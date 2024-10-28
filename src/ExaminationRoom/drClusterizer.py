@@ -8,7 +8,7 @@ from os import path as p
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger
-from UtilitiesCloset import drSelector
+from UtilitiesCloset import drSelector, drListInitiator
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -39,13 +39,7 @@ def clustering_manager(pathInfo: Dict, clusterInfo: Dict) -> List[FilePath]:
     os.makedirs(clusterDir, exist_ok=True)
 
     ## list of dirs created by drMD that we don't want to cluster
-    notRunDirs: list  = ["00_configs",
-                          "01_ligand_parameters",
-                            "00_collated_pdbs",
-                              "00_clustered_pdbs",
-                                "00_drMD_logs", 
-                                "00_AutoMethods"]
-
+    notRunDirs = drListInitiator.get_not_a_run_dir()
     ## create list of dirs to cluster
     runDirs: List[DirectoryPath] = [p.join(outDir, dir) for dir in os.listdir(outDir) if not dir in notRunDirs]
     dirsToCluster: List[DirectoryPath] = [p.join(runDir,stepDir) for stepDir in clusterInfo["stepNames"] for runDir in runDirs]

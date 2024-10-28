@@ -75,3 +75,14 @@ def get_solvent_residue_names() -> set:
     """
     return {"HOH", "WAT"}
 ##################################################################################
+def get_not_a_run_dir() -> set:
+    """
+    Returns a list of the not a run directory names.
+    """
+    return {"00_AutoMethods",
+             "00_clustered_pdbs",
+               "00_configs",
+                 "00_drMD_logs",
+                   "00_vitals_reports",
+                     "01_ligand_parameters",
+                       "00_collated_pdbs"}

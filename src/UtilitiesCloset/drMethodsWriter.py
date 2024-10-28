@@ -281,7 +281,7 @@ def write_solvation_charge_balance_methods(batchConfig: Dict, configDicts: List[
     approxWaterCount, counterIonCounts = get_solvation_atom_counts(configDicts, batchConfig)
     ## write solvation and charge balence methods
     with open(methodsFile, "a", encoding = "utf-8") as methods:
-        methods.write("## Solvation and Charge Balencing\n\n")
+        methods.write("## Solvation and Charge Balancing\n\n")
         ## info on solvation box
         methods.write(f"All proteins were placed in {inflect.engine().an(boxGeometry)} {boxGeometry} solvation box with a 10 Å buffer between")
         methods.write(f" the protein and the nearest edge of the box. ")
@@ -617,7 +617,7 @@ def write_per_step_simulation_methods(methodsFile: FilePath, sim: dict, stepInde
             ## deal with heavy protons // timestep
             heavyProtons = sim.get("heavyProtons", False)
             if heavyProtons:
-                methods.write(f"This simulations was performed using a mass of 4.03036 amu for hydrogen atoms. ")
+                methods.write(f"This simulation was performed using a mass of 4.03036 amu for hydrogen atoms. ")
                 methods.write(f"The mass added to each hydrogen atom was subtracted from the mass of the heavy atom it was bonded to. ")
                 methods.write(f"This, combined with the constraints placed upon bonds between heavy and hydrogen atoms, ")
                 methods.write(f"allowed the simulation to be performed using a timestep of {sim['timestep']} [Ref. {cite('heavyProtons')}]. ")
@@ -718,7 +718,7 @@ def write_forecefields_methods(methodsFile):
         methods.write(f"All protein residues were parameterised using the AMBER ff19SB and forcefield [Ref. {cite('ff19SB')}]. ")
         methods.write(f" These parameters were prepared using tleap from the Ambertools package [Ref. {cite('ambertools')}]. ")
         methods.write(f"Simulations were performed in explicit solvent. All water molecules parameterised using the TIP3P model [Ref. {cite('tip3pParams')}]. ")
-        methods.write(f"Any ions in our system were treated using parameteres calculated to complement the TIP3P water model [Ref. {cite('ionParams')}]. \n\n")
+        methods.write(f"Any ions in our system were treated using parameters calculated to complement the TIP3P water model [Ref. {cite('ionParams')}]. \n\n")
 ##########################################################################################
 def  write_simulation_methods(methodsFile: FilePath, simulationInfo: dict):
     """

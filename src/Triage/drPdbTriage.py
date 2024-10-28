@@ -351,7 +351,7 @@ def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Di
         Tuple[bool, Optional[Dict[str, List[str]]]]: A tuple containing a boolean indicating if sidechains were found,
         and a dictionary with the residue IDs of the residues with missing sidechains and a list of the missing atoms.
     """
-    ## initialise a set of backbond atom names and terminal oxygen name
+    ## initialise a set of backbone atom names and terminal oxygen name
     backboneAtoms: set = {"N", "C", "O", "CA", "OXT"}
     ## get amino acid names and dictionary containing heavy atom counts for each residue
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
@@ -365,6 +365,9 @@ def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Di
         for resId, resDf in chainDf.groupby(f"RES_ID"):
             ## get residue name of this residue
             resName: str = resDf["RES_NAME"].iloc[0]
+            correctHeavyAtomCount = heavySideChainAtomCounts.get(resName, None)
+            if correctHeavyAtomCount is None:
+                continue
             ## get atom names of this residue
             resAtomNames: List[str] = resDf["ATOM_NAME"].tolist()
             ## exclude hydrogen atoms
@@ -372,7 +375,7 @@ def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Di
             ## ecxlude backbone atoms
             sideChainAtoms: List[str] = list(set([atom for atom in heavyAtomNames if atom not in backboneAtoms ]))
             ## check if number of heavy sidechain atoms matches expected value
-            if  len(sideChainAtoms) != heavySideChainAtomCounts[resName]:
+            if  len(sideChainAtoms) != correctHeavyAtomCount:
                 missingSidechains[f"{chainId}:{resName}:{str(resId)}"] = sideChainAtoms
     ## return boolean indicating if sidechains with missing atoms were found and the dictionary
     return bool(missingSidechains), missingSidechains or None

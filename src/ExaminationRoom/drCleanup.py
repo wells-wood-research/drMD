@@ -5,7 +5,7 @@ from shutil import copy, rmtree
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger, drClusterizer
-from UtilitiesCloset import drSelector
+from UtilitiesCloset import drSelector, drListInitiator
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -39,15 +39,7 @@ def clean_up_handler(batchConfig: dict) -> None:
     directory_cleanup_handler(batchConfig)
 ######################################################################################################
 
-def init_not_run_dirs() -> list:
-    return ["00_configs",
-             "01_ligand_parameters",
-               "00_collated_pdbs", 
-               "00_drMD_logs",
-                 "00_AutoMethods",
-                   "00_clustered_pdbs",
-                     "00_vitals_reports"]
-######################################################################################################
+
 
 def collate_vitals_reports(batchConfig: Dict) -> None:
     """
@@ -76,7 +68,7 @@ def collate_vitals_reports(batchConfig: Dict) -> None:
     vitalsDir: DirectoryPath = p.join(outDir, "00_vitals_reports")
     os.makedirs(vitalsDir, exist_ok=True)
 
-    notRunDirs = init_not_run_dirs()
+    notRunDirs = drListInitiator.get_not_a_run_dir()
     
     for systemName in os.listdir(outDir):
         if systemName in notRunDirs:
@@ -279,7 +271,7 @@ def get_endpoint_pdbs(endPointInfo: Dict, pathInfo: Dict) -> List[FilePath]:
     ## unpack pathInfo
     outDir: DirectoryPath = pathInfo["outputDir"]
     ## create list of directories that are made by drMD - we don't want to look inside these
-    notRunDirs = init_not_run_dirs()
+    notRunDirs = drListInitiator.get_not_a_run_dir()
     ## create a list of all run directories
     runDirs: List[DirectoryPath] = [p.join(outDir, dir) for dir in os.listdir(outDir) if not dir in notRunDirs]
     ## create a list of step directories that we want to look for endpoint pdb files in 
