@@ -1,7 +1,18 @@
 ########################################################################
+#   This is the world's worst config.
+#   Do not use it!
+#   If you use this as an input to drMD, you will see the configTriage error
+#
+#   World's worst config waits,
+#   Never to be used again—
+#   Errors in each line.
+#
+#
+#
+########################################################################
 pathInfo:
-  # inputDir: /home/esp/scriptDevelopment/drMD/01_inputs
-  # outputDir: NOTaDIR
+  inputDir: /correctly/formatted/but/does/not/exist
+  outputDir: NOTaDIR
 ########################################################################
 hardwareInfo:
   platform: CUDA
@@ -30,7 +41,7 @@ miscInfo:
   - selection:
       keyword: custom
       customSelection:
-      - {RES_NAME: "all", RES_ID:  "balls", ATOM_NAME: "CA"}
+      - {RES_NAME: all, RES_ID:  sausages, ATOM_NAME: CA}
 ########################################################################
 equilibriationRestraints: &equilibriationRestraints
     - restraintType: position
@@ -71,19 +82,29 @@ simulationInfo:
     restraintInfo: None
 
 ################################################
+
 postSimulationInfo:
   clusterInfo:
-    stepNames: [05_Production_MD] 
+    stepNames: [NOTADIR] 
     nClusters: -1
     clusterBy:
     - selection:
-        keyword: protein
+        keyword: nothing
     removeAtoms:
       - selection:
-          keyword: sausages
       - selection:
           keyword: custom
-          
+          customSelection:
+          - {RES_NAME: all, RES_ID:  rubbish, ATOM_NAME: CA}
+  collateVitalsReports: True
   endPointInfo:
-    stepNames: []
+    stepNames: [01_energy_minimisation]
+    removeAtoms: 
+    - selection:
+        keyword: ions
+    - selection:
+        keyword: water
+  removeAllSimulationDirs: yesplease
+
+
 

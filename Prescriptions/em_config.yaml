@@ -1,11 +1,25 @@
+
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription is used to perform energy minimisations on a large set of pdb files
+#   
+#   As each energy minimisation step is rather quick, and does not effectively use GPU acceleration,
+#   these calculations are greatly sped up by performing them in parallel
+#   To do this, we have used a value of 16 for the parallelCPU parameter
+#   
+#   For this type of simulation, we are rarely interested in all of the files
+#   generated in the preparation steps. 
+#   We have used the endpointInfo section to collate all of our optimised geometries in one output directory.
+#   Finally, we have used the removeAllSimulationDirs parameter to remove extra files and directories
+#
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/01_inputs/test_em
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_em
   outputDir: /home/esp/scriptDevelopment/drMD/03_em_outputs
   
 ########################################################################
 hardwareInfo:
-  parallelCPU: 8
+  parallelCPU: 16
   platform: CUDA
   subprocessCpus: 1
 

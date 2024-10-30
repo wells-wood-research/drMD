@@ -1,7 +1,31 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription was used for our demonstration of drMD 
+#   We have used it to recreate the equilibrium and production simulation steps used 
+#   by Lameria et al.
+#
+#   A complex equilibriation protocol is used to equilibrate the system:
+#   1. ENERGY MINIMISATION WITH POSITION RESTRAINTS
+#   This consists of seven Energy minimisation with position restraints on all atoms
+#   This restraint is reduced in each EM step and removed in the last EM step
+#   2. WARMUP
+#   Next, an NVT and NPT simulation are performed
+#   Each of these simulations gradually increases the temperature of the simulation 
+#   until it reaches 300K
+#   3. EQUILIBRIATION
+#   Next, an unrestrained NPT simulation is performed for 5 nanoseconds
+#   No measurements are taken during this simulation, we are just equilibrating
+#   4. PRODUCTION
+#   Finally, an urestrained NPT simulation is run for 500 nanoseconds
+#   This is the simulation that we want to perform our analysis on
+#
+#   Note that we have used larger values for the "logInterval" parameter for 
+#   the equilibriation steps than the production step. This reduces the file sizes 
+#   of the simulation outputs
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/01_inputs/PET_proj
-  outputDir: /home/esp/scriptDevelopment/drAnalysis/PETase_MD_for_drMD_paper/04_PET_proj_outputs
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/PET_proj
+  outputDir: /home/esp/scriptDevelopment/drMD/04_PET_proj_outputs
   
 ########################################################################
 miscInfo:

@@ -1,6 +1,15 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription is used to perform a metadynamics simulation of alanine-dipeptide
+#   using two bias variables that represent the phi and psi angles of the dipeptide
+#
+#   The same equilibriation protocol that is used in standard_MD_config.yaml is used
+#   Note that as this molecule uses capping groups, the input file must be protonated 
+#   and the "skipPdbTriage" flag must be set to True
+#
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/01_inputs/alanine-dipeptide
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/alanine-dipeptide
   outputDir: /home/esp/scriptDevelopment/drMD/03_alanine-dipeptide-metadynamics
   
 ########################################################################
