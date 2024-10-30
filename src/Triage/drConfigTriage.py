@@ -1101,7 +1101,7 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
     return disorders, stepName, simulationType, noDisorders
 
 #########################################################################
-def validate_path(argName: str, argPath: Union[PathLike, str]) -> str:
+def validate_path(argName: str, argPath: Union[FilePath, DirectoryPath]) -> str:
     """
     Check to see if a path variable is indeed the correct type
     Check to see if the path exists
@@ -1126,7 +1126,7 @@ def get_config_input_arg() -> FilePath:
     parser.add_argument(f"--config")
     args = parser.parse_args()
 
-    configFile: Union[PathLike, str] = args.config
+    configFile: FilePath = args.config
 
     return configFile
 #####################################################################################

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drMD"
-version = "0.0.3"
+version = '1.0.0'
 description = "drMD: Molecular Dynamics for Protein Scientists"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,20 +20,21 @@ classifiers = [
 ]
 
 dependencies = [
-    "pyyaml",
-    "argpass",
-    "pandas",
-    "mdtraj",
-    "numpy",
-    "matplotlib",
-    "weasyprint",
-    "scipy",
-    "tqdm",
-    "pdbutils",
-    "scikit-learn",
-    "propka",
-    "mdanalysis",
-    "jinja2",
-    "inflect".
-    "pdb2pqr"
-]
+        'pyyaml',
+        'argparse',
+        'pandas',
+        'mdtraj',
+        'numpy',
+        'matplotlib',
+        'weasyprint',
+        'scipy',
+        'tqdm',
+        'pdbutils',
+        'scikit-learn',
+        'propka',
+        'jinja2',
+        'inflect',
+        'pdb2pqr',
+        'mdanalysis',
+        'gputil',
+    ]

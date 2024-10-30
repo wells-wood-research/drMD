@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='drMD',
-    version='0.0.3',
+    version = '1.0.0',
     description='drMD: Molecular Dynamics for Protein Scientists',
     author="Dr Eugene Shrimpton-Phoenix",
     author_email="eshrimpt@ed.ac.uk",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/ESPhoenix/drMD",
+    url="https://github.com/wells-wood-research/drMD",
     packages=find_packages(),
     python_requires='>=3.9',
     classifiers=[
@@ -17,7 +17,7 @@ setup(
     ],
     install_requires=[
         'pyyaml',
-        'argpass',
+        'argparse',
         'pandas',
         'mdtraj',
         'numpy',
@@ -28,9 +28,10 @@ setup(
         'pdbutils',
         'scikit-learn',
         'propka',
-        'mdanalysis',
         'jinja2',
         'inflect',
         'pdb2pqr',
+        'mdanalysis',
+        'gputil',
     ],
 )

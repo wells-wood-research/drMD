@@ -1,5 +1,5 @@
 pyyaml
-argpass
+argparse
 pandas
 mdtraj
 numpy
@@ -10,4 +10,8 @@ tqdm
 pdbutils
 scikit-learn
 propka
+jinja2
+inflect
+pdb2pqr
 mdanalysis
+gputil
