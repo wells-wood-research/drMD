@@ -1,5 +1,13 @@
 # :medical_symbol: drMD :medical_symbol:
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
+# :medical_symbol: CONTENTS :medical_symbol:
+
+- [GitHub Installation (recommended)](#github-installation)
+- [Pip Installation (for advanced users)](#pip-installation)
+
+
+
+
 # GitHub Installation 
 We reccomned that you use the following steps to install drMD:
 1. Clone this repository
@@ -65,7 +73,7 @@ Now that you have sucessfully set up the dependancies for drMD, you are nearly r
 If you have used the GitHub installation method, you can run drMD using the following command:
 
 ```bash
-python drMD.py --config config.yaml
+python /path/to/drMD.py --config config.yaml
 ```
 
 If you have used the Pip installation method, you can import drMD as a python module, and as following:
@@ -83,7 +91,7 @@ The following section will detail the correct formatting of this config.yaml fil
 
 # Config syntax
 The config.yaml file is in the YAML format *(https://en.wikipedia.org/wiki/YAML)* 
-Inputs are grouped by theme and are stored as nested dictionaries and lists
+Inputs are grouped by theme and are stored as nested dictionaries and lists.
 The next few sections will detail the correct formatting of the config.yaml file
 
 ## pathInfo
@@ -119,8 +127,9 @@ The **hardwareInfo** entry in the config file is a dictionary containing three p
   
 
   > :medical_symbol:
-  > If you have access to GPU acceleration using CUDA, we reccomend this option. If you don't but have access through OpenCL, this is a close second.
+  > If you have access to GPU acceleration using CUDA, we recommend this option. If you cant use CUDA but have access to OpenCL, this is a close second.
   > If you don't have a GPU you can use the CPU option, this will be a lot slower.
+  > Energy minimisation calculations do not benefit from GPU acceleration, so you should use the CPU option for these
 
 - **paralellCPU**:   *(int)* This is the number  of simulations that will be run in paralell
 - **subprocessCpus**: *(int)* This is the number of cpu cores that will be allocated to each simulation.  
@@ -565,3 +574,5 @@ simulationInfo:
     restraintInfo: *equilibriationRestraints
 
 ```
+
+# WORKED EXAMPLES
