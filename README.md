@@ -1,12 +1,17 @@
 # :medical_symbol: drMD :medical_symbol:
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
-# :medical_symbol: CONTENTS :medical_symbol:
+# :medical_symbol: README Contents :medical_symbol:
 
-- [GitHub Installation (recommended)](#github-installation)
-- [Pip Installation (for advanced users)](#pip-installation)
-
-
-
+1. [GitHub Installation (recommended)](#github-installation)
+2. [Pip Installation (for advanced users)](#pip-installation)
+3. [Usage](#usage)
+4. [Config Syntax](#config-syntax)
+    - [pathInfo](#pathinfo)
+    - [hardwareInfo](#hardwareinfo)
+    - [miscInfo](#miscinfo)
+    - [ligandInfo](#ligandinfo)
+    - [simulationInfo](#simulationinfo)
+    - [post-simulation processing](#post-simulation-processing)
 
 # GitHub Installation 
 We reccomned that you use the following steps to install drMD:
@@ -96,14 +101,15 @@ The next few sections will detail the correct formatting of the config.yaml file
 
 ## pathInfo
 The **pathInfo** entry in the config file is a dictionary containing two parameters:
-- **inputDir**:    *(DirectoryPath)* This is the absoloute path towards a directory containing PDB files that will be used as starting points for your simulations.
+### 	:anatomical_heart: inputDir
+*(DirectoryPath)* This is the absoloute path towards a directory containing PDB files that will be used as starting points for your simulations.
             
   > :medical_symbol:
   > **To Perform Replicate** simulations, simply create copies of your starting PDB files in the inputDir, with each copy
   > named with a unique number. For example, your inputDir could contain my_protein_1.pdb, my_protein_2.pdb, etc.
 
-
-- **outputDir**:  *(DirectoryPath)*  This is the absoloute path towards a directory that you want your drMD outputs to be written to.
+### outputDir  
+*(DirectoryPath)*  This is the absoloute path towards a directory that you want your drMD outputs to be written to.
 
   > :medical_symbol:
   > The outputDir will be created if it does not already exist at the point of running drMD
@@ -122,17 +128,18 @@ pathInfo:
 ## hardwareInfo
 This config entry tells drMD about your computer hardware and how you want to use it to run your simulations
 The **hardwareInfo** entry in the config file is a dictionary containing three parameters:
-- **platform**: *(str)* This is the platform that will be used to run simulations in OpenMM. Accepted arguments for **platform** are *"CUDA"*, *"OpenCL"*, and *"CPU"*
-
-  
+### platform
+*(str)* This is the platform that will be used to run simulations in OpenMM. Accepted arguments for **platform** are *"CUDA"*, *"OpenCL"*, and *"CPU"*
 
   > :medical_symbol:
   > If you have access to GPU acceleration using CUDA, we recommend this option. If you cant use CUDA but have access to OpenCL, this is a close second.
   > If you don't have a GPU you can use the CPU option, this will be a lot slower.
   > Energy minimisation calculations do not benefit from GPU acceleration, so you should use the CPU option for these
 
-- **paralellCPU**:   *(int)* This is the number  of simulations that will be run in paralell
-- **subprocessCpus**: *(int)* This is the number of cpu cores that will be allocated to each simulation.  
+### parallelCPU
+*(int)* This is the number  of simulations that will be run in paralell
+### subprocessCpus
+ *(int)* This is the number of cpu cores that will be allocated to each simulation.  
 
   > :medical_symbol:
   > The total CPU usage will be parallelCPU * subprocessCpus, so make sure you have enough CPUs when you set these parameters
@@ -149,17 +156,21 @@ This will use CUDA git achive GPU acceleration and run 16 simulations in paralel
 ## miscInfo
 This section allows you to set some general options for your simulations:
 
-- **pH**: *(int or float)* This is the pH of your simulation, this will affect the protonation states of your protein and any ligands present in your simulation
+### pH
+ *(int or float)* This is the pH of your simulation, this will affect the protonation states of your protein and any ligands present in your simulation
 
-- **firstAidMaxRetries**: *(int)* This is the maximum number of times that drMD will attempt to recover from an error in a simulation
+### firstAidMaxRetries
+*(int)* This is the maximum number of times that drMD will attempt to recover from an error in a simulation
 
 > :medical_symbol: This option can be very helpful for rescuing crashed simulations. However 
 > don't rely on it too much. If your simulation keeps crashing you may want to reduce the 
 > temperature or timestep parameters instead to make it more stable
 
-- **boxGeometry**: *(str)*  This is the shape of the solvation box that will be used in your simulations. Accepted arguments for **boxGeometry** are *"cubic" or "octahedral"
+### boxGeometry 
+*(str)*  This is the shape of the solvation box that will be used in your simulations. Accepted arguments for **boxGeometry** are *"cubic" or "octahedral"
 
-- **writeMyMethodsSection**: *(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis.
+### writeMyMethodsSection
+*(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis.
 
 > :medical_symbol: drMD methods sections contain all of the information one might need to replicate your simulations.
 > The formatting of these methods section may be too robotic and repetative for you, feel free to reformat them as you see fit. 
@@ -186,10 +197,12 @@ To do this, you will need to tell drMD some things about each ligand you whish t
 
 **ligandInfo** is a list of dictionaries that contain the following parameters:
 
-- **ligandName**: *(str)*  This is the three letter name of the ligand, this will be used to match the residue names in your PDB files
+### ligandName
+*(str)*  This is the three letter name of the ligand, this will be used to match the residue names in your PDB files
 
-- **protons**:    *(bool)*  This is a to tell drMD whether you have protons on your ligand. 
-                If set to FALSE, drMD will run an automated protonation protocol to add protons to your ligand
+### protons
+  *(bool)*  This is a to tell drMD whether you have protons on your ligand. 
+              If set to FALSE, drMD will run an automated protonation protocol to add protons to your ligand
 
   > :medical_symbol:
   > The automatic protonation protocol only works reliably for simple organic ligands.
@@ -197,12 +210,14 @@ To do this, you will need to tell drMD some things about each ligand you whish t
   > :medical_symbol:
   > For more complex ligand, we recommended that you manually add protons in your input PDB file prior to running drMD
 
-- **charge**:  *(int)*  This is the formal charge of the ligand 
+### charge
+*(int)*  This is the formal charge of the ligand 
 
-- **toppar**:   *(bool)*  This is to tell drMD whether you have an frcmod file for your ligand already made.
+### toppar
+*(bool)*  This is to tell drMD whether you have an frcmod file for your ligand already made.
                 If you already have one, it must be located in the 01_ligand_parameters directory within your outputDir
-
-- **mol2**:   *(bool)*   This is to tell drMD whether you have a mol2 file for your ligand already made.
+### toppar
+*(bool)*   This is to tell drMD whether you have a mol2 file for your ligand already made.
                 If you already have one, it must be located in the 01_ligand_parameters directory within your outputDir
 
 Example ligandInfo:
@@ -229,11 +244,12 @@ This is the real meat and potatoes of the drMD config file.
 The **simulationInfo** entry in the config file is a list of dictionaries containing information about each simulation.
 
 Each simulation detailed in **simulationInfo** will be run in sequence, with the output of the previous simulation being the starting point for the next simulation.
-### Selecting Simulation Type
 Each simulation dictionary contains the following parameters:
-- **stepName**:         This is the name of the step that will be used to create a subdirectory in the runDir, we reccomend prefixing these names with numbers to make them order nicely
+### stepName
+*(str)* This is the name of the step that will be used to create a subdirectory in the runDir, we reccomend prefixing these names with numbers to make them order nicely
 
-- **simulationType**: *(str)* This is the type of simulation that will be run. Accepted arguments are:
+### simulationType
+*(str)* This is the type of simulation that will be run. Accepted arguments are:
 
     - **"EM"**:         This will run a steepest-decent Energy Minimisation step. 
     > :medical_symbol:
@@ -242,21 +258,26 @@ Each simulation dictionary contains the following parameters:
     - **"NPT"**:        This will run an NPT (constant pressure) molecular dynamics simulation
     > :medical_symbol:
     > For the majority of protein simulations, the NPT ensemble is used for production MD simulations, while the NVT ensemble is only used in equilibration steps
-    - **"META"**:       This will run a Metadynamics simulation (see later on for more details)
+    - **"META"**:       This will run a Metadynamics simulation 
 
 ### Selecting simulation temperature 
 For most simulations, a constant temperature is used. In this case the following parameter is required:
 
-- **temperature**: *(int)* This is the temperature of the simulation in Kelvin 
+#### temperature
+*(int)* This is the temperature of the simulation in Kelvin 
 
 If you wish to change the temperature throughout the simulation, the following parameter is required:
 
-- **temperatureRange**: *(list of int)* This is a list of integers (again, in Kelvin) that will be used to change the temperature throughout the simulation. 
+
+#### temperatureRange
+*(list of int)* This is a list of integers (again, in Kelvin) that will be used to change the temperature throughout the simulation. 
 
 ### Energy Minimisation Pararameters
 For Energy Minimisation steps, the following additional parameters are required:
-- **maxIterations**:   *(int)* This is the maximum number of iterations that will be run in the Energy Minimisation step
-                    If this parameter is set to -1, the step will run until the energy converges
+#### maxIterations
+*(int)* This is the maximum number of iterations that will be run in the Energy Minimisation step.
+If this parameter is set to -1, the step will run until the energy converges.
+
 Example Energy Minimisation syntax:
 ```yaml
 simulationInfo:
@@ -267,13 +288,16 @@ simulationInfo:
 ```
 This will run a energy minimisation until the energy converges
 
-#### Generic Simulation Parameters
+### Generic Simulation Parameters
 For "normal" MD simulations using NVT or NpT ensembles, as well as for Metadynamics simulations, the following additional parameters are required:
-- **duration**: *(str)* This is the duration of the simulation step, as a string "int unit" eg. "1000 ps"
+#### duration
+: *(str)* This is the duration of the simulation step, as a string "int unit" eg. "1000 ps"
 
-- **timestep**:  *(str)* This is the timestep of the simulation, as a string "int unit" eg. "2 fs"
+#### timestep
+ *(str)* This is the timestep of the simulation, as a string "int unit" eg. "2 fs"
 
-- **logInterval**:  *(str)* This is the frequency that the simulation will write to file using built-in OpemMM reporters. As a string "int unit" eg. "100 ps"
+#### logInterval
+*(str)* This is the frequency that the simulation will write to file using built-in OpemMM reporters. As a string "int unit" eg. "100 ps"
 
 Example NVT simulation syntax:
 ```yaml
@@ -289,26 +313,33 @@ This will run a 100 ps NVT molecular dynamics simulation with a timestep of 2 fs
 
 ### Adding Restraints with drMD
 If you whish to perform simulations with restraints, the following additional parameters are required:
-- **restraintInfo**:       This is a list of dictionaries containing information about each restraints. 
+#### restraintInfo
+*(list of dict)*  This is a list of dictionaries containing information about each restraints. 
 
 Within the restraintInfo list, you must provied at least one dictionary that contains the following parameters:
 
-- **restraintType**: *(str)* This is the type of restraints that will be added. Accepted arguments are: "distance", "angle", "dihedral", "position"
+#### restraintType
+ *(str)* This is the type of restraints that will be added. Accepted arguments are: "distance", "angle", "dihedral", "position"
 
-- **parameters**:  *(dict)*  This is a dictionary containing the parameters for the restraints.
+#### parameters
+*(dict)*  This is a dictionary containing the parameters for the restraints.
 
 Within the parameters dictionary, all restraint types require the following parameter:
 
-- **k** :   *(int)*  This is the force constant of the restraint (int), given in kJ/mol A^-2
+###  k 
+*(int)*  This is the force constant of the restraint (int), given in kJ/mol A^-2
 
 
 Additional entries in the parameters dictionary depend on the type of restraints:
 
-- **r0**: *(int or float)*  *Required for distance restraints*. This is the distance in Angstroms that the restraint should be applied to 
+### r0
+ *(int or float)*  *Required for distance restraints*. This is the distance in Angstroms that the restraint should be applied to 
 
-- **theta0**: *(int or float)*   *Required for angle restraints*. This is the angle in degrees that the angle should be constrained to 
+### theta0
+*(int or float)*   *Required for angle restraints*. This is the angle in degrees that the angle should be constrained to 
 
-- **phi0**: *(int or float)*     *Required for torsion restraints*. This is the angle in degrees that the dihedral should be constrained to
+### phi0
+*(int or float)*  *Required for torsion restraints*. This is the angle in degrees that the dihedral should be constrained to
 
 All restraints require the selection parameter. This tells drMD what atoms to apply the restraint to
     - **selection**:  *(list of dicts)*  This is a dictionary containing information on the selection of atoms that the restraints will be applied to.
@@ -340,6 +371,36 @@ Example restraints syntax:
 This example will add the following restraints:
 - Position restraints to the protein atoms with a force constant of 1000 kJ/mol 
 - A 3 Angstrom distance restraint between the CA atoms of residues 1 and 2 of the protein, with a force constant of 1000 kJ/mol
+
+For a detailed explaination of how to select chains, residues, and atoms for restraints, see the [drMD Selection syntax](#drmd-selection-syntax) section.
+
+
+### Post-simulation processing
+After all of your simulations have been run, drMD contains some simple utilities for organising your output files and deleting any unwanted files.
+
+If you want to do any post-processing, you will need to provide the following parameter in your config file:
+- **postSimulationInfo**: *(dict)* This is a dictionary containing the parameters for the post-simulation processing
+
+If you wish to collect PDB files that represent the last frame of each simulation, you may include the following parameter in **postSimulationInfo**:
+- **endpointInfo**: *(dict)* This is a dictionary containing the parameters the following parameters:
+
+  - **stepNames**: *(list)* This is a list of strings containing the names of the steps in the simulation, these should match the stepNames that you have used in your simulationInfo dictionary (described above). Endpoint PDB files will be gathered for these steps
+
+  - **removeAtoms**: *(list)* This is a list of dictionaries containing the selections of atoms to be removed from the PDB files. The format for these selections is the same as that used for the restraints, metadynamics, etc. (described above)
+
+Molecular Dyamics simulations can generate very large output files that can become rather unweildy and difficulat to anaylse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with drMD, include the following parameter in your config file:
+
+- **clusterInfo**: *(dict)* This is a dictionary containing the parameters following parameters:
+
+  - **stepNames**: *(list)* This is a list of strings containing the names of the steps in the simulation, these should match the stepNames that you have used in your simulationInfo dictionary (described above). Clustering will be performed on trajectories of these steps
+  - **nClusters**: *(int)* This is the number of clusters PDB files that will be generated
+  - **clusterBy**: *(list)* This is a list of selections of atoms (described above) to cluster on. 
+
+> :medical_symbol:
+> By selecting only the parts of our system that you are interested in with the clusterBy parameter, you can generated cluster
+> PDB files where these atoms are most separated by RMSD.
+
+- **collateVitalsReports**: *(bool)* If True, will collate vitals reports from the trajectories generated by the MD simulations
 
 ### drMD Selection syntax
 
@@ -467,32 +528,7 @@ Example MetaDynamics syntax:
 This example will add a RMSD bias to the backbone of the protein
 and a torsion bias between the CA atoms of residues 1, 2, 3, and 4 of the protein
 ---
-### Post-simulation processing
-After all of your simulations have been run, drMD contains some simple utilities for organising your output files and deleting any unwanted files.
 
-If you want to do any post-processing, you will need to provide the following parameter in your config file:
-- **postSimulationInfo**: *(dict)* This is a dictionary containing the parameters for the post-simulation processing
-
-If you wish to collect PDB files that represent the last frame of each simulation, you may include the following parameter in **postSimulationInfo**:
-- **endpointInfo**: *(dict)* This is a dictionary containing the parameters the following parameters:
-
-  - **stepNames**: *(list)* This is a list of strings containing the names of the steps in the simulation, these should match the stepNames that you have used in your simulationInfo dictionary (described above). Endpoint PDB files will be gathered for these steps
-
-  - **removeAtoms**: *(list)* This is a list of dictionaries containing the selections of atoms to be removed from the PDB files. The format for these selections is the same as that used for the restraints, metadynamics, etc. (described above)
-
-Molecular Dyamics simulations can generate very large output files that can become rather unweildy and difficulat to anaylse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with drMD, include the following parameter in your config file:
-
-- **clusterInfo**: *(dict)* This is a dictionary containing the parameters following parameters:
-
-  - **stepNames**: *(list)* This is a list of strings containing the names of the steps in the simulation, these should match the stepNames that you have used in your simulationInfo dictionary (described above). Clustering will be performed on trajectories of these steps
-  - **nClusters**: *(int)* This is the number of clusters PDB files that will be generated
-  - **clusterBy**: *(list)* This is a list of selections of atoms (described above) to cluster on. 
-
-> :medical_symbol:
-> By selecting only the parts of our system that you are interested in with the clusterBy parameter, you can generated cluster
-> PDB files where these atoms are most separated by RMSD.
-
-- **collateVitalsReports**: *(bool)* If True, will collate vitals reports from the trajectories generated by the MD simulations
 
 
 ## Advanced YAML-ing with variables
