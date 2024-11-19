@@ -7,3 +7,6 @@
 
 ## drPdbChecker
 [] move list init to drListInitiator
+
+## drFirstAid
+BUG! BREAKING METDYNAMICS

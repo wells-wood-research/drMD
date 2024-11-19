@@ -18,7 +18,7 @@ from UtilitiesCloset import drSelector, drFixer
 ########################################################################################################
 ########################################################################################################
 @drLogger.monitor_progress_decorator()
-@drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
+# @drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
 @drCheckup.check_up_handler()
 def run_metadynamics(prmtop: app.Topology,
                       inpcrd: any,
@@ -28,6 +28,7 @@ def run_metadynamics(prmtop: app.Topology,
                               platform: openmm.Platform,
                                 refPdb: str,
                                     config:dict) -> str:
+
     """
     Run a simulation at constant pressure (NpT) step with biases.
 
@@ -57,7 +58,6 @@ def run_metadynamics(prmtop: app.Topology,
     simDir: str = p.join(outDir, stepName)
     os.makedirs(simDir, exist_ok=True)
 
-
     sim = drSim.process_sim_data(sim)
     # Define the nonbonded method and cutoff.
     nonbondedMethod: openmm.NonbondedForce = app.PME
@@ -83,6 +83,7 @@ def run_metadynamics(prmtop: app.Topology,
     # Read biases from sim config and create bias variables
     biases: list = metaDynamicsInfo["biases"]
     biasVariables: list = []
+
     for bias in biases:
         # Get atom indexes and coordinates for the biases
         atomIndexes: list = drSelector.get_atom_indexes(bias["selection"], refPdb)
@@ -100,6 +101,8 @@ def run_metadynamics(prmtop: app.Topology,
         elif bias["biasVar"].upper() == "ANGLE":
             biasVariable: metadynamics.BiasVariable = gen_angle_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
+
+
     # Create metadynamics object and add bias variables as forces to the system
     meta: metadynamics.Metadynamics = metadynamics.Metadynamics(system=system,
                                      variables=biasVariables,
@@ -126,7 +129,6 @@ def run_metadynamics(prmtop: app.Topology,
                                 simulation=simulation,
                                 dcdAtomSelections= config["miscInfo"]["trajectorySelections"],
                                 refPdb=refPdb)
-
     # Run metadynamics simulation
     meta.step(simulation, sim["nSteps"])
  
