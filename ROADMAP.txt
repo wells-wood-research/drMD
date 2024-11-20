@@ -10,3 +10,8 @@
 ## General
 PostSimulation --> AfterCare
 
+## drPrep
+[] cope with two-letter elements better
+
+## real time updates after crash
+[] kill job upon crash

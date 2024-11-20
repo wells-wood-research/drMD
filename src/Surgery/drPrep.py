@@ -86,8 +86,6 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
                                                                             prepDir=prepDir)
         
 
-
-
     
     drLogger.log_info(f"Prep steps complete for {protName}!",True)
     drLogger.close_logging()
@@ -254,7 +252,7 @@ def find_ligand_charge(ligDf: pd.DataFrame,
                     totalCharge += 1
 
     # Clean up temporary files
-    [os.remove(p.join(outDir, file)) for file in os.listdir(outDir) if not p.splitext(file)[1] == ".yaml"]
+    # [os.remove(p.join(outDir, file)) for file in os.listdir(outDir) if not p.splitext(file)[1] == ".yaml"]
     drLogger.close_logging()
     return totalCharge
 
@@ -525,7 +523,6 @@ def ensure_ligand_atoms_are_unique(ligPdb: FilePath) -> FilePath:
     return ligPdb
 #####################################################################################
 def rename_heteroatoms(pdbDf: pd.DataFrame) -> pd.DataFrame:
-    
     # Generate new names for hydrogens
     letters: List[str] = list(string.ascii_uppercase)
     numbers: List[str] = [str(i) for i in range(1,10)]
@@ -534,8 +531,14 @@ def rename_heteroatoms(pdbDf: pd.DataFrame) -> pd.DataFrame:
     # Rename hydrogens in the DataFrame
     count: int = 0
     for index, _ in pdbDf.iterrows():
-        pdbDf.loc[index,"ATOM_NAME"] = pdbDf.loc[index,"ATOM_NAME"][0]  + newNameSuffixes[count]
+        ## Use element column if available
+        if len(pdbDf.loc[index,"ELEMENT"]) > 0:
+            pdbDf.loc[index,"ATOM_NAME"] = pdbDf.loc[index,"ELEMENT"]  + newNameSuffixes[count]
+        ## Use first letter of atom name if element is not available (will break for 2 letter element names)
+        else:
+             pdbDf.loc[index,"ATOM_NAME"] = pdbDf.loc[index,"ATOM_NAME"][0]  + newNameSuffixes[count]
         count += 1
+
     return pdbDf
 
 #####################################################################################

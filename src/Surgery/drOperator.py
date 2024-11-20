@@ -37,7 +37,6 @@ def drMD_protocol(configYaml: FilePath) -> None:
     # Create the output directory if it doesn't exist
     outDir: str = config["pathInfo"]["outputDir"]
     os.makedirs(outDir, exist_ok=True)
-
     # Prepare the protocol
     solvatedPdb, inputCoords, amberParams = drPrep.prep_protocol(config)
 
@@ -100,8 +99,8 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
 
         # Run simulation
         simulationFunction = choose_simulation_function(sim["simulationType"])
-
-        saveFile = simulationFunction(prmtop = prmtop,
+        try:
+            saveFile = simulationFunction(prmtop = prmtop,
                                        inpcrd = inpcrd,
                                          sim = sim,
                                            saveFile = saveFile,
@@ -109,6 +108,9 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
                                                platform = platform,
                                                  refPdb = pdbFile,
                                                    config = config)
+        except Exception as e:
+            drLogger.log_info(f"Error running simulation: {e}", True, True)
+            continue
 
 
 ###########################################################################################
@@ -198,7 +200,7 @@ def skip_resume_or_simulate(simDir: str, simulations: list, i: int, outDir: str)
         if p.isfile(saveChk):
             return "resume", saveChk
         else:
-            rmtree(simDir)
+            # rmtree(simDir)
             previousSimName = simulations[i-1]["stepName"]
             previousSimDir = p.join(outDir, previousSimName) if i > 0 else False
             saveXml = p.join(previousSimDir, f"{previousSimName}.xml") if previousSimDir else False

@@ -42,6 +42,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
         - [removeAtoms](#removeatomscluster)
         - [nClusters](#nclusters)
         - [clusterBy](#clusterby)
+        
     - [drMD Selection Syntax](#drmdselectionsyntax)
       - [keyword](#keyword)
       - [customSelection](#customselection)
@@ -58,7 +59,6 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
           - [theta0](#theta0)
           - [phi0](#phi0)
         - [selection](#selectionrestraints)
-
     - [Running Metadynamics with drMD](#runningmetadynamics)
       - [metaDynamicsInfo](#metadynamicsinfo)
         - [height](#height)
