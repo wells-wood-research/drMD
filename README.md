@@ -896,6 +896,7 @@ This example introduces the following concepts:
 - Ligand preparation
 - The `ligandInfo` section of the config file
 - Creation of custom restraints in drMD
+- Clustering simulation trajectories
 
 ### PDB preparation
 
