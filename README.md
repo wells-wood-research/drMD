@@ -1,4 +1,6 @@
-# :medical_symbol: drMD :medical_symbol:
+<img src="./images/00_drMD_logo_cropped.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
+
+# :medical_symbol: drMD: Molecular Dynamics for Experimentalists :medical_symbol:
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
 # :medical_symbol: README Contents :medical_symbol:
 
@@ -70,13 +72,15 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
           - [maxValue](#maxvalue)
           - [biasWidth](#biaswidth)
           - [selection](#selectiometadynamics)
+5. [WORKED EXAMPLES](#worked-examples)
+  - [Worked Example 1: Molecular Dynamics Simulation of a Protein](#worked-example-1-molecular-dynamics-simulation-of-a-protein)
 
 
 # GitHub Installation 
 We reccomned that you use the following steps to install drMD:
 1. Clone this repository
 ```bash
-git clone https://github.com/ESPhoenix/drMD.git
+git clone https://github.com/wells-wood-research/drMD
 ```
 2. Create and activate conda environment
 ```bash
@@ -528,7 +532,7 @@ In the above example, a selection containing the following:
 ---
 <a id="addingrestraints"></a>
 ### Adding Restraints with drMD
-If you whish to perform simulations with restraints, create a *restraintsInfo* dictionary in the simulation step:
+If you wish to perform simulations with restraints, create a *restraintsInfo* dictionary in the simulation step:
 
 <a id="restraintinfo"></a>
 #### :brain: restraintInfo
@@ -694,8 +698,6 @@ This example will add a RMSD bias to the backbone of the protein
 and a torsion bias between the CA atoms of residues 1, 2, 3, and 4 of the protein
 ---
 
-
-
 ## Advanced YAML-ing with variables
 If you are running multiple simulation steps that share the same parameters, you can use variables in the YAML config file. This will most commonly come up when you are applying position restraints during equilibriation steps. Below is a standard syntax for a pair of equilibiation steps:
 ```yaml
@@ -775,6 +777,242 @@ simulationInfo:
     restraintInfo: *equilibriationRestraints
 
 ```
+---
 
 # WORKED EXAMPLES
-In this section we will go through a series of configuration files 
+In this section we will go through a series of examples of how to use this package. We will start with the simplest possible simulation setup and gradually build up to more complex ones.
+
+## Worked Example 1: Molecular Dynamics Simulation of a Protein
+In this example, we want to simulate the dynamics of the protein isPETase. 
+
+This example introduces the following concepts:
+- Removal of co-crystalised ions and small molecules
+- Changing `pathInfo` in a config file
+- Running drMD from command line
+- Simple equilibrium protocol
+- Production MD simulations
+
+
+### PDB preparation
+To begin with, we download a crystal structure of isPETase from the Protein Data Bank [PDB:6eqe](https://www.rcsb.org/structure/6EQE). 
+Next we need to remove any random ions and small molecules that have co-crystalised in the structure (we recommend this is done in Pymol). Once this file has been saved, we place it into the `inputFiles` directory.
+
+<img src="./images/01_removal_of_xtal_stuff.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+
+*Before and after removal of co-crystalised waters, ions and small molecules*
+
+### Config file setup
+
+Next we need to construct our configuration file. As we don't want to do anything too fancy, we will use the [standard_MD_config.yaml](./Prescriptions/standard_MD_config.yaml) as a template. We copy this file into `inputFiles` directory:
+```bash
+cp ./Prescriptions/standard_MD_config.yaml ./inputFiles/isPETase_standard_MD.yaml
+```
+
+The first thing we need to do is change the **pathInfo** section of this config file. We need to set the `inputDir` and `outputDir` entries to match with our own directory paths (this change for your own directory system!)
+
+```yaml
+pathInfo:
+  inputDir: "/path/to/inputFiles"
+  outputDir: "/path/to/outputFiles"
+```
+
+We don't need to change anything else in the config file. If you want to change anything else, refer to the [Config Syntax](#config-syntax) section of this README for more information.
+
+To run our simulations, we first navigate to the main drMD directory:
+```bash
+cd /path/to/drMD
+```
+Then we activate our conda environment (see [Installation](#installation) for more information):
+```bash
+conda activate drMD
+```
+Finally we run drMD using our config file:
+```bash
+python ./src/drMD.py ./inputFiles/isPETase_standard_MD.yaml
+```
+***
+First, you will see the drMD logo in your terminal. 
+The output text immediately below the logo will keep you updated with what is going on in your simulation.
+
+<img src="./images/02_drMD_logo.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+
+*An example of drMD command line output. Here we can see that drMD is running prep steps for system 6eqe_1*
+
+### Preparation steps
+Initially  prep steps are being performed. During this step the following are performed:
+- Our protein is protonated at our specified pH (7.4).
+- Our protein is placed in a solvent box which is filled with TIP3P water molecules
+- Chloride ions are added to the solvent box to balence the overall positive charge of our protein
+
+
+To see output files associated with this step, check the `./outputFiles/6eqe/00_prep` directory. 
+
+Once the prep steps have finished, our `isPETase_standard_MD.yaml` file instructs drMD to perform an energy minimisation step. The resulting file can be found in the `./outputFiles/6eqe/01_minimisation` directory.
+
+> We recommend that you open PDB file in Pymol to check the results of this step. If you slowly rotate the structure, you >will be able to see that the water molecules have a strange, unphysical order to them. This is due to the inperfections in the algorithn used to place the waters in the first place. The purpose of the next two simulation steps is to remove this unphysical behaviour.
+
+### Pre-equilibraition protocol
+ 
+The steps `02_NVT_pre-equilibraition` and `03_NPT_pre-equilibraition` are used to equilibriate the water molecules in our system.
+
+As we are only equilibrating water, we apply position restraints to the protein and ligand. This is done using the `restraintInfo` section of our config file (see [Adding Restraints with drMD](#adding-restraints-with-drmd) and [Advanced YAML-ing with variables](#advanced-yaml-ing-with-variables) for more information).
+
+The `02_NVT_pre-equilibraition` step is performed under the NVT ensemble. This means that the number of particles (N), the volume of the system (V), and the temperature (T) are all constant. Under the NVT ensemble the pressure of the system is allowed to change.
+
+<a id="how-to-look-at-the-trajectory"></a>
+If we look at the trajectory of this step in Pymol (which can be done by loading the `trajectory.pdb` file then the `trajectory.dcd` file), we can see that the water molecules contract, leaving voids at the corners of the solvent box. 
+
+In the next step `03_NPT_pre-equilibriation`, we use the NPT ensemble. This means that the number of particles (N), the volume of the system (V),  and the pressure (P) are all constant. Under the NPT ensemble, the Volume of the system is allowed to change. 
+If we look at the trajectory of this step in Pymol, we can see that the solvent box itself contracts, eliminating the voids at the corners of the box.
+
+### Slow integrator step
+
+Sometimes the removal of restraints can cause numerical errors. To prevent this, we run the `04_NpT_slowIntergrator` step using a small timestep of 0.5 fs. This can prevent the next couple of steps from crashing. 
+> If some of your simulations fail, you can try to run these slow intergrator steps before other simulation steps.
+
+### Equilibriation step
+
+The `05_Equilibriation` step is run under the NPT ensemble for 5 nanoseconds. The purpose of this step is to ensure that our system is equilibrated. To make sure of this, we can check the vitals report that drMD generates. If the vitals report indicates that the system is not equilibrated, we can extend the duration of this step before running our production simulation.
+
+<img src="./images/03_Equilibriation_vitals_report.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
+
+*An example of drMD vitals report for the 05_Equilibriation step. We can see that all of the key simulation properties have coverged. This gives us good confidence that our system is equilibrated*
+
+### Production MD
+The `06_Production_MD` step is run under the NPT ensemble for 50 nanoseconds. This is the production simulation that we are interested in. Depending on our research goals, we will take measurements and/or extract structures from the trajectory of this step. 
+
+To perform routine analysis on your production MD trajectories we recommend the [MDAnalysis](https://www.mdanalysis.org/) and [MDTraj](https://www.mdtraj.org/1.9.8.dev0/index.html) python packages.
+
+
+## Worked Example 2: Restrained MD Simulations of a Protein-Ligand Complex
+
+In this example, we want to investigate the catalytic pose of the ligand PET-tetramer in the active site of isPETase. 
+
+This example introduces the following concepts:
+- Ligand preparation
+- The `ligandInfo` section of the config file
+- Creation of custom restraints in drMD
+
+### PDB preparation
+
+For this set of simulations, we need to prepare a PDB file of our protein-ligand complex. We start with a cleaned up structure of isPETase (see [previous worked example](#pdb-preparation)). We recommend this is done using the [GNINA](https://github.com/gnina/gnina) molecular docking software. Once we have generated this protein-ligand complex, we place it as a PDB file into our `inputFiles` directory.
+
+<img src="./images/04_molecular_docking.png" alt="Molecular docking of PET-tetramer ligand to isPETase" width="1000"/>
+
+*An example of a protein-ligand complex generated by GNINA. Note that GNINA generates a large number of alternate conformations for the ligand. It will be up to you to decide which conformations to use as input(s) to drMD*
+
+### Config file setup
+
+Next we need to construct our configuration file. Again, we are going to use the [standard_MD_config.yaml](./Prescriptions/standard_MD_config.yaml) as a template. We copy this file into `inputFiles` directory:
+```bash 
+cp ./Prescriptions/standard_MD_config.yaml ./inputFiles/isPETase_ligand_MD.yaml
+```
+
+We then need to modify the `inputFiles/isPETase_ligand_MD.yaml` file. First we need to change the `pathInfo` section [see previous example](#config-file-setup).
+
+Next we need to add a `ligandInfo` section to our config file. This section will tell drMD useful information about our PET-tetramer ligand.
+
+```yaml 
+ligandInfo:
+  - ligandName: "PET"
+    charge: 0
+    protons: False
+    toppar: False
+    mol2: False
+```
+Here we have told drMD that our ligand is called "PET" and has a formal charge of 0. We have also told drMD that it needs to add protons to our ligand and that it does not already have a toppar or mol2 file for our ligand - these will be automatically generated by drMD.
+
+We will use the same pre-equilibration and equilibriation steps as our [previous worked example](#config-file-setup).
+
+### Creation of custom restraints
+
+To sample from only catalytically active poses of the PET-tetramer ligand in our isPETase active site, we need to add custom restraints to our MD simulation. From [QM/MM calculations](https://chemistry-europe.onlinelibrary.wiley.com/doi/full/10.1002/chem.202201728), we know that the catalytic pose of PET in the active site of isPETase relies on the geometry between the ester carbonyl of the ligand and the residues Ser160, Met161 and Tyr87 (see image below).
+
+<img src="./images/05_catalytic_geom.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+
+*The catalytic pose of PET in the active site of isPETase. The catalytic Ser160 residue is 3 Å from the scissile ester carbon of the ligand and forms an angle of 109.5° relative to the ester carbonyl bond. The ester oxygen of the ligand is 2.7 Angstroms from backbone nitrogen atoms of the residues Met161 and Tyr87*
+
+To do this, we will create a `restraintsInfo` section in our `06_Production_MD` step of our config file. To do this nice and cleanly, we can create a variable that contains our custom restraints:
+
+```yaml
+catalyticPoseRestraints: &catalyticPoseRestraints
+  ## create a distance restraint between Tyr87-N and PET-O2 with a k of 100 and r0 of 2.7 Angstroms
+  - restraintType: distance
+    parameters:
+      k: 100
+      r0: 2.7
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: TYR, RES_ID: 87, ATOM_NAME: N}
+        - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: O2}
+
+  ## create a distance restraint between Met161-N and PET-O2 with a k of 100 and r0 of 2.7 Angstroms
+  - restraintType: distance
+    parameters:
+      k: 100
+      r0: 2.7
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: MET, RES_ID: 161, ATOM_NAME: N}
+        - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: O2}
+
+  ## create a distance restraint between Ser160-OG and PET-C9 with a k of 100 and r0 of 3.0 Angstroms
+  - restraintType: distance
+    parameters:
+      k: 100
+      r0: 3.0
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: SER, RES_ID: 160, ATOM_NAME: OG}
+        - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: C9}
+
+  ## create an angle restraint between Ser160-OG, PET-C9 and PET-O2 with a k of 100 and theta0 of 109.5 degrees
+  - restraintType: distance
+    parameters:
+      k: 100
+      theta0: 109.5
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: SER, RES_ID: 160, ATOM_NAME: OG}
+        - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: C9}
+        - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: O2}
+
+```
+We can then include these restraints in out `06_Production_MD` step of our config file:
+
+```yaml
+  - stepName: "06_Production_MD"
+    simulationType: "NpT"
+    duration: "50 ns"
+    timestep: "4 fs"
+    heavyProtons: True
+    temperature: 300
+    logInterval: "50 ps"
+    restraintInfo: *catalyticPoseRestraints
+```
+
+### Clustering MD trajectories
+
+We want to investigate the conformational space that our ligand can adopt, whilst being in its catalytic pose. Instead of looking through the entire trajectory manually in Pymol ([see previous example for how to do this](#how-to-look-at-the-trajectory)), we can cluster our trajectory. 
+
+To do this, we will create a `clusterInfo` section in our `postSimulationInfo` section of our config file (see [clusterInfo](#clusterinfo) for more information):
+
+```yaml
+postSimulationInfo:
+  clusterInfo:
+    stepNames: ["06_Production_MD"] 
+    nClusters: 10
+    clusterBy:
+    - selection:
+        keyword: "ligand"
+    removeAtoms:
+      - selection:
+          keyword: "water"
+      - selection:
+          keyword: "ions"
+```
+Here we have told drMD to cluster the trajectory generated by our `06_Production_MD` step. 10 PDB files will be created in the `path/to/outputDir/00_clustered_pdbs` directory. These files can be used as a starting point for your analysis or an input structures for further computational tools.

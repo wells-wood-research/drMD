@@ -11,7 +11,10 @@
 PostSimulation --> AfterCare
 
 ## drPrep
-[] cope with two-letter elements better
+[x] cope with two-letter elements better
 
 ## real time updates after crash
 [] kill job upon crash
+
+## drFirstAid
+[] alternate between em and 0.1 fs x 10 ps NpT // NVT (use same as sim in qustion??)

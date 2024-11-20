@@ -56,6 +56,8 @@ miscInfo:
       keyword: "protein"
   - selection:
       keyword: "ligand"
+  - selection:
+      keyword: "water"
 
 ########################################################################
 equilibriationRestraints: &equilibriationRestraints
@@ -84,7 +86,7 @@ simulationInfo:
     timestep: "4 fs"
     heavyProtons: True
     temperature: 300
-    logInterval: "10 ps"
+    logInterval: "1 ps"
     restraintInfo: *equilibriationRestraints
 
 # ########################################################################
@@ -94,7 +96,7 @@ simulationInfo:
     timestep: "4 fs"
     heavyProtons: True
     temperature: 300
-    logInterval: "10 ps"
+    logInterval: "1 ps"
     restraintInfo: *equilibriationRestraints
 
 ########################################################################
