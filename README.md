@@ -35,7 +35,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
       - [duration](#duration)
       - [timestep](#timestep)
       - [logInterval](#loginterval)
-    - [postSimulationInfo](#postsimulationinfo)
+    - [aftercareInfo](#aftercareinfo)
       - [endPointInfo](#endpointinfo)
         - [stepNames](#stepnamesendpoint)
         - [removeAtoms](#removeatomsendpoint)
@@ -72,12 +72,12 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
           - [biasWidth](#biaswidth)
           - [selection](#selectiometadynamics)
 5. [WORKED EXAMPLES](#worked-examples)
-  - [Worked Example 1: Molecular Dynamics Simulation of a Protein](#worked-example-1-molecular-dynamics-simulation-of-a-protein)
-  - [Worked Example 2: Restrained MD Simulations of a Protein-Ligand Complex](#worked-example-2-restrained-md-simulations-of-a-protein-ligand-complex)
-
+  - [Worked Example 1: Molecular Dynamics Simulation of a Protein](#worked-example-1)
+  - [Worked Example 2: Restrained MD Simulations of a Protein-Ligand Complex](#worked-example-2)
+  - [Worked Example 3: Energy Minimisation of Multiple Structures](#worked-example-3)
 
 # GitHub Installation 
-We reccomned that you use the following steps to install drMD:
+We recommend that you use the following steps to install drMD:
 1. Clone this repository
 ```bash
 git clone https://github.com/wells-wood-research/drMD
@@ -107,7 +107,7 @@ pip install -r requirements.txt
 ```
 
 # Pip Installation
-If you want to intergate drMD into a python-based pipeline, you can install drMD with pip and use it as a python module:
+If you want to integrate drMD into a python-based pipeline, you can install drMD with pip and use it as a python module:
 
 1. Create and activate conda environment
 ```bash
@@ -136,7 +136,7 @@ conda install -c conda-forge openbabel
 
 # Usage
 
-Now that you have sucessfully set up the dependancies for drMD, you are nearly ready to run some biomolecular simulations!
+Now that you have successfully set up the dependencies for drMD, you are nearly ready to run some bimolecular simulations!
 
 If you have used the GitHub installation method, you can run drMD using the following command:
 
@@ -154,7 +154,7 @@ myBatchConfig = "/path/to/config.yaml"
 drMD.main(myBatchConfig)
 ```
 
-This config file contains all of the user inputs drMD needs to run a series of biomolecular simulations.
+This config file contains all of the user inputs drMD needs to run a series of bimolecular simulations.
 The following section will detail the correct formatting of this config.yaml file
 
 # Config syntax
@@ -166,7 +166,7 @@ The next few sections will detail the correct formatting of the config.yaml file
 The **pathInfo** entry in the config file is a dictionary containing two parameters:
 <a id="inputdir"></a>
 ### :anatomical_heart: inputDir
-*(DirectoryPath)* This is the absoloute path towards a directory containing PDB files that will be used as starting points for your simulations.
+*(DirectoryPath)* This is the absolute path towards a directory containing PDB files that will be used as starting points for your simulations.
             
   > :medical_symbol:
   > **To Perform Replicate** simulations, simply create copies of your starting PDB files in the inputDir, with each copy
@@ -174,13 +174,13 @@ The **pathInfo** entry in the config file is a dictionary containing two paramet
 
 <a id="outputdir"></a>
 ### :anatomical_heart:  outputDir  
-*(DirectoryPath)*  This is the absoloute path towards a directory that you want your drMD outputs to be written to.
+*(DirectoryPath)*  This is the absolute path towards a directory that you want your drMD outputs to be written to.
 
   > :medical_symbol:
   > The outputDir will be created if it does not already exist at the point of running drMD
 
   > :medical_symbol:
-  > Within outputDir, a directory will be created for each PDB file contained in inputDir, in this document, these subdirectories will be refered to
+  > Within outputDir, a directory will be created for each PDB file contained in inputDir, in this document, these subdirectories will be referred to
   > as **runDirs**
 
 Example pathInfo:
@@ -205,7 +205,7 @@ The **hardwareInfo** entry in the config file is a dictionary containing three p
 
 <a id="parallelcpu"></a>
 ### :anatomical_heart:  parallelCPU
-*(int)* This is the number  of simulations that will be run in paralell
+*(int)* This is the number  of simulations that will be run in parallel
 
 <a id="subprocesscpus"></a>
 ### :anatomical_heart:  subprocessCpus
@@ -221,7 +221,7 @@ hardwareInfo:
   platform: "CUDA"
   subprocessCpus: 2
 ```
-This will use CUDA git achive GPU acceleration and run 16 simulations in paralell using 2 cores each for a total useage of 32 cores.
+This will use CUDA to achieve GPU acceleration and run 16 simulations in parallel using 2 cores each for a total usage of 32 cores.
 ---
 <a id="miscinfo"></a>
 ## :brain: miscInfo
@@ -248,7 +248,7 @@ This section allows you to set some general options for your simulations:
 *(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis.
 
 > :medical_symbol: drMD methods sections contain all of the information one might need to replicate your simulations.
-> The formatting of these methods section may be too robotic and repetative for you, feel free to reformat them as you see fit. 
+> The formatting of these methods section may be too robotic and repetitive for you, feel free to reformat them as you see fit. 
 
 Example miscInfo:
 ```yaml
@@ -331,7 +331,7 @@ Each simulation dictionary contains the following parameters:
 
 <a id="stepnamesiminfo"></a>
 ### :anatomical_heart:  stepName
-*(str)* This is the name of the step that will be used to create a subdirectory in the runDir, we reccomend prefixing these names with numbers to make them order nicely
+*(str)* This is the name of the step that will be used to create a subdirectory in the runDir, we recommend prefixing these names with numbers to make them order nicely
 
 <a id="simulationtype"></a>
 ### :anatomical_heart: simulationType
@@ -339,7 +339,7 @@ Each simulation dictionary contains the following parameters:
 
     - **"EM"**:         This will run a steepest-decent Energy Minimisation step. 
     > :medical_symbol:
-    > We reccomended that you run one of these steps before any other simulation steps
+    > We recommend that you run one of these steps before any other simulation steps
     - **"NVT"**:        This will run an NVT (constant volume) molecular dynamics simulation
     - **"NPT"**:        This will run an NPT (constant pressure) molecular dynamics simulation
     > :medical_symbol:
@@ -360,7 +360,7 @@ If you wish to change the temperature throughout the simulation, the following p
 #### :anatomical_heart: temperatureRange
 *(list of int)* This is a list of integers (again, in Kelvin) that will be used to change the temperature throughout the simulation. 
 
-### Energy Minimisation Pararameters
+### Energy Minimisation Parameters
 For Energy Minimisation steps, the following additional parameters are required:
 
 <a id="maxiterations"></a>
@@ -389,9 +389,9 @@ For "normal" MD simulations using NVT or NpT ensembles, as well as for Metadynam
 #### :anatomical_heart: timestep
  *(str)* This is the timestep of the simulation, as a string "int unit" eg. "2 fs"
 
-<a id="heavyatoms"></a>
+<a id="heavyProtons"></a>
 #### :anatomical_heart: heavyAtoms
-*(bool)* 
+*(bool)*  If set to True, the mass of each proton will be set to 4 amu instead of 1 amu in this simulation step (this increase in mass is compensated by reducing the mass of nearby heavy atoms). On its own, this setting does nothing. It does however allow you to perform you simulation step with a longer [timestep](#timestep) (we recommend 4 fs). Simulations run with longer timesteps will be faster, but can be prone to instability. 
 
 <a id="loginterval"></a>
 #### :anatomical_heart: logInterval
@@ -400,7 +400,7 @@ For "normal" MD simulations using NVT or NpT ensembles, as well as for Metadynam
 Example NVT simulation syntax:
 ```yaml
 simulationInfo:
-  - stepName: "02_NVT_pre-equilibraition"
+  - stepName: "02_NVT_pre-equilibration"
     type: "NVT"
     duration: "100 ps"
     timestep: "2 fs"
@@ -411,16 +411,16 @@ This will run a 100 ps NVT molecular dynamics simulation with a timestep of 2 fs
 
 ---
 
-### Post-simulation processing
+### Simulation Aftercare
 After all of your simulations have been run, drMD contains some simple utilities for organising your output files and deleting any unwanted files.
 
 If you want to do any post-processing, you will need to provide the following parameter in your config file:
 
-<a id="postsimulationinfo"></a>
-### :brain: postSimulationInfo
+<a id="aftercareinfo"></a>
+### :brain: aftercareInfo
  *(dict)* This is a dictionary containing the parameters for the post-simulation processing
 
-If you wish to collect PDB files that represent the last frame of each simulation, you may include the following parameter in **postSimulationInfo**:
+If you wish to collect PDB files that represent the last frame of each simulation, you may include the following parameter in **aftercareInfo**:
 
 <a id="endpointinfo"></a>
 ### :brain: endpointInfo
@@ -434,7 +434,7 @@ If you wish to collect PDB files that represent the last frame of each simulatio
 #### :anatomical_heart: removeAtoms
 *(list)* This is a list of dictionaries containing the selections of atoms to be removed from the PDB files. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
 
-Molecular Dyamics simulations can generate very large output files that can become rather unweildy and difficult to anaylse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with drMD, include the following parameter in your config file:
+Molecular Dynamics simulations can generate very large output files that can become rather unwieldy and difficult to analyse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with drMD, include the following parameter in your config file:
 
 <a id="clusterinfo"></a>
 ### :brain: clusterInfo
@@ -498,7 +498,7 @@ Each dictionary in the list must contain the following parameters:
 
  <a id="resname"></a>
 #### :anatomical_heart: RES_NAME
- *(str, llist of str, or "all")*  This is the three-letter residue name of the atom to be selected
+ *(str, list of str, or "all")*  This is the three-letter residue name of the atom to be selected
 
 <a id="resid"></a>
 #### :anatomical_heart: RES_ID
@@ -517,7 +517,7 @@ For the above parameters:
 :biohazard: WARNING: PLEASE DON'T CALL ANY OF YOUR RESIDUE NAMES IN YOUR PDB FILE "ALL" AS THIS WILL CAUSE PROBLEMS
 
 > :medical_symbol:
-> This selection method is used to match atoms using columns of your PDB files. To work out how to identify what inputs you need to select your atoms of interest, simply open your input PDB file in PyMOL and use labels to identify the relavent **CHAIN_ID**, **RES_NAME**, **RES_ID**, and **ATOM_NAME** values
+> This selection method is used to match atoms using columns of your PDB files. To work out how to identify what inputs you need to select your atoms of interest, simply open your input PDB file in PyMOL and use labels to identify the relevant **CHAIN_ID**, **RES_NAME**, **RES_ID**, and **ATOM_NAME** values
 
 Example customSelection syntax, (this is probably more complex than you will need, but shows off what you can do):
 
@@ -542,7 +542,7 @@ If you wish to perform simulations with restraints, create a *restraintsInfo* di
 #### :brain: restraintInfo
 *(list of dict)*  This is a list of dictionaries containing information about each restraints. 
 
-Within the restraintInfo list, you must provied at least one dictionary that contains the following parameters:
+Within the restraintInfo list, you must provided at least one dictionary that contains the following parameters:
 
 <a id="restrainttype"></a>
 ##### :anatomical_heart: restraintType
@@ -607,7 +607,7 @@ This example will add the following restraints:
 - Position restraints to the protein atoms with a force constant of 1000 kJ/mol 
 - A 3 Angstrom distance restraint between the CA atoms of residues 1 and 2 of the protein, with a force constant of 1000 kJ/mol
 
-For a detailed explaination of how to select chains, residues, and atoms for restraints, see the [drMD Selection syntax](#drmd-selection-syntax) section.
+For a detailed explanation of how to select chains, residues, and atoms for restraints, see the [drMD Selection syntax](#drmd-selection-syntax) section.
 
 ---
 
@@ -703,10 +703,10 @@ and a torsion bias between the CA atoms of residues 1, 2, 3, and 4 of the protei
 ---
 
 ## Advanced YAML-ing with variables
-If you are running multiple simulation steps that share the same parameters, you can use variables in the YAML config file. This will most commonly come up when you are applying position restraints during equilibriation steps. Below is a standard syntax for a pair of equilibiation steps:
+If you are running multiple simulation steps that share the same parameters, you can use variables in the YAML config file. This will most commonly come up when you are applying position restraints during equilibration steps. Below is a standard syntax for a pair of equilibration steps:
 ```yaml
 simulationInfo:
-  - stepName: "01_NVT_pre-equilibraition"
+  - stepName: "01_NVT_pre-equilibration"
     simulationType: "NVT"
     duration: "100 ps"
     timestep: "4 fs"
@@ -725,7 +725,7 @@ simulationInfo:
       parameters:
         k: 1000
 
-  - stepName: "02_NPT_pre-equilibraition"
+  - stepName: "02_NPT_pre-equilibration"
     simulationType: "NPT"
     duration: "100 ps"
     timestep: "4 fs"
@@ -745,10 +745,10 @@ simulationInfo:
           k: 1000
 
 ``` 
-Instead of repeating the restraintsInfo section each time, **equilibriumRestraints** can be defined as a variable, then re-used in each equilibriation step:
+Instead of repeating the restraintsInfo section each time, **equilibriumRestraints** can be defined as a variable, then re-used in each equilibration step:
 
 ```yaml
-equilibriationRestraints: &equilibriationRestraints
+equilibrationRestraints: &equilibrationRestraints
     - restraintType: "position"
       parameters:
         k: 1000
@@ -762,23 +762,23 @@ equilibriationRestraints: &equilibriationRestraints
         k: 1000
 
 simulationInfo:
-  - stepName: "01_NVT_pre-equilibraition"
+  - stepName: "01_NVT_pre-equilibration"
     simulationType: "NVT"
     duration: "100 ps"
     timestep: "4 fs"
     heavyProtons: True
     temperature: 300
     logInterval: "10 ps"
-    restraintInfo: *equilibriationRestraints
+    restraintInfo: *equilibrationRestraints
 
-  - stepName: "02_NPT_pre-equilibraition"
+  - stepName: "02_NPT_pre-equilibration"
     simulationType: "NPT"
     duration: "100 ps"
     timestep: "4 fs"
     heavyProtons: True
     temperature: 300
     logInterval: "10 ps"
-    restraintInfo: *equilibriationRestraints
+    restraintInfo: *equilibrationRestraints
 
 ```
 ---
@@ -786,6 +786,8 @@ simulationInfo:
 # WORKED EXAMPLES
 In this section we will go through a series of examples of how to use this package. We will start with the simplest possible simulation setup and gradually build up to more complex ones.
 
+
+<a id="worked-example-1"></a>
 ## Worked Example 1: Molecular Dynamics Simulation of a Protein
 In this example, we want to simulate the dynamics of the protein isPETase. 
 
@@ -846,48 +848,48 @@ The output text immediately below the logo will keep you updated with what is go
 Initially  prep steps are being performed. During this step the following are performed:
 - Our protein is protonated at our specified pH (7.4).
 - Our protein is placed in a solvent box which is filled with TIP3P water molecules
-- Chloride ions are added to the solvent box to balence the overall positive charge of our protein
+- Chloride ions are added to the solvent box to balance the overall positive charge of our protein
 
 
 To see output files associated with this step, check the `./outputFiles/6eqe/00_prep` directory. 
 
 Once the prep steps have finished, our `isPETase_standard_MD.yaml` file instructs drMD to perform an energy minimisation step. The resulting file can be found in the `./outputFiles/6eqe/01_minimisation` directory.
 
-> We recommend that you open PDB file in Pymol to check the results of this step. If you slowly rotate the structure, you >will be able to see that the water molecules have a strange, unphysical order to them. This is due to the inperfections in the algorithn used to place the waters in the first place. The purpose of the next two simulation steps is to remove this unphysical behaviour.
+> We recommend that you open PDB file in Pymol to check the results of this step. If you slowly rotate the structure, you >will be able to see that the water molecules have a strange, unphysical order to them. This is due to the imperfections in the algorithm used to place the waters in the first place. The purpose of the next two simulation steps is to remove this unphysical behavior.
 
-### Pre-equilibraition protocol
+### Pre-equilibration protocol
  
-The steps `02_NVT_pre-equilibraition` and `03_NPT_pre-equilibraition` are used to equilibriate the water molecules in our system.
+The steps `02_NVT_pre-equilibration` and `03_NPT_pre-equilibration` are used to equilibriate the water molecules in our system.
 
 As we are only equilibrating water, we apply position restraints to the protein and ligand. This is done using the `restraintInfo` section of our config file (see [Adding Restraints with drMD](#adding-restraints-with-drmd) and [Advanced YAML-ing with variables](#advanced-yaml-ing-with-variables) for more information).
 
-The `02_NVT_pre-equilibraition` step is performed under the NVT ensemble. This means that the number of particles (N), the volume of the system (V), and the temperature (T) are all constant. Under the NVT ensemble the pressure of the system is allowed to change.
+The `02_NVT_pre-equilibration` step is performed under the NVT ensemble. This means that the number of particles (N), the volume of the system (V), and the temperature (T) are all constant. Under the NVT ensemble the pressure of the system is allowed to change.
 
 <a id="how-to-look-at-the-trajectory"></a>
 If we look at the trajectory of this step in Pymol (which can be done by loading the `trajectory.pdb` file then the `trajectory.dcd` file), we can see that the water molecules contract, leaving voids at the corners of the solvent box. 
 
-In the next step `03_NPT_pre-equilibriation`, we use the NPT ensemble. This means that the number of particles (N), the volume of the system (V),  and the pressure (P) are all constant. Under the NPT ensemble, the Volume of the system is allowed to change. 
+In the next step `03_NPT_pre-equilibration`, we use the NPT ensemble. This means that the number of particles (N), the volume of the system (V),  and the pressure (P) are all constant. Under the NPT ensemble, the Volume of the system is allowed to change. 
 If we look at the trajectory of this step in Pymol, we can see that the solvent box itself contracts, eliminating the voids at the corners of the box.
 
 ### Slow integrator step
 
-Sometimes the removal of restraints can cause numerical errors. To prevent this, we run the `04_NpT_slowIntergrator` step using a small timestep of 0.5 fs. This can prevent the next couple of steps from crashing. 
-> If some of your simulations fail, you can try to run these slow intergrator steps before other simulation steps.
+Sometimes the removal of restraints can cause numerical errors. To prevent this, we run the `04_NpT_slowIntegrator` step using a small timestep of 0.5 fs. This can prevent the next couple of steps from crashing. 
+> If some of your simulations fail, you can try to run these slow integrator steps before other simulation steps.
 
 ### Equilibriation step
 
-The `05_Equilibriation` step is run under the NPT ensemble for 5 nanoseconds. The purpose of this step is to ensure that our system is equilibrated. To make sure of this, we can check the vitals report that drMD generates. If the vitals report indicates that the system is not equilibrated, we can extend the duration of this step before running our production simulation.
+The `05_Equilibration` step is run under the NPT ensemble for 5 nanoseconds. The purpose of this step is to ensure that our system is equilibrated. To make sure of this, we can check the vitals report that drMD generates. If the vitals report indicates that the system is not equilibrated, we can extend the duration of this step before running our production simulation.
 
 <img src="./images/Equilibriation_vitals_report.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
 
-*An example of drMD vitals report for the 05_Equilibriation step. We can see that all of the key simulation properties have coverged. This gives us good confidence that our system is equilibrated*
+*An example of drMD vitals report for the 05_Equilibration step. We can see that all of the key simulation properties have converged. This gives us good confidence that our system is equilibrated*
 
 ### Production MD
 The `06_Production_MD` step is run under the NPT ensemble for 50 nanoseconds. This is the production simulation that we are interested in. Depending on our research goals, we will take measurements and/or extract structures from the trajectory of this step. 
 
 To perform routine analysis on your production MD trajectories we recommend the [MDAnalysis](https://www.mdanalysis.org/) and [MDTraj](https://www.mdtraj.org/1.9.8.dev0/index.html) python packages.
 
-
+<a id="worked-example-2"></a>
 ## Worked Example 2: Restrained MD Simulations of a Protein-Ligand Complex
 
 In this example, we want to investigate the catalytic pose of the ligand PET-tetramer in the active site of isPETase. 
@@ -927,13 +929,13 @@ ligandInfo:
 ```
 Here we have told drMD that our ligand is called "PET" and has a formal charge of 0. We have also told drMD that it needs to add protons to our ligand and that it does not already have a toppar or mol2 file for our ligand - these will be automatically generated by drMD.
 
-We will use the same pre-equilibration and equilibriation steps as our [previous worked example](#config-file-setup).
+We will use the same pre-equilibration and equilibration steps as our [previous worked example](#config-file-setup).
 
 ### Creation of custom restraints
 
 To sample from only catalytically active poses of the PET-tetramer ligand in our isPETase active site, we need to add custom restraints to our MD simulation. From [QM/MM calculations](https://chemistry-europe.onlinelibrary.wiley.com/doi/full/10.1002/chem.202201728), we know that the catalytic pose of PET in the active site of isPETase relies on the geometry between the ester carbonyl of the ligand and the residues Ser160, Met161 and Tyr87 (see image below).
 
-<img src="./images/catalytic_geom.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+<img src="./images/catalytic_geom.png" alt="The ideal catalytic geometry of PET in the active site of isPETase" width="500"/>
 
 *The catalytic pose of PET in the active site of isPETase. The catalytic Ser160 residue is 3 Å from the scissile ester carbon of the ligand and forms an angle of 109.5° relative to the ester carbonyl bond. The ester oxygen of the ligand is 2.7 Angstroms from backbone nitrogen atoms of the residues Met161 and Tyr87*
 
@@ -975,7 +977,7 @@ catalyticPoseRestraints: &catalyticPoseRestraints
         - {CHAIN_ID: B, RES_NAME: PET, RES_ID: 1, ATOM_NAME: C9}
 
   ## create an angle restraint between Ser160-OG, PET-C9 and PET-O2 with a k of 100 and theta0 of 109.5 degrees
-  - restraintType: distance
+  - restraintType: angle
     parameters:
       k: 100
       theta0: 109.5
@@ -1004,10 +1006,10 @@ We can then include these restraints in out `06_Production_MD` step of our confi
 
 We want to investigate the conformational space that our ligand can adopt, whilst being in its catalytic pose. Instead of looking through the entire trajectory manually in Pymol ([see previous example for how to do this](#how-to-look-at-the-trajectory)), we can cluster our trajectory. 
 
-To do this, we will create a `clusterInfo` section in our `postSimulationInfo` section of our config file (see [clusterInfo](#clusterinfo) for more information):
+To do this, we will create a `clusterInfo` section in our `aftercareInfo` section of our config file (see [clusterInfo](#clusterinfo) for more information):
 
 ```yaml
-postSimulationInfo:
+aftercareInfo:
   clusterInfo:
     stepNames: ["06_Production_MD"] 
     nClusters: 10
@@ -1021,3 +1023,73 @@ postSimulationInfo:
           keyword: "ions"
 ```
 Here we have told drMD to cluster the trajectory generated by our `06_Production_MD` step. 10 PDB files will be created in the `path/to/outputDir/00_clustered_pdbs` directory. These files can be used as a starting point for your analysis or an input structures for further computational tools.
+
+<a id="worked-example-3"></a>
+## Worked Example 3: Energy Minimisation of Multiple Structures
+
+In this example, we want to perform an energy minimisation calculation on multiple structures.
+
+This example introduces the following concepts:
+- Parallelisation of calculations in drMD
+- Cleanup of directories
+
+There are many situations in computational protein science where one may want to perform an energy minimisation calculation on a large library of structures. With the explosion of AI-driven structure prediction tools, this is becoming more common. Some of these tools (such as Alphafold 2) have an energy minimisation step built-in, while others (such as Omegafold) do not. In these cases, drMD can be used to perform the energy minimisation step for you.
+
+### PDB preparation
+
+For this example, we will be using some output files from Omegafold, located in the `ExampleInputs/Worked_example_3_Mass_EM` directory on our github repository. These files are good to go as-is. We can simply place them in our `inputDir` directory.
+
+<img src="./images/deltaprots_grid.png" alt="Our input structures in this example" width="500"/>
+
+*3D structures of our input proteins. These were generated by Omegafold*
+
+### Config file setup
+
+We can use the [pre-built energy minimisation configuration file](./Prescriptions/em_config.yaml). As always, we need to change the `pathInfo` entry to match with our own directory system (see [Previous Example](#worked-example-1) for more information).
+
+If we look into our [configuration file](./Prescriptions/em_config.yaml), we can see that the `hardwareInfo` section uses more than one CPU:
+
+```yaml
+hardwareInfo:
+  parallelCPU: 16
+  platform: CUDA
+  subprocessCpus: 1
+```
+This means that we will be running 16 energy minimisation calculations in parallel, each using 1 CPU core. This is a good idea as energy minimisation calculations do not benefit much from GPU acceleration. By running 16 parallel calculations, we can speed up our calculations by a factor of 16. 
+
+
+In this config file, we have a simple one-step `simulationInfo` section:
+
+```yaml
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+```
+This will run an energy minimisation step until it reaches convergence.
+
+In the `aftercareInfo` section, we have the following:
+
+```yaml
+aftercareInfo:
+  endPointInfo:
+    stepNames: [01_energy_minimisation]
+    removeAtoms: 
+    - selection:
+        keyword: ions
+    - selection:
+        keyword: water
+  removeAllSimulationDirs: True
+```
+
+The `endpointInfo` section tells drMD to collect the final PDB file generated from each energy minimisation calculation and place them in the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. Within the `endPointInfo` section, we have specified that we want to remove all water and ion atoms from the PDB file. This ensures that we have the same atoms in our output files as our input files.
+The `removeAllSimulationDirs` parameter tells drMD to delete all prep and simulation directories once the job is complete. This will leave us with only the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. This can be useful as it saves on disk space.
+
+### Running Energy Minimisation
+
+When we run these simulations, drMD will display a progress bar for each calculation:
+
+<img src="./images/energy_minimisation_loading_bar.png" alt="Loading Bars" width="1000"/>
+
+*Loading bars for each energy minimisation calculation*

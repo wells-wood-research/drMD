@@ -26,7 +26,7 @@ def clean_up_handler(batchConfig: dict) -> None:
         None
     """
 
-    if not "postSimulationInfo" in batchConfig:
+    if not "aftercareInfo" in batchConfig:
         return
 
     ## run clustering if instructed to in config file
@@ -54,8 +54,8 @@ def collate_vitals_reports(batchConfig: Dict) -> None:
     """
 
     ## unpack batchConfig
-    postSimulationInfo: Dict = batchConfig["postSimulationInfo"]
-    collateVitalsReports: Dict = postSimulationInfo.get("collateVitalsReports", False)
+    aftercareInfo: Dict = batchConfig["aftercareInfo"]
+    collateVitalsReports: Dict = aftercareInfo.get("collateVitalsReports", False)
     if not collateVitalsReports:
         return
 
@@ -97,15 +97,15 @@ s
     
     """
     ## unpack batchConfig
-    postSimulationInfo: Dict = batchConfig["postSimulationInfo"]
+    aftercareInfo: Dict = batchConfig["aftercareInfo"]
     pathInfo: Dict = batchConfig["pathInfo"]
-    ## skip no clusterInfo key in postSimulationInfo exists
-    if not "clusterInfo" in postSimulationInfo:
+    ## skip no clusterInfo key in aftercareInfo exists
+    if not "clusterInfo" in aftercareInfo:
         return
     ## let user know what's going on
     drLogger.log_info(f"Performing clustering on MD trajectories...", True )
     ## get clusterInfo dict
-    clusterInfo: Dict = postSimulationInfo["clusterInfo"]
+    clusterInfo: Dict = aftercareInfo["clusterInfo"]
     ## run clustering
     allClusterPdbs: List[FilePath] = drClusterizer.clustering_manager(pathInfo, clusterInfo)
     if not allClusterPdbs:
@@ -132,10 +132,10 @@ def endpoint_handler(batchConfig: Dict) -> None:
         None
     """
     ## unpack batchConfig
-    postSimulationInfo: Dict = batchConfig["postSimulationInfo"]
+    aftercareInfo: Dict = batchConfig["aftercareInfo"]
     pathInfo: Dict = batchConfig["pathInfo"]
-    endpointInfo = postSimulationInfo.get("endPointInfo", False)
-    ## skip no endpointInfo key in postSimulationInfo exists
+    endpointInfo = aftercareInfo.get("endPointInfo", False)
+    ## skip no endpointInfo key in aftercareInfo exists
     if not endpointInfo:
         return
     ## get endpoint PDB files
@@ -160,20 +160,20 @@ def directory_cleanup_handler(batchConfig: dict) -> None:
     
     """
     ## unpack batchConfig
-    postSimulationInfo = batchConfig.get("postSimulationInfo", False)
-    if not postSimulationInfo:
+    aftercareInfo = batchConfig.get("aftercareInfo", False)
+    if not aftercareInfo:
         return
 
     ## if instructed, delete all simulation directories 
     ## NOTE that this means only collated directories will be retained
     ## NOTE this will save a lot of storage, but you will loose all of your trajectory files
-    removeAllSimulationDirs = postSimulationInfo.get("removeAllSimulationDirs", False)
+    removeAllSimulationDirs = aftercareInfo.get("removeAllSimulationDirs", False)
     if removeAllSimulationDirs:
         remove_siulation_directories(batchConfig)
         return
     ## remove any specified step directories
     ## NOTE this can be useful to delete prep / equiibriation directories to save storage space
-    removeStepDirs = postSimulationInfo.get("removeStepDirs", False)
+    removeStepDirs = aftercareInfo.get("removeStepDirs", False)
     if removeStepDirs:
         remove_step_directories(batchConfig, removeStepDirs)
 

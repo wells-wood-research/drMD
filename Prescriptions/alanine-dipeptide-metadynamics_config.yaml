@@ -3,7 +3,7 @@
 #   This prescription is used to perform a metadynamics simulation of alanine-dipeptide
 #   using two bias variables that represent the phi and psi angles of the dipeptide
 #
-#   The same equilibriation protocol that is used in standard_MD_config.yaml is used
+#   The same equilibration protocol that is used in standard_MD_config.yaml is used
 #   Note that as this molecule uses capping groups, the input file must be protonated 
 #   and the "skipPdbTriage" flag must be set to True
 #
@@ -31,7 +31,7 @@ miscInfo:
       keyword: ligand
 
 ########################################################################
-equilibriationRestraints: &equilibriationRestraints
+equilibrationRestraints: &equilibrationRestraints
     - restraintType: position
       parameters:
         k: 1000
@@ -58,7 +58,7 @@ simulationInfo:
     heavyProtons: True
     temperature: 300
     logInterval: 10 ps
-    restraintInfo: *equilibriationRestraints
+    restraintInfo: *equilibrationRestraints
 
 # ########################################################################
   - stepName: 03_NPT_pre-equilibraition
@@ -68,7 +68,7 @@ simulationInfo:
     heavyProtons: True
     temperature: 300
     logInterval: 10 ps
-    restraintInfo: *equilibriationRestraints
+    restraintInfo: *equilibrationRestraints
 
 ########################################################################
   - stepName: 04_NpT_slowIntergrator
@@ -113,7 +113,7 @@ simulationInfo:
             - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: C}
             - {CHAIN_ID: A, RES_NAME: NME, RES_ID: 3, ATOM_NAME: N}
 ################################################
-postSimulationInfo:
+aftercareInfo:
   clusterInfo:
     stepNames: [05_Metadynamics] 
     nClusters: 25

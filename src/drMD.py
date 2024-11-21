@@ -82,7 +82,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     writeMyMethodsSection = batchConfig["miscInfo"].get("writeMyMethodsSection", False)
 
     ## set up logging for post simulation processes
-    drLogger.setup_logging(p.join(batchConfig["pathInfo"]["outputDir"], "00_drMD_logs", "postSimulation.log"))
+    drLogger.setup_logging(p.join(batchConfig["pathInfo"]["outputDir"], "00_drMD_logs", "aftercare.log"))
     ## write methods section if desired
     if writeMyMethodsSection:
         try:

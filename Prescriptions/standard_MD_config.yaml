@@ -116,7 +116,7 @@ simulationInfo:
     logInterval: "500 ps"
 
 ########################################################################
-  - stepName: "05_Production_MD"
+  - stepName: "06_Production_MD"
     simulationType: "NpT"
     duration: "50 ns"
     timestep: "4 fs"
@@ -124,7 +124,7 @@ simulationInfo:
     temperature: 300
     logInterval: "50 ps"
 ################################################
-postSimulationInfo:
+aftercareInfo:
   clusterInfo:
     stepNames: ["05_Production_MD"] 
     nClusters: 25

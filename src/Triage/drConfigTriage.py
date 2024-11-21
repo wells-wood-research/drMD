@@ -53,7 +53,7 @@ def validate_config(config) -> FilePath:
 
     configDisorders["simulationInfo"], noDisordersFound  = check_simulationInfo(config, noDisordersFound)
 
-    configDisorders["postSimulationInfo"], noDisordersFound  = check_postSimulationInfo(config,noDisordersFound)
+    configDisorders["aftercareInfo"], noDisordersFound  = check_aftercareInfo(config,noDisordersFound)
   
     configDisorders["ligandInfo"], noDisordersFound  = check_ligandInfo(config, noDisordersFound)
                 
@@ -458,33 +458,33 @@ def check_restraintInfo(restraintInfo: dict, disorders: dict, noDisorders: bool)
 
 
 #####################################################################################
-def check_postSimulationInfo(config: dict, noDisorders) -> Tuple[dict,bool]:
+def check_aftercareInfo(config: dict, noDisorders) -> Tuple[dict,bool]:
     """
-    Checks for postSimulationInfo in config
+    Checks for aftercareInfo in config
     """
-    postSimulationInfoDisorders = {}
-    ## check for postSimulationInfo in config
-    postSimulationInfo = config.get("postSimulationInfo", None)
-    if postSimulationInfo is None:
+    aftercareInfoDisorders = {}
+    ## check for aftercareInfo in config
+    aftercareInfo = config.get("aftercareInfo", None)
+    if aftercareInfo is None:
         return None, noDisorders
     
-    endPointInfo = postSimulationInfo.get("endPointInfo", None)
+    endPointInfo = aftercareInfo.get("endPointInfo", None)
     if endPointInfo is not None:
         endPointInfoDisorders, noDisorders = check_endPointInfo(endPointInfo, noDisorders)
-        postSimulationInfoDisorders["endPointInfo"] = endPointInfoDisorders
+        aftercareInfoDisorders["endPointInfo"] = endPointInfoDisorders
 
-    clusterInfo = postSimulationInfo.get("clusterInfo", None)
+    clusterInfo = aftercareInfo.get("clusterInfo", None)
     if clusterInfo is not None:
-        postSimulationInfoDisorders["clusterInfo"], noDisorders = check_clusterInfo(clusterInfo, noDisorders)
+        aftercareInfoDisorders["clusterInfo"], noDisorders = check_clusterInfo(clusterInfo, noDisorders)
 
 
-    collateVitalsReports = postSimulationInfo.get("collateVitalsReports", None)
+    collateVitalsReports = aftercareInfo.get("collateVitalsReports", None)
     if collateVitalsReports is not None:
         if not isinstance(collateVitalsReports, bool):
-            postSimulationInfoDisorders["collateVitalsReports"] = "collateVitalsReports must be a boolean"
+            aftercareInfoDisorders["collateVitalsReports"] = "collateVitalsReports must be a boolean"
             noDisorders = False
 
-    return postSimulationInfoDisorders, noDisorders
+    return aftercareInfoDisorders, noDisorders
 
 
 

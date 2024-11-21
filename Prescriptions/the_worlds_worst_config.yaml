@@ -83,7 +83,7 @@ simulationInfo:
 
 ################################################
 
-postSimulationInfo:
+aftercareInfo:
   clusterInfo:
     stepNames: [NOTADIR] 
     nClusters: -1
