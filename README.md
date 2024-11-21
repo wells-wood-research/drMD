@@ -4,77 +4,26 @@
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
 # :medical_symbol: README Contents :medical_symbol:
 
-1. [GitHub Installation (recommended)](#github-installation)
-2. [Pip Installation (for advanced users)](#pip-installation)
-3. [Usage](#usage)
-4. [Config Syntax](#config-syntax)
-    - [pathInfo](#pathinfo)
-      - [inputDir](#inputdir)
-      - [outputDir](#outputdir)
-    - [hardwareInfo](#hardwareinfo)
-      - [platform](#platform)
-      - [parallelCPU](#parallelcpu)
-      - [subprocessCpus](#subprocesscpus)
-    - [miscInfo](#miscinfo)
-      - [pH](#pH)
-      - [firstAidMaxRetries](#firstaidmaxretries)
-      - [boxGeometry](#boxgeometry)
-      - [writeMyMethodsSection](#writemymethodssection)
-    - [ligandInfo](#ligandinfo)
-      - [ligandName](#ligandname)
-      - [protons](#protons)
-      - [charge](#charge)
-      - [toppar](#toppar)
-      - [mol2](#mol2)
-    - [simulationInfo](#simulationinfo)
-      - [stepName](#stepname)
-      - [simulationType](#simulationtype)
-      - [temperature](#temperature)
-      - [temperatureRange](#temperaturerange)
-      - [maxIterations](#maxiterations)
-      - [duration](#duration)
-      - [timestep](#timestep)
-      - [logInterval](#loginterval)
-    - [aftercareInfo](#aftercareinfo)
-      - [endPointInfo](#endpointinfo)
-        - [stepNames](#stepnamesendpoint)
-        - [removeAtoms](#removeatomsendpoint)
-      - [clusterInfo](#clusterinfo)
-        - [stepNames](#stepnamescluster)
-        - [removeAtoms](#removeatomscluster)
-        - [nClusters](#nclusters)
-        - [clusterBy](#clusterby)  
-    - [drMD Selection Syntax](#drmdselectionsyntax)
-      - [keyword](#keyword)
-      - [customSelection](#customselection)
-         - [CHAIN_ID](#chainid)
-         - [RES_NAME](#resname)
-         - [RES_ID](#resid)
-         - [ATOM_NAME](#atomname)
-    - [Adding Restraints in drMD](#addingrestraints)
-      - [restraintInfo](#restraintinfo)
-        - [restraintType](#restrainttype)
-        - [parameters](#parameters)
-          - [k](#k)
-          - [r0](#r0)
-          - [theta0](#theta0)
-          - [phi0](#phi0)
-        - [selection](#selectionrestraints)
-    - [Running Metadynamics with drMD](#runningmetadynamics)
-      - [metaDynamicsInfo](#metadynamicsinfo)
-        - [height](#height)
-        - [biasFactor](#biasfactor)
-        - [frequency](#frequency)
-        - [biases](#biases)
-          - [biasVar](#biasvar)
-          - [minValue](#minvalue)
-          - [maxValue](#maxvalue)
-          - [biasWidth](#biaswidth)
-          - [selection](#selectiometadynamics)
-5. [WORKED EXAMPLES](#worked-examples)
-  - [Worked Example 1: Molecular Dynamics Simulation of a Protein](#worked-example-1)
-  - [Worked Example 2: Restrained MD Simulations of a Protein-Ligand Complex](#worked-example-2)
-  - [Worked Example 3: Energy Minimisation of Multiple Structures](#worked-example-3)
+1. **Installation**
+   - [GitHub Installation](#github-installation)
+   - [Pip Installation](#pip-installation)
+2. **Running drMD**: [Running drMD from the command line](#run-from-cmd-line), [Running drMD as a Python Module](#run-from-python)
+3. **Config Syntax**
+   - **Path Info**: [inputDir](#inputdir), [outputDir](#outputdir)
+   - **Hardware Info**: [platform](#platform), [parallelCPU](#parallelcpu), [subprocessCpus](#subprocesscpus)
+   - **Misc Info**: [pH](#pH), [firstAidMaxRetries](#firstaidmaxretries), [boxGeometry](#boxgeometry), [writeMyMethodsSection](#writemymethodssection)
+   - **Ligand Info**: [ligandName](#ligandname), [protons](#protons), [charge](#charge), [toppar](#toppar), [mol2](#mol2)
+   - **Simulation Info**: [stepName](#stepname), [simulationType](#simulationtype), [temperature](#temperature), [temperatureRange](#temperaturerange), [maxIterations](#maxiterations), [duration](#duration), [timestep](#timestep), [logInterval](#loginterval)
+   - **Aftercare Info**: 
+     - **End Point Info**: [stepNames](#stepnamesendpoint), [removeAtoms](#removeatomsendpoint)
+     - **Cluster Info**: [stepNames](#stepnamescluster), [removeAtoms](#removeatomscluster), [nClusters](#nclusters), [clusterBy](#clusterby)
+4. **drMD Selection Syntax**: [keyword](#keyword), [customSelection](#customselection)
+5. **Adding Restraints in drMD**: [restraintInfo](#restraintinfo), [restraintType](#restrainttype), [parameters](#parameters)
+6. **Running Metadynamics with drMD**: [metaDynamicsInfo](#metadynamicsinfo), [height](#height), [biasFactor](#biasfactor), [frequency](#frequency), [biases](#biases)
+7. **Worked Examples**
+   - [Example 1: MD Simulation of a Protein](#worked-example-1)
+   - [Example 2: Restrained MD of Protein-Ligand Complex](#worked-example-2)
+   - [Example 3: Energy Minimisation of Structures](#worked-example-3)
 
 # GitHub Installation 
 We recommend that you use the following steps to install drMD:
@@ -133,17 +82,21 @@ conda install -c omnia openmm
 conda install -c conda-forge openbabel
 ```
 
-
-# Usage
+<a id="running-drmd"></a>
+# Running drMD
 
 Now that you have successfully set up the dependencies for drMD, you are nearly ready to run some bimolecular simulations!
+
+<a id="run-from-cmd-line"></a>
+## Running drMD from the command line
 
 If you have used the GitHub installation method, you can run drMD using the following command:
 
 ```bash
 python /path/to/drMD.py --config config.yaml
 ```
-
+<a id="run-as-python-module"></a>
+## Running drMD as a python module
 If you have used the Pip installation method, you can import drMD as a python module, and as following:
 
 ```python
