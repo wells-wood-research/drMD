@@ -24,3 +24,9 @@ PostSimulation --> AfterCare
 
 ## drConfigTriage
 [] better errors upon YAML format error
+[] defaults for each simulation step?
+
+
+## drSim
+[] em steps don't need a temperature
+

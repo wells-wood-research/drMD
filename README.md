@@ -11,7 +11,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 3. **Config Syntax**
    - **Path Info**: [inputDir](#inputdir), [outputDir](#outputdir)
    - **Hardware Info**: [platform](#platform), [parallelCPU](#parallelcpu), [subprocessCpus](#subprocesscpus)
-   - **Misc Info**: [pH](#pH), [firstAidMaxRetries](#firstaidmaxretries), [boxGeometry](#boxgeometry), [writeMyMethodsSection](#writemymethodssection)
+   - **Misc Info**: [pH](#pH), [firstAidMaxRetries](#firstaidmaxretries), [boxGeometry](#boxgeometry), [writeMyMethodsSection](#writemymethodssection), [skipPdbTriage](#skippdbtriage), [trajectorySelections](#trajectoryselections)
    - **Ligand Info**: [ligandName](#ligandname), [protons](#protons), [charge](#charge), [toppar](#toppar), [mol2](#mol2)
    - **Simulation Info**: [stepName](#stepname), [simulationType](#simulationtype), [temperature](#temperature), [temperatureRange](#temperaturerange), [maxIterations](#maxiterations), [duration](#duration), [timestep](#timestep), [logInterval](#loginterval)
    - **Aftercare Info**: 
@@ -25,7 +25,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
    - [Example 2: Restrained MD of Protein-Ligand Complex](#worked-example-2)
    - [Example 3: Energy Minimisation of Structures](#worked-example-3)
 
-# GitHub Installation 
+# :medical_symbol: GitHub Installation :medical_symbol:
 We recommend that you use the following steps to install drMD:
 1. Clone this repository
 ```bash
@@ -55,7 +55,7 @@ conda install -c conda-forge openbabel
 pip install -r requirements.txt
 ```
 
-# Pip Installation
+# :medical_symbol: Pip Installation :medical_symbol:
 If you want to integrate drMD into a python-based pipeline, you can install drMD with pip and use it as a python module:
 
 1. Create and activate conda environment
@@ -83,12 +83,12 @@ conda install -c conda-forge openbabel
 ```
 
 <a id="running-drmd"></a>
-# Running drMD
+# :medical_symbol: Running drMD :medical_symbol:
 
 Now that you have successfully set up the dependencies for drMD, you are nearly ready to run some bimolecular simulations!
 
 <a id="run-from-cmd-line"></a>
-## Running drMD from the command line
+## :brain: Running drMD from the command line
 
 If you have used the GitHub installation method, you can run drMD using the following command:
 
@@ -96,7 +96,7 @@ If you have used the GitHub installation method, you can run drMD using the foll
 python /path/to/drMD.py --config config.yaml
 ```
 <a id="run-as-python-module"></a>
-## Running drMD as a python module
+## :brain: Running drMD as a python module
 If you have used the Pip installation method, you can import drMD as a python module, and as following:
 
 ```python
@@ -110,16 +110,22 @@ drMD.main(myBatchConfig)
 This config file contains all of the user inputs drMD needs to run a series of bimolecular simulations.
 The following section will detail the correct formatting of this config.yaml file
 
-# Config syntax
-The config.yaml file is in the YAML format *(https://en.wikipedia.org/wiki/YAML)* 
+# :medical_symbol: Config syntax :medical_symbol:
+The config.yaml file is in the [YAML format](https://yaml.org/spec/1.2.2/)
 Inputs are grouped by theme and are stored as nested dictionaries and lists.
 The next few sections will detail the correct formatting of the config.yaml file
+
+For most entries in the config file, the default value will be used unless otherwise specified.
+If your config file is improperly formatted, or contains a parameter that is not supported, drMD provide useful guidance to help you fix this issue.
+
 <a id="pathinfo"></a>
 ## :brain: pathInfo
 The **pathInfo** entry in the config file is a dictionary containing two parameters:
 <a id="inputdir"></a>
 ### :anatomical_heart: inputDir
 *(DirectoryPath)* This is the absolute path towards a directory containing PDB files that will be used as starting points for your simulations.
+
+**Default Value**: `Current working directory`
             
   > :medical_symbol:
   > **To Perform Replicate** simulations, simply create copies of your starting PDB files in the inputDir, with each copy
@@ -128,6 +134,8 @@ The **pathInfo** entry in the config file is a dictionary containing two paramet
 <a id="outputdir"></a>
 ### :anatomical_heart:  outputDir  
 *(DirectoryPath)*  This is the absolute path towards a directory that you want your drMD outputs to be written to.
+
+**Default Value**: `/inputDir/outputs` 
 
   > :medical_symbol:
   > The outputDir will be created if it does not already exist at the point of running drMD
@@ -147,9 +155,11 @@ pathInfo:
 This config entry tells drMD about your computer hardware and how you want to use it to run your simulations
 The **hardwareInfo** entry in the config file is a dictionary containing three parameters:
 
-<a id="inputdir"></a>
+<a id="platform"></a>
 ### :anatomical_heart:  platform
 *(str)* This is the platform that will be used to run simulations in OpenMM. Accepted arguments for **platform** are *"CUDA"*, *"OpenCL"*, and *"CPU"*
+
+**Default Value**: `CPU`
 
   > :medical_symbol:
   > If you have access to GPU acceleration using CUDA, we recommend this option. If you cant use CUDA but have access to OpenCL, this is a close second.
@@ -160,9 +170,13 @@ The **hardwareInfo** entry in the config file is a dictionary containing three p
 ### :anatomical_heart:  parallelCPU
 *(int)* This is the number  of simulations that will be run in parallel
 
+**Default Value**: `1`
+
 <a id="subprocesscpus"></a>
 ### :anatomical_heart:  subprocessCpus
  *(int)* This is the number of cpu cores that will be allocated to each simulation.  
+
+**Default Value**: `1`
 
   > :medical_symbol:
   > The total CPU usage will be parallelCPU * subprocessCpus, so make sure you have enough CPUs when you set these parameters
@@ -184,9 +198,13 @@ This section allows you to set some general options for your simulations:
 ### :anatomical_heart:  pH
  *(int or float)* This is the pH of your simulation, this will affect the protonation states of your protein and any ligands present in your simulation
 
+**Default Value**: `7`
+
 <a id="firstaidmaxretries"></a>
 ### :anatomical_heart:  firstAidMaxRetries
 *(int)* This is the maximum number of times that drMD will attempt to recover from an error in a simulation
+
+**Default Value**: `10`
 
 > :medical_symbol: This option can be very helpful for rescuing crashed simulations. However 
 > don't rely on it too much. If your simulation keeps crashing you may want to reduce the 
@@ -196,12 +214,31 @@ This section allows you to set some general options for your simulations:
 ### :anatomical_heart:  boxGeometry 
 *(str)*  This is the shape of the solvation box that will be used in your simulations. Accepted arguments for **boxGeometry** are *"cubic" or "octahedral"
 
+**Default Value**: `cubic`
+
 <a id="writemymethodsection"></a>
 ### :anatomical_heart:  writeMyMethodsSection
-*(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis.
+*(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis
+
+**Default Value**: `True`
 
 > :medical_symbol: drMD methods sections contain all of the information one might need to replicate your simulations.
 > The formatting of these methods section may be too robotic and repetitive for you, feel free to reformat them as you see fit. 
+
+<a id="skippdbtriage"></a>
+### :anatomical_heart:  skipPdbTriage
+*(bool)* drMD runs a pdbTriage protocol to check the validity of your PDB files before running your simulations. To disable this step, set this parameter to `True`
+
+**Default Value**: `False`
+
+<a id="trajectoryselections"></a>
+### :anatomical_heart:  trajectorySelections
+
+*(list of dicts)* This entry controls the atoms that are written to your MD trajectories. You can specify any selection of atoms that you whish to write to your trajectories. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+
+**Default Value**: `[{"selection": {"keyword": 'all'}}]}` (this will write all atoms to your trajectory files)
+
+
 
 Example miscInfo:
 ```yaml
@@ -213,16 +250,15 @@ miscInfo:
 ```
 Simulations will be run with a pH of 7.4 in a cubic solvation box. The maximum number of first-aid retries will be 10. A methods section will automatically be generated. 
 
-
 <a id="ligandinfo"></a>
 ## :brain: ligandInfo
-The **ligandInfo** entry in the config file is optional and may be used if your PDB files have organic ligand or cofactors.
+The `ligandInfo` entry in the config file is optional and may be used if your PDB files have organic ligand or cofactors.
 These small molecules will not have parameters in the AMBER forcefield, drMD will run an automated protocol to generate these parameters for you.
 To do this, you will need to tell drMD some things about each ligand you whish tp simulate.
 
 > :medical_symbol:
-> The **ligandInfo** entry is *optional*. drMD will automatically detect ligand in your PDB files. It will also detect
-> parameter files in your input directory. If you have frcmod and mol2 files for your ligand already made, they must be located in your **inputDir**
+The `ligandInfo` entry is *optional*. drMD will automatically detect ligand in your PDB files. It will also detect
+parameter files in your input directory. If you have frcmod and mol2 files for your ligand already made, they must be located in your `inputDir`
 
 **ligandInfo** is a list of dictionaries that contain the following parameters:
 
@@ -242,18 +278,18 @@ To do this, you will need to tell drMD some things about each ligand you whish t
   > For more complex ligand, we recommended that you manually add protons in your input PDB file prior to running drMD
 
 <a id="charge"></a>
-### :anatomical_heart:  charge
+### :anatomical_heart: charge
 *(int)*  This is the formal charge of the ligand 
 
 <a id="toppar"></a>
-### :anatomical_heart:  toppar
+### :anatomical_heart: toppar
 *(bool)*  This is to tell drMD whether you have an frcmod file for your ligand already made.
-                If you already have one, it must be located in the 01_ligand_parameters directory within your outputDir
+                If you already have one, it must be located in the `01_ligand_parameters` directory within your outputDir
 
 <a id="mol2"></a>
 ### :anatomical_heart:  mol2
 *(bool)*   This is to tell drMD whether you have a mol2 file for your ligand already made.
-                If you already have one, it must be located in the 01_ligand_parameters directory within your outputDir
+                If you already have one, it must be located in the `01_ligand_parameters` directory within your outputDir
 
 Example ligandInfo:
 ```yaml
@@ -269,7 +305,7 @@ ligandInfo:
     toppar: False
     mol2: False
 ```
-This **ligandInfo** tells drMD to expect two ligands: FMN and TPA. FMN has a formal charge of -1 and TPA has a formal charge of -2. Both ligands already have protons, so drMD will not add any. For both ligands the toppar and mol2 parameters are set to False, drMD will automatically generate these files for you
+This `ligandInfo` tells drMD to expect two ligands: FMN and TPA. FMN has a formal charge of -1 and TPA has a formal charge of -2. Both ligands already have protons, so drMD will not add any. For both ligands the toppar and mol2 parameters are set to False, drMD will automatically generate these files for you
 
 ---
 
@@ -277,9 +313,9 @@ This **ligandInfo** tells drMD to expect two ligands: FMN and TPA. FMN has a for
 ## :brain: simulationInfo
 This is the real meat and potatoes of the drMD config file. 
 
-The **simulationInfo** entry in the config file is a list of dictionaries containing information about each simulation.
+The `simulationInfo` entry in the config file is a list of dictionaries containing information about each simulation.
 
-Each simulation detailed in **simulationInfo** will be run in sequence, with the output of the previous simulation being the starting point for the next simulation.
+Each simulation detailed in `simulationInfo` will be run in sequence, with the output of the previous simulation being the starting point for the next simulation.
 Each simulation dictionary contains the following parameters:
 
 <a id="stepnamesiminfo"></a>
@@ -290,14 +326,14 @@ Each simulation dictionary contains the following parameters:
 ### :anatomical_heart: simulationType
 *(str)* This is the type of simulation that will be run. Accepted arguments are:
 
-    - **"EM"**:         This will run a steepest-decent Energy Minimisation step. 
-    > :medical_symbol:
-    > We recommend that you run one of these steps before any other simulation steps
-    - **"NVT"**:        This will run an NVT (constant volume) molecular dynamics simulation
-    - **"NPT"**:        This will run an NPT (constant pressure) molecular dynamics simulation
-    > :medical_symbol:
-    > For the majority of protein simulations, the NPT ensemble is used for production MD simulations, while the NVT ensemble is only used in equilibration steps
-    - **"META"**:       This will run a Metadynamics simulation 
+  - `EM`         This will run a steepest-decent Energy Minimisation step. 
+  > :medical_symbol:
+  > We recommend that you run one of these steps before any other simulation steps
+  - `NVT`:        This will run an NVT (constant volume) molecular dynamics simulation
+  - `NPT`:        This will run an NPT (constant pressure) molecular dynamics simulation
+  > :medical_symbol:
+  > For the majority of protein simulations, the NPT ensemble is used for production MD simulations, while the NVT ensemble is only used in equilibration steps
+  - `META`:       This will run a Metadynamics simulation 
 
 ### Selecting simulation temperature 
 For most simulations, a constant temperature is used. In this case the following parameter is required:
@@ -336,7 +372,7 @@ For "normal" MD simulations using NVT or NpT ensembles, as well as for Metadynam
 
 <a id="duration"></a>
 #### :anatomical_heart: duration
-: *(str)* This is the duration of the simulation step, as a string "int unit" eg. "1000 ps"
+*(str)* This is the duration of the simulation step, as a string "int unit" eg. "1000 ps"
 
 <a id="timestep"></a>
 #### :anatomical_heart: timestep
@@ -417,7 +453,7 @@ Molecular Dynamics simulations can generate very large output files that can bec
 ---
 
 <a id="drmdselectionsyntax"></a>
-## drMD Selection syntax
+## :medical_symbol: drMD Selection syntax :medical_symbol:
 When creating restraints, metadynamics bias variables or running post-simulation clustering, you will need to specify the selection of atoms that the restraints will be applied to. To do this, you will need to supply a "selection" dictionary. This dictionary must contain the following parameter:
 
 <a id="keyword"></a>
@@ -488,7 +524,7 @@ In the above example, a selection containing the following:
 - all atoms in the residue FMN in chain C
 ---
 <a id="addingrestraints"></a>
-### Adding Restraints with drMD
+## :medical_symbol: Adding Restraints with drMD :medical_symbol:
 If you wish to perform simulations with restraints, create a *restraintsInfo* dictionary in the simulation step:
 
 <a id="restraintinfo"></a>
@@ -565,7 +601,7 @@ For a detailed explanation of how to select chains, residues, and atoms for rest
 ---
 
 <a id="runningmetadynamics"></a>
-### Running Metadynamics with drMD
+## :medical_symbol: Running Metadynamics with drMD :medical_symbol:
 To run a metadynamics simulation, first set the **simulationType** to **"META"**.
 
 Once you have selected your **simulationType**, you will need to include an additional **metaDynamicsInfo** dictionary in your simulation dictionary:
@@ -736,7 +772,7 @@ simulationInfo:
 ```
 ---
 
-# WORKED EXAMPLES
+# :medical_symbol: WORKED EXAMPLES :medical_symbol:
 In this section we will go through a series of examples of how to use this package. We will start with the simplest possible simulation setup and gradually build up to more complex ones.
 
 

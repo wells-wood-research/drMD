@@ -105,7 +105,7 @@ def check_pathInfo(config: dict, configDefaults: dict, noDisorders: bool) -> Tup
     if pathInfo is None:
         config["pathInfo"] = configDefaults["pathInfo"]
         drLogger.log_info(f"No pathInfo specified, using defaults")
-        pathInfoDisorders["inptDir"] = "Automatic Default Used!"
+        pathInfoDisorders["inputDir"] = "Automatic Default Used!"
         pathInfoDisorders["outputDir"] = "Automatic Default Used!"
 
         return config, pathInfoDisorders, False
@@ -114,15 +114,15 @@ def check_pathInfo(config: dict, configDefaults: dict, noDisorders: bool) -> Tup
     inputDir = pathInfo.get("inputDir", None)
     if inputDir is None:
         config["pathInfo"]["inputDir"] = configDefaults["pathInfo"]["inputDir"]
-        pathInfoDisorders["inptDir"] = "Automatic Default Used!"
+        pathInfoDisorders["inputDir"] = "Automatic Default Used!"
         noDisorders = False
     else:
         inputDirPathProblem = validate_path(f"inputDir", inputDir)
         if inputDirPathProblem is not None:
-            pathInfoDisorders["inptDir"] = inputDirPathProblem
+            pathInfoDisorders["inputDir"] = inputDirPathProblem
             noDisorders = False
         else:
-            pathInfoDisorders["inptDir"] = None
+            pathInfoDisorders["inputDir"] = None
 
     ## validate outputDir
     outputDir = pathInfo.get("outputDir", None)
