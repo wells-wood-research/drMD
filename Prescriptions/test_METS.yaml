@@ -10,7 +10,7 @@
 ########################################################################
 pathInfo:
   inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/alanine-dipeptide
-  outputDir: /home/esp/scriptDevelopment/drMD/03_metadynamics_test
+  outputDir: /home/esp/scriptDevelopment/drMD/03_alanine-dipeptide-metadynamics
   
 ########################################################################
 hardwareInfo:
@@ -78,7 +78,7 @@ simulationInfo:
     temperature: 300
     logInterval: 1 ps
 ########################################################################
-  - stepName: 05_Metadynamics
+  - stepName: 05_Metadynamics_distance_test
     simulationType: META
     duration: 5 ns
     timestep: 2 fs

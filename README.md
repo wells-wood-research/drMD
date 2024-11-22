@@ -574,13 +574,15 @@ All restraints require the selection parameter. This tells drMD what atoms to ap
 
 Example restraints syntax:
 ```yaml
+  ## position restraint to all protein atoms
     restraints:
     - restraintType: "position"
       selection:
         keyword: "protein"
-        parameters:
-          k: 1000
-    - type: "distance"
+      parameters:
+        k: 1000
+  ## distance restraint between CA atoms of residues 1 and 2
+    - restraintType: "distance"
       selection: 
         keyword: "custom"  
         customSelection:
