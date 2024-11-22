@@ -18,7 +18,7 @@ from UtilitiesCloset import drSelector, drFixer
 ########################################################################################################
 ########################################################################################################
 @drLogger.monitor_progress_decorator()
-# @drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
+@drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
 @drCheckup.check_up_handler()
 def run_metadynamics(prmtop: app.Topology,
                       inpcrd: any,
@@ -102,7 +102,7 @@ def run_metadynamics(prmtop: app.Topology,
             biasVariable: metadynamics.BiasVariable = gen_angle_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
 
-
+        
     # Create metadynamics object and add bias variables as forces to the system
     meta: metadynamics.Metadynamics = metadynamics.Metadynamics(system=system,
                                      variables=biasVariables,
@@ -112,7 +112,7 @@ def run_metadynamics(prmtop: app.Topology,
                                      frequency=50,
                                      saveFrequency=50,
                                      biasDir=simDir)
-
+    
 
     # Set up integrator
     integrator: openmm.LangevinMiddleIntegrator = openmm.LangevinMiddleIntegrator(sim["temperature"], 1/unit.picosecond, sim["timestep"])
@@ -286,12 +286,10 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
     """
 
     # Create a distance bias force
-    distanceForce: openmm.CustomTorsionForce = openmm.CustomBondForce("0.5*k*(r-r0)^2")
-    distanceForce.addPerBondParameter("k")
-    distanceForce.addPerBondParameter("r0") 
-    # Add the atom indexes for the distance
+    distanceForce: openmm.CustomBondForce = openmm.CustomBondForce("r")
+
     distanceForce.addBond(atomIndexes[0],
-                             atomIndexes[1])
+                          atomIndexes[1])
     
     distanceBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(force = distanceForce,
                                                     minValue = bias["minValue"] * unit.angstrom,

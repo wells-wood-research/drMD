@@ -400,7 +400,7 @@ This will run a 100 ps NVT molecular dynamics simulation with a timestep of 2 fs
 
 ---
 
-### Simulation Aftercare
+### :medical_symbol: Simulation Aftercare :medical_symbol:
 After all of your simulations have been run, drMD contains some simple utilities for organising your output files and deleting any unwanted files.
 
 If you want to do any post-processing, you will need to provide the following parameter in your config file:

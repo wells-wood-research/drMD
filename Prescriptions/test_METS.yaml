@@ -1,0 +1,115 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription is used to perform a metadynamics simulation of alanine-dipeptide
+#   using two bias variables that represent the phi and psi angles of the dipeptide
+#
+#   The same equilibration protocol that is used in standard_MD_config.yaml is used
+#   Note that as this molecule uses capping groups, the input file must be protonated 
+#   and the "skipPdbTriage" flag must be set to True
+#
+########################################################################
+pathInfo:
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/alanine-dipeptide
+  outputDir: /home/esp/scriptDevelopment/drMD/03_metadynamics_test
+  
+########################################################################
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+########################################################################
+miscInfo:
+  pH: 7.4
+  firstAidMaxRetries: 10
+  boxGeometry: cubic
+  writeMyMethodsSection: True
+  skipPdbTriage: True
+  trajectorySelections:
+  - selection:
+      keyword: protein
+  - selection:
+      keyword: ligand
+
+########################################################################
+equilibrationRestraints: &equilibrationRestraints
+    - restraintType: position
+      parameters:
+        k: 1000
+      selection:
+        keyword: protein
+
+    - restraintType: position
+      parameters:
+        k: 1000
+      selection:
+        keyword: ligand
+
+########################################################################
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+########################################################################
+  - stepName: 02_NVT_pre-equilibraition
+    simulationType: NVT
+    duration: 100 ps
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 10 ps
+    restraintInfo: *equilibrationRestraints
+
+# ########################################################################
+  - stepName: 03_NPT_pre-equilibraition
+    simulationType: NPT
+    duration: 100 ps
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 10 ps
+    restraintInfo: *equilibrationRestraints
+
+########################################################################
+  - stepName: 04_NpT_slowIntergrator
+    simulationType: NpT
+    duration: 10 ps
+    timestep: 0.5 fs
+    temperature: 300
+    logInterval: 1 ps
+########################################################################
+  - stepName: 05_Metadynamics
+    simulationType: META
+    duration: 5 ns
+    timestep: 2 fs
+    heavyProtons: False
+    temperature: 300
+    logInterval: 2 ps
+    metaDynamicsInfo:
+      height: 0.8
+      biasFactor: 10
+      frequency: 500
+      biases:
+        - biasVar: distance
+          minValue: 4
+          maxValue: 8
+          biasWidth: 5.73
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ACE, RES_ID: 1, ATOM_NAME: CH3}
+            - {CHAIN_ID: A, RES_NAME: NME, RES_ID: 3, ATOM_NAME: C}
+
+################################################
+aftercareInfo:
+  clusterInfo:
+    stepNames: [05_Metadynamics] 
+    nClusters: 25
+    clusterBy:
+    - selection:
+        keyword: protein
+    removeAtoms:
+      - selection:
+          keyword: water
+      - selection:
+          keyword: ions

@@ -149,16 +149,14 @@ def monitor_progress_decorator(checkInterval: int=3):
             try:
                 result = func(*args, **kwargs)
             ## if simulation fails, raise error
-            except SystemExit as e:
-                if e.code == 1:
-                    monitoring.set()
-                    monitorThread.join()
-                    exit(1)
-                else:
-                    raise
-            monitoring.set()
-            monitorThread.join()
-            return result
+            except Exception  as e:
+                monitoring.set()
+                monitorThread.join()
+                raise e
+            else:
+                monitoring.set()
+                monitorThread.join()
+                return result
         return wrapper
     return decorator
 #################################################################################################
