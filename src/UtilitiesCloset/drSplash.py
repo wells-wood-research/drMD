@@ -248,7 +248,12 @@ def print_config_error(configDisorders) -> None:
         for argName, argDisorder in disorderDict.items():
             if argDisorder is None:
                 print_config_text(argName, argDisorder, greenText, indentationLevel)
-            elif isinstance(argDisorder, (str, list)):
+            elif isinstance(argDisorder, str):
+                if "default" in argDisorder.lower():
+                    print_config_text(argName, argDisorder, orangeText, indentationLevel)
+                else:
+                    print_config_text(argName, argDisorder, redText, indentationLevel)
+            elif isinstance(argDisorder, list):
                 print_config_text(argName, argDisorder, redText, indentationLevel)
             elif isinstance(argDisorder, dict):
                 loop_disorder_dict(argName, argDisorder, indentationLevel + 1)

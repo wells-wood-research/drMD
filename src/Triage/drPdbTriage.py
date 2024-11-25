@@ -41,7 +41,8 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
         "isBrokenChains": False,  # PDB contains broken chains
         "isMissingSidechains": False,  # PDB contains missing sidechains
         "isNonCanonicalAminoAcids": False,  # PDB contains non-canonical amino acids
-        "isOrganimetallicLigands": False  # PDB contains organimetallic ligand
+        "isOrganimetallicLigands": False,  # PDB contains organimetallic ligand
+        "isSharedChains": False  # Chains shared between ligand and protein
     }
 
     # Iterate through all PDB files in the directory
@@ -51,6 +52,8 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
         pdbFile: FilePath = p.join(pdbDir, file)
         # Check for common problems in the PDB file
         problemsDict = pdb_triage_protocol(pdbFile, pdbDir, config)
+        print(problemsDict)
+        print(commonPdbProblems)
         # Update the dictionary that looks at all PDB files
         commonPdbProblems = update_problem_dict(commonPdbProblems, problemsDict)
     # Print the results to the terminal

@@ -51,7 +51,7 @@ def validate_config(config) -> FilePath:
     config, configDisorders["pathInfo"], noDisordersFound = check_pathInfo(config, configDefaults, noDisordersFound)
     config, configDisorders["hardwareInfo"], noDisordersFound  = check_hardwareInfo(config, configDefaults, noDisordersFound)
 
-    configDisorders["simulationInfo"], noDisordersFound  = check_simulationInfo(config, noDisordersFound)
+    configDisorders["simulationInfo"], noDisordersFound, config  = check_simulationInfo(config, noDisordersFound)
 
     configDisorders["aftercareInfo"], noDisordersFound  = check_aftercareInfo(config,noDisordersFound)
   
@@ -83,7 +83,20 @@ def init_config_defaults(topDir: DirectoryPath) -> dict:
             "boxGeometry": "cubic",
             "writeMyMethodsSection": True,
             "skipPdbTriage": False,
-            "trajectorySelections": [{"selection": {"keyword": 'all'}}]}
+            "trajectorySelections": [{"selection": {"keyword": 'all'}}]
+            },
+
+        "simInfo": {
+            "stepName": None,           ## THIS IS REQUIRED
+            "simulationType": "NPT",
+            "temperature": 300,
+            "temperatureRange": None,   ## OPTIONAL, NO DEFAULT
+            "maxIterations": -1,   ## ONLY TURN ON WHEN EM STEP  
+            "duration": None,       ## THIS IS REQUIRED
+            "timestep": "2 fs",           ## IF HEAVY PROTONS IS SET TO TRUE, USE "4 fs"  INSTEAD
+            "logInterval": "10 ps",
+            "heavyProtons": False,   ## 
+        }
     }
     return configDefaults
 
@@ -161,6 +174,7 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
     if hardwareInfo is None:
         config["hardwareInfo"] = configDefaults["hardwareInfo"]
         for argName in ["parallelCPU", "platform", "subprocessCpus"]:
+            config["hardwareInfo"][argName] = configDefaults["hardwareInfo"][argName]
             hardwareInfoDisorders[argName] = "Automatic Default Used!"
         drLogger.log_info(f"No hardwareInfo specified, using defaults")
         return config, hardwareInfoDisorders, True
@@ -362,29 +376,28 @@ def check_simulationInfo(config: dict, noDisorders) -> Tuple[dict, bool]:
     if len(simulationInfo) == 0:
         return config, "simulationInfo must have at least one entry", False
     
+
     simulationInfoDisorders = {}
-    counter = 0
-    for simulation in simulationInfo:
-        counter += 1
+    for counter, simulation in enumerate(simulationInfo):
+
         disorders = {}
         drLogger.log_info(f"Checking {simulation['stepName']}...")
-        disorders, stepName, simulationType, noDisorders  = check_shared_simulation_options(simulation, disorders, noDisorders)
-        ## if we don't have a simulationType or stepName, further checks wont work.
+        disorders, stepName, simulationType, noDisorders, simulationWithDefaults  = check_shared_simulation_options(simulation, disorders, noDisorders)
+
+        ## if we don't have stepName, further checks wont work.
         if stepName is None:
             disorders["stepName"] = "stepName must be specified"
-            simulationInfoDisorders[f"Unnamed_step_{str(counter)}"] = "stepName must be specified"
-            noDisorders = False
-            continue
-        if simulationType is None:
-            disorders["simulationType"] = "simulationType must be specified"
-            simulationInfoDisorders[stepName] = disorders
+            simulationInfoDisorders[f"Unnamed_step_{str(counter+1)}"] = "stepName must be specified"
             noDisorders = False
             continue
 
-        if simulationType in ["NVT", "NPT"]:
-            disorders, noDisorders = check_nvt_npt_options(simulation, stepName, disorders, noDisorders)
-        elif simulationType == "META":
-            disorders, noDisorders = check_metadynamics_options(simulation, stepName, disorders, noDisorders)
+
+        if simulationWithDefaults["simulationType"] in ["NVT", "NPT"]:
+            disorders, noDisorders, simulationWithDefaults  = check_nvt_npt_options(simulationWithDefaults, stepName, disorders, noDisorders)
+        elif simulationWithDefaults["simulationType"] == "META":
+            disorders, noDisorders = check_metadynamics_options(simulationWithDefaults, stepName, disorders, noDisorders)
+        elif simulationWithDefaults["simulationType"] == "EM":
+            disorders, noDisorder, simulationWithDefaults = check_em_options(simulationWithDefaults, stepName, disorders, noDisorders)
 
         restraintsInfo = simulation.get("restraintInfo", None)
         if restraintsInfo:
@@ -392,9 +405,27 @@ def check_simulationInfo(config: dict, noDisorders) -> Tuple[dict, bool]:
 
         simulationInfoDisorders[stepName] = disorders
 
-    return simulationInfoDisorders, noDisorders
+        ## update config dict to use defaults
+        config["simulationInfo"][counter] = simulationWithDefaults
+
+    return simulationInfoDisorders, noDisorders, config
 
 #################################################################################################
+def check_em_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict, bool]:
+    ## check duration
+    maxIterations = simulation.get("maxIterations", None)
+    if maxIterations is None:
+        disorders["maxIterations"] = "maxIterations not set for EM step, using a default of -1"
+        simulation["maxIterations"] = -1
+    else:
+        if not isinstance(maxIterations, int):
+            disorders["maxIterations"] = "maxIterations must be an integer"
+            noDisorders = False
+        else:
+            disorders["maxIterations"] = None
+
+    return disorders, noDisorders, simulation
+
 
 
 def check_restraintInfo(restraintInfo: dict, disorders: dict, noDisorders: bool) -> Tuple[dict, bool]:
@@ -973,13 +1004,13 @@ def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict,
 
     return disorders, noDisorders
 #########################################################################
-def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict,bool]:
+def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict,bool,dict]:
     ## check for required args for a nvt or npt simulation
 
     ## check duration
     duration = simulation.get("duration", None)
     if duration is None:
-        disorders["duration"] = "No duration specified in simulation"
+        disorders["duration"] = "Duration must be specified. example `duration = '1 ns'`"
         noDisorders = False
     else:
         timeCheckProblems = check_time_input(duration, "duration", stepName)
@@ -992,8 +1023,9 @@ def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDi
     # check logInterval
     logInterval = simulation.get("logInterval", None)
     if logInterval is None:
-        disorders["logInterval"] = "No logInterval specified in simulation"
-        noDisorders = False
+        simulation["logInterval"] = "10 ps"
+        disorders["logInterval"] = "No logInterval specified in simulation, using default of 10 ps"
+        
     else:
         timeCheckProblems = check_time_input(logInterval, "logInterval", stepName)
         if timeCheckProblems is not None:
@@ -1005,16 +1037,34 @@ def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDi
     ## check heavyProtons
     heavyProtons = simulation.get("heavyProtons", None)
     if heavyProtons is None:
-        disorders["heavyProtons"] = "No heavyProtons specified in simulation"
-        noDisorders = False
+        disorders["heavyProtons"] = "No heavyProtons specified in simulation, using default of False"
+        simulation["heavyProtons"] = False
     else:
         if not isinstance(heavyProtons, bool):
             disorders["heavyProtons"] = "heavyProtons must be a boolean"
             noDisorders = False
         else:
             disorders["heavyProtons"] = None
+
+
+    ## check timestep
+    timestep = simulation.get("timestep", None)
+    if timestep is None:
+        if simulation["heavyProtons"] is True:
+            simulation["timestep"] = "4 fs"
+            disorders["timestep"] = "No timestep specified in simulation, heavyProtons set to True so using default of 4 fs"
+        else:
+            simulation["timestep"] = "2 fs"
+            disorders["timestep"] = "No timestep specified in simulation, using default of 2 fs"
+    else:
+        timeCheckProblems = check_time_input(timestep, "timestep", stepName)
+        if timeCheckProblems is not None:
+            disorders["timestep"] = timeCheckProblems
+            noDisorders = False
+        else:
+            disorders["timestep"] = None
         
-    return disorders, noDisorders
+    return disorders, noDisorders, simulation
 
         
 
@@ -1025,17 +1075,21 @@ def check_time_input(timeInputValue: str, timeInputName: str, stepName: str) -> 
     if not isinstance(timeInputValue, str):
         return problemText
     timeInputData = timeInputValue.split()
-    try:
-        numberAsInt = int(timeInputData[0])
-    except:
+    if len(timeInputData) != 2:
         return problemText
+    ## check if time is a number
+    try:
+        _ = float(timeInputData[0])
+    except ValueError:
+        return problemText
+    
     if not timeInputData[1] in ["fs","ps","ns","ms"]:
         return problemText
     
     return None
 
 #########################################################################
-def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorders) -> Tuple[dict, str, str, bool]:
+def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorders) -> Tuple[dict, str, str, bool, dict]:
     ## check simulation step name
     stepName = simulation.get("stepName", None)
     if stepName is None: 
@@ -1054,8 +1108,8 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
     ## check simulationType
     simulationType = simulation.get("simulationType", None)
     if simulationType is None:
-        disorders["simulationType"] = "No simulationType specified in simulation"
-        noDisorders = False
+        simulation["simulationType"] = "NPT"
+        disorders["simulationType"] = "No simulationType specified in simulation, using NPT as default"
     elif not simulationType.upper() in ["EM", "NVT", "NPT", "META"]:
         disorders["simulationType"] = "simulationType in simulation must be one of the following: 'EM', 'NVT', 'NPT', 'META'"
         noDisorders = False
@@ -1068,10 +1122,11 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
     if temperature and tempRange:
         disorders["temperature"] = "Cannot specify both temperature and temperatureRange in simulation"
         noDisorders = False
-    ## check for neither temperature or tempRange (this is also not allowed!)
+    ## check for neither temperature or tempRange
+    ## Use a default value of 300 K
     elif not temperature and not tempRange:
-        disorders["temperature"] = "Must specify either temperature or temperatureRange in simulation"
-        noDisorders = False
+        simulation["temperature"] = 300
+        disorders["temperature"] = "No temperature or temperatureRange specified in simulation, using 300 K as default"
     ## check temperature
     elif temperature:
         if not isinstance(temperature, int):
@@ -1098,7 +1153,7 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
                 disorders["tempRange"] = "TemperatureRange in simulation must be a list of positive ints"
                 noDisorders = False
 
-    return disorders, stepName, simulationType, noDisorders
+    return disorders, stepName, simulationType, noDisorders, simulation
 
 #########################################################################
 def validate_path(argName: str, argPath: Union[FilePath, DirectoryPath]) -> str:

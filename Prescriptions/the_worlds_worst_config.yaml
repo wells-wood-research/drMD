@@ -60,26 +60,20 @@ equilibriationRestraints: &equilibriationRestraints
 simulationInfo:
   - stepName: 01_energy_minimisation
     simulationType: EM
-    maxIterations: 1000
 ########################################################################
   - stepName: 02_NVT_pre-equilibraition
-    simulationType: NVT
     duration: 100
     timestep: 4
     heavyProtons: eggs
     temperature: 300
     logInterval: 10 ps
     restraintInfo: *equilibriationRestraints
-
-# ########################################################################
-  - stepName: 1
-    simulationType: NPT
-    duration: 100 ps
-    timestep: 4 fs
+########################################################################
+  - stepName: 03_lazy_inputs
+    duration: 5 ns
     heavyProtons: True
-    temperature: -20
-    logInterval: 10 ps
-    restraintInfo: None
+# ########################################################################
+
 
 ################################################
 

@@ -110,6 +110,7 @@ drMD.main(myBatchConfig)
 This config file contains all of the user inputs drMD needs to run a series of bimolecular simulations.
 The following section will detail the correct formatting of this config.yaml file
 
+<a id="configSyntax"></a>
 # :medical_symbol: Config syntax :medical_symbol:
 The config.yaml file is in the [YAML format](https://yaml.org/spec/1.2.2/)
 Inputs are grouped by theme and are stored as nested dictionaries and lists.
@@ -1084,3 +1085,127 @@ When we run these simulations, drMD will display a progress bar for each calcula
 <img src="./images/energy_minimisation_loading_bar.png" alt="Loading Bars" width="1000"/>
 
 *Loading bars for each energy minimisation calculation*
+
+## Worked Example 4: Using drMD defaults
+In this example, we will run the same simulation as in [Worked Example 1](#worked-example-1) using a very minimal config file.
+
+This example introduces the following concepts:
+- Default values in drMD
+
+As you read the [configSyntax](#configSyntax) section of this README you will notice that for most config entries, drMD can provide a default value. This means that if you do not specify a value for a parameter, drMD will use the default value provided for that parameter. 
+
+> :biohazard: WARNING: If you do specify a value for a parameter but it is incorrect, drMD will not attempt to use a default value. Instead a handy error message will be displayed.
+
+### Config file setup
+
+In the `Prescriptions` directory, we have a config file named `lazy_config.yaml`. This config file has the following:
+
+```yaml
+## sparse pathInfo
+pathInfo: 
+  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard"
+## sparse hardwareInfo
+hardwareInfo:
+  platform: CUDA
+## no miscInfo
+## sparse simulationInfo
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+  - stepName: 02_NVT_pre-equilibration
+    simulationType: NVT
+    duration: 100 ps
+    heavyProtons: True
+  - stepName: 03_NPT_pre-equilibration
+    duration: 100 ps
+    heavyProtons: True
+  - stepName: 04_slow_step
+    duration: 50 ps
+    heavyProtons: True
+    timestep: 0.5 fs
+  - stepName: 05_equilibration
+    duration: 5 ns
+    heavyProtons: True
+  - stepName: 06_production_MD
+    duration: 50 ns
+    heavyProtons: True   
+```
+We have set up the config file as follows:
+- In the `pathInfo` section, we have not specified the `outputDir` . drMD will use a default value for `outputDir`, which is `/current/working/directory/outputs`.
+
+- In `hardwareInfo` we have only specified `platform`, so drMD will use a default value for `parallelCPU` and `subprocessCpus` (both values are set to 1). 
+- We have completely neglected to include a `miscInfo` section. drMD will create this section from scratch with default values. 
+- In the `simulationInfo` section, we have included the minimal amount of information that drMD needs to reproduce the simulation in [Worked Example 1](#worked-example-1). 
+  - Each simulation step has a `stepName` entry, this is mandatory. 
+  - For the `01_energy_minimisation` step, we have specified a `simulationType` of `EM`. For energy minimisation calculations a `maxIterations` parameter is required, drMD will use a default value of -1 (this means that the step will run until it reaches convergence). 
+  - For the remaining simulation steps, we have specified the `duration` and `heavyProtons` parameters. 
+  - We will let drMD use defaults for `timestep` (4 fs when heavyProtons is True), `temperature` (300 K) , `logInterval` (10 ps) and `simulationType` (NpT). 
+  - Where we do not want a default value to be used, we have specified a value: For the`02_NVT_pre-equilibration` step we want use the *canonical (NVT)* ensemble, so we have specified the `simulationType` as `NVT`. For the `04_slow_step` step, we we have specified a `timestep` of 0.5 fs.
+
+After we run drMD, a per-run config file will be created in the `/path/to/outputDir/00_configs' directory:
+
+```yaml
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+miscInfo:
+  boxGeometry: cubic
+  firstAidMaxRetries: 10
+  pH: 7
+  skipPdbTriage: false
+  trajectorySelections:
+  - selection:
+      keyword: all
+  writeMyMethodsSection: true
+pathInfo:
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
+  inputPdb: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard/6eqe_1.pdb
+  outputDir: /home/esp/scriptDevelopment/drMD/outputs/6eqe_1
+  outputName: 6eqe_1
+proteinInfo:
+  proteinName: 6eqe_1
+  protons: false
+simulationInfo:
+- maxIterations: -1
+  simulationType: EM
+  stepName: 01_energy_minimisation
+  temperature: 300
+- duration: 100 ps
+  heavyProtons: true
+  logInterval: 10 ps
+  simulationType: NVT
+  stepName: 02_NVT_pre-equilibraition
+  temperature: 300
+  timestep: 4 fs
+- duration: 100 ps
+  heavyProtons: true
+  logInterval: 10 ps
+  simulationType: NPT
+  stepName: 03_NPT_pre-equilibraition
+  temperature: 300
+  timestep: 4 fs
+- duration: 50 ps
+  heavyProtons: true
+  logInterval: 10 ps
+  simulationType: NPT
+  stepName: 04_slow_intergration_step
+  temperature: 300
+  timestep: 0.5 fs
+- duration: 5 ns
+  heavyProtons: true
+  logInterval: 10 ps
+  simulationType: NPT
+  stepName: 05_equilibriation
+  temperature: 300
+  timestep: 4 fs
+- duration: 50 ns
+  heavyProtons: true
+  logInterval: 10 ps
+  simulationType: NPT
+  stepName: 06_production_MD
+  temperature: 300
+  timestep: 4 fs
+```
+
+

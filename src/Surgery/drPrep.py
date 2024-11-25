@@ -479,7 +479,7 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
         ligPdb: FilePath = p.join(ligPrepDir, f"{ligandName}.pdb")
 
         # Protonate the ligand
-        drLogger.log_info(f"{' '*4}--> Protonating ligand {ligandName}...",True)
+        drLogger.log_info(f"Protonating ligand {ligandName}...",True)
         ligPdb, ligandPdbs = ligand_protonation(ligand,ligPrepDir,ligandName,ligandPdbs, ligPdb)  
 
         # deal with atom names in ligand, make sure they are all unique
@@ -487,12 +487,12 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
 
 
         # Create mol2 file
-        drLogger.log_info(f"{' '*4}--> Calculating partial charges for ligand {ligandName}...",True)
+        drLogger.log_info(f"Calculating partial charges for ligand {ligandName}...",True)
         ligMol2, ligFileDict = ligand_mol2(ligand,inputDir,ligandName,ligParamDir,
                                           ligPrepDir,ligPdb,ligFileDict)
         
         # Create frcmod file
-        drLogger.log_info(f"{' '*4}--> Creating parameter files for ligand {ligandName}...",True)
+        drLogger.log_info(f"Creating parameter files for ligand {ligandName}...",True)
         ligFileDict = ligand_toppar(ligand,inputDir,ligandName,ligParamDir,
                                     ligPrepDir,ligMol2,ligFileDict)
 
