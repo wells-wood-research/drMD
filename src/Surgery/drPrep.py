@@ -137,7 +137,6 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
                             pdbFile= mergedPdb,
                             config= config,
                             outName= outName)
-
         niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, solvatedPdb)
         return niceChainsPdb, inputCoords, amberParams
 #####################################################################################   

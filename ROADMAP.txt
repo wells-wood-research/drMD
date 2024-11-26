@@ -30,3 +30,5 @@ PostSimulation --> AfterCare
 ## drSim
 [] em steps don't need a temperature
 
+## drFixer
+[] shape-based alignment for mapping resID and chainID ??
