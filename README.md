@@ -818,15 +818,15 @@ We don't need to change anything else in the config file. If you want to change 
 
 To run our simulations, we first navigate to the main **drMD** directory:
 ```bash
-cd /path/to/**drMD**
+cd /path/to/drMD
 ```
 Then we activate our conda environment (see [Installation](#installation) for more information):
 ```bash
-conda activate **drMD**
+conda activate drMD
 ```
 Finally we run **drMD** using our config file:
 ```bash
-python ./src/**drMD**.py ./inputFiles/isPETase_standard_MD.yaml
+python ./src/drMD.py ./inputFiles/isPETase_standard_MD.yaml
 ```
 ***
 First, you will see the **drMD** logo in your terminal. 
