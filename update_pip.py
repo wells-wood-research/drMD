@@ -5,10 +5,17 @@ import subprocess
 import re
 import shutil
 
+
+class FilePath:
+    pass
+class DirectoryPath:
+    pass
+
 def main():
-    newVersion = get_input_version()
+    newVersion: str = get_input_version()
     # find files
     setupDotPy, pyprojectDotToml = find_setup_files()
+    ## delete previous builds
     clean_previous_builds()
     ## edit setup files
     update_version(setupDotPy, newVersion)
@@ -27,17 +34,17 @@ def get_input_version():
 
 
     if newVersion == None:
-        raise ValueError("ENTER A VERISON NUMBER!")
+        raise ValueError("ENTER A VERSION NUMBER USING --newVersion INPUT!")
     return newVersion
 
-def find_setup_files():
+def find_setup_files() -> tuple[FilePath, FilePath]:
     print("Current working directory:", os.getcwd())
 
-    cwd = os.getcwd()
+    cwd: DirectoryPath = os.getcwd()
     print("setup.py:", p.join(cwd, "setup.py"))
-    setupDotPy = p.join(cwd, "setup.py")
+    setupDotPy: FilePath = p.join(cwd, "setup.py")
     print("pyproject.toml:", p.join(cwd, "pyproject.toml"))
-    pyprojectDotToml = p.join(cwd, "pyproject.toml")
+    pyprojectDotToml: FilePath = p.join(cwd, "pyproject.toml")
     return setupDotPy, pyprojectDotToml
 
 def build_package():
@@ -71,18 +78,17 @@ def clean_previous_builds():
         if file.endswith('.egg-info'):
             shutil.rmtree(file)
 
-def update_version(file_path, new_version):
-    print(file_path)
-    with open(file_path, 'r') as file:
+def update_version(inputFile: FilePath, newVersion: str):
+    """Update the version in pip pyproject.toml and setup.py"""
+    with open(inputFile, 'r') as file:
         content = file.read()
 
     updated_content = re.sub(
         r'version\s*=\s*["\'][^"\']*["\']',
-        f"version = '{new_version}'",
+        f"version = '{newVersion}'",
         content
     )
-    
-    with open(file_path, 'w') as file:
+    with open(inputFile, 'w') as file:
         file.write(updated_content)
 
 
