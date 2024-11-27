@@ -261,7 +261,7 @@ def load_simulation_state(simulation: app.Simulation, saveFile: FilePath) -> app
     return simulation
 ###########################################################################################
 @drLogger.monitor_progress_decorator()
-@drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
+@drFirstAid.firstAid_handler()
 @drCheckup.check_up_handler()
 def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
                            inpcrd: app.AmberInpcrdFile,
@@ -291,9 +291,7 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     protName = config["proteinInfo"]["proteinName"]
 
     drLogger.log_info(f"Running {stepName} Step for: {protName}",True)
-
     sim = process_sim_data(sim)
-
     ## create simluation directory
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)
@@ -301,15 +299,12 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     ## initialise a new system from parameters
     hardwareInfo = config["hardwareInfo"]
     simulation, integrator = initialise_simulation(prmtop, inpcrd, sim, saveFile, refPdb, platform, hardwareInfo)
-
     # set up intergrator and system
     # load state from previous simulation (or continue from checkpoint)
     simulation: app.Simulation = load_simulation_state(simulation, saveFile)
     # set up reporters
     totalSteps: int = simulation.currentStep + sim["nSteps"]
     reportInterval: int = sim["logInterval"]
-
-
 
     simulation: app.Simulation = init_reporters(simDir=simDir,
                                 nSteps=totalSteps,
@@ -362,7 +357,7 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
                            inpcrd: app.AmberInpcrdFile,
                              sim: Dict,
                                saveFile: FilePath,
-                                 outDir: FilePath,
+                                 outDir: DirectoryPath,
                                    platform: openmm.Platform,
                                      refPdb: FilePath,
                                        config: Dict) -> FilePath:
@@ -386,7 +381,6 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     the result as a PDB file, resets the chain and residue Ids, saves the simulation
     state as an XML file, and returns the path to the XML file.
     """
-
     stepName: str = sim["stepName"]
     protName: str = config["proteinInfo"]["proteinName"]
 

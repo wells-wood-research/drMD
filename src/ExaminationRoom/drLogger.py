@@ -113,6 +113,16 @@ def monitor_progress_decorator(checkInterval: int=3):
     Args:
         checkInterval (int): The number of seconds between each check of the progress
     """
+
+    teal = "\033[38;5;37m" 
+    red = "\033[31m"
+    yellow = "\033[33m"
+    orange = "\033[38;5;208m"
+    green = "\033[32m"
+    reset = "\033[0m"
+    coral = "\033[38;5;203m"       # Soft red-orange
+    gold = "\033[38;5;220m"        # Warm yellow
+    violet = "\033[38;5;135m"      # Purple
     ## set up decorator and wrapper
     def decorator(func):
         @wraps(func)
@@ -131,32 +141,34 @@ def monitor_progress_decorator(checkInterval: int=3):
                 simDir: DirectoryPath = p.join(outDir, stepName)
                 progressReporterCsv: FilePath = p.join(simDir, "progress_report.csv")
                 ## run logging while simulation is running
+                cachedProgress: str = "N/A"
                 while not monitoring.is_set():
                     ## get key simulation monitoring information
                     progressPercent, timeRemaining, averageSpeed = read_simulation_progress(
                         progressReporterCsv)
-                    ## print to terminal and log file
-                    log_info(f"Running {stepName} Step for: "
-                             f"{protName} | Progress: {progressPercent} | "
-                             f"Time Remaining: {timeRemaining} | "
-                             f"Average Speed: {averageSpeed} ns/day ", True)
+                    if progressPercent != cachedProgress:
+                        ## print to terminal and log file
+                        log_info(f"Running {teal}{stepName}{reset} Step for: "
+                                f"{teal}{protName}{reset} | Progress: {violet}{progressPercent}{reset} | "
+                                f"Time Remaining: {coral}{timeRemaining}{reset} | "
+                                f"Average Speed: {gold}{averageSpeed} ns/day {reset}", True)
+                    cachedProgress = progressPercent
                     ## wait for check interval
                     time.sleep(checkInterval)
             ## set up monitoring thread
             monitorThread = threading.Thread(target=monitor_progress)
             monitorThread.start()
             ## run simulation
+            saveFile = kwargs["saveFile"]
             try:
-                result = func(*args, **kwargs)
+                saveFile = func(*args, **kwargs)
             ## if simulation fails, raise error
             except Exception  as e:
+                pass ## errors handled elsewhere
+            finally:
                 monitoring.set()
                 monitorThread.join()
-                raise e
-            else:
-                monitoring.set()
-                monitorThread.join()
-                return result
+                return saveFile
         return wrapper
     return decorator
 #################################################################################################

@@ -20,7 +20,7 @@ from os import PathLike
 
 
 #######################################################################
-def firstAid_handler(firstAid_function: callable):
+def firstAid_handler():
     """
     A decorator that handles firstAid retries.
 
@@ -45,7 +45,7 @@ def firstAid_handler(firstAid_function: callable):
 
             e) Reset arguments for the target simulation function 
 
-            f) adjust the target simluation number of steps parameter based on the output os step a)
+            f) adjust the target simulation number of steps parameter based on the output os step a)
 
             f) Run the target simulation function using the output geometry from step d)
 
@@ -85,17 +85,18 @@ def firstAid_handler(firstAid_function: callable):
                                                             config = kwargs["config"])
                     ## return the saveFile (XML) of the simulation to be used by subsequent simulations
                     return saveFile
-                ## if our simulation crashes due to a numeriacal error or an OpenMM exception
+                ## if our simulation crashes due to a numerical error or an OpenMM exception
                 ## run firstAid protocol to try and recover
-                except (OpenMMException) as errorOpenMM:
+                except (OpenMMException, ValueError) as errorOpenMM:
                     saveFile, retries = run_first_aid_protocol(retries, maxRetries, *args, **kwargs)
+                except Exception as error:
+                    drLogger.log_info(f"Unexpected Error for {kwargs['sim']['stepName']}:\n{error}", True, True)
 
             else:
                 ## If we have got here, the firstAid has failed
                 ## let user know and merge output reporters and trajectories
                 drLogger.log_info(f"Max retries reached. Stopping.", True, True)
-                drSplash.print_first_aid_failed(errorOpenMM)
-                exit(1)
+                drSplash.print_first_aid_failed("Particle coordinate NaN")
         return wrapper
     return decorator
 
@@ -111,25 +112,21 @@ def  run_first_aid_protocol(retries: int, maxRetries: int, *args, **kwargs):
     simDir: Union[PathLike, str] = p.join(runOutDir, kwargs["sim"]["stepName"])
     ## look for checkpoint file of exploded simulation
     ## if none found, simulatoin has exploded on first step, try simulation again
-    try:
-        firstAidDir, explodedCheckpoint = pre_firstAid_processing(simDir, retries)
-    except FileNotFoundError as ErrorFileNotFound:
-        ## if no checkpoint file is found, simulation has exploded on first step
-        ## we use continue here to do another round of the while loop
-        ## this will result in the simulation being restarted using the same input geometry
-        ## the retries counter has still been incremented, so this will not cause an infinite loop
-        drLogger.log_info(ErrorFileNotFound, True)
-        return None, retries
-    
-        # kwargs["firstAidTries"] = retries
-        # saveFile: Union[PathLike, str] = run_firstAid_npt_simulation(*args, **kwargs)
+    firstAidDir, explodedCheckpoint = pre_firstAid_processing(simDir, retries)
+    ## if no checkpoint file is found, simulation has exploded on first step
+    ## in this case, reload from the original saveFile from the preceding run
+    if explodedCheckpoint is None:
+        explodedCheckpoint = kwargs["saveFile"]
 
     ## get current timestep of simulation
     currentNsteps: int = get_nsteps_at_crash(explodedCheckpoint, kwargs["prmtop"])
     ## prepare arguments for firstAid simulation
     kwargs: Dict = prepare_arguments_for_firstAid(kwargs, firstAidDir, explodedCheckpoint, retries)
     ## run firstAid simulation using modified keyword arguments
-    saveFile: Union[PathLike, str] = run_firstAid_energy_minimisation(*args, **kwargs)
+    try:
+        saveFile: Union[PathLike, str] = run_energy_minimisation_then_npt(*args, **kwargs)
+    except Exception as e:
+        drLogger.log_info(e, True,True)
     ## reset keyword arguments so simulation can be resumed
     reset_keyword_arguments(kwargs, runOutDir, currentNsteps)
 
@@ -148,15 +145,18 @@ def get_nsteps_at_crash(explodedCheckpoint: Union[PathLike, str], prmtop: app.Am
     Returns:
         int: The number of steps that have been run in the simulation
     """
-    ## create a system, integrator and simulation using prmtop
-    system: openmm.System = prmtop.createSystem()
-    integrator: openmm.Integrator = openmm.VerletIntegrator(1.0 * unit.femtoseconds)
-    simulation: app.Simulation = app.Simulation(prmtop.topology, system, integrator)
-    ## load the checkpoint file
-    with open(explodedCheckpoint, 'rb') as f:
-        simulation.context.loadCheckpoint(f.read())
-    ## get the number of steps from the context
-    nsteps: int = simulation.context.getStepCount()
+    try:
+        ## create a system, integrator and simulation using prmtop
+        system: openmm.System = prmtop.createSystem()
+        integrator: openmm.Integrator = openmm.VerletIntegrator(1.0 * unit.femtoseconds)
+        simulation: app.Simulation = app.Simulation(prmtop.topology, system, integrator)
+        ## load the checkpoint file
+        with open(explodedCheckpoint, 'rb') as f:
+            simulation.context.loadCheckpoint(f.read())
+        ## get the number of steps from the context
+        nsteps: int = simulation.context.getStepCount()
+    except:
+        nsteps = 0
     return nsteps    
 
 #######################################################################
@@ -223,11 +223,6 @@ def pre_firstAid_processing(simDir: Union[PathLike, str],
         firstAidDir (Union[PathLike, str]): The path to the firstAid directory
         explodedCheckpoint (Union[PathLike, str]): The path to the exploded checkpoint file
     """
-    ## look for checkpoint file of exploded simulation
-    explodedCheckpoint = p.join(simDir, "checkpoint.chk")
-    if not p.isfile(explodedCheckpoint):
-        raise FileNotFoundError(f"Checkpoint file not found at {explodedCheckpoint}")
-    
     ## make a firstAid directory - this will be where each firstAid step is performed
     firstAidDir = p.join(simDir, "firstAid")
     os.makedirs(firstAidDir, exist_ok=True)
@@ -237,7 +232,8 @@ def pre_firstAid_processing(simDir: Union[PathLike, str],
 
     ## find renamed checkpoint
     explodedCheckpoint = p.join(simDir, f"checkpoint_partial_{str(retries)}.chk")
-
+    if not p.isfile(explodedCheckpoint):
+        explodedCheckpoint = None
     return firstAidDir, explodedCheckpoint
 #######################################################################
 
@@ -265,11 +261,6 @@ def rename_output_files(outDir: Union[PathLike, str], retries: int) -> None:
         if p.splitext(file)[1] in extensions:
             os.rename(p.join(outDir, file),
                        p.join(outDir,f"{p.splitext(file)[0]}_partial_{str(retries)}{p.splitext(file)[1]}"))
-#######################################################################
-
-
-
-
 #######################################################################
 def run_firstAid_energy_minimisation(prmtop: str,
                                       inpcrd: str,
@@ -300,7 +291,7 @@ def run_firstAid_energy_minimisation(prmtop: str,
 
     """
     firstAidSimInfo =  {
-        "stepName" : f"firstAid_step_{firstAidTries}",
+        "stepName" : f"firstAid_step_EM_{firstAidTries}",
         "simulationType": "NPT",
         "duration" : "10 ps",
         "timestep" : "0.5 ps",
@@ -324,30 +315,68 @@ def run_firstAid_energy_minimisation(prmtop: str,
 def run_firstAid_npt_simulation(prmtop: str, inpcrd: str, sim: dict, saveFile: str, outDir: str, platform: openmm.Platform, refPdb: str, firstAidTries: int, config: dict) -> None:
 
     firstAidSimInfo =  {
-        "stepName" : f"firstAid_step_{firstAidTries}",
+        "stepName" : f"firstAid_step_NpT_{firstAidTries}",
         "simulationType": "NPT",
         "duration" : "10 ps",
-        "timestep" : "0.5 ps",
-        "temp" : 300,
+        "timestep" : "0.1 fs",
+        "temperature" : 10,
         "logInterval" : "1 ps",
         }
     
     firstAidSimInfo = drSim.process_sim_data(firstAidSimInfo)
 
     firstAidSaveFile = drSim.run_molecular_dynamics(prmtop = prmtop,
-                                                   inpcrd = inpcrd,
-                                                   sim = firstAidSimInfo,
-                                                    saveFile= saveFile,
-                                                     outDir = outDir,
-                                                     platform = platform,
-                                                      refPdb= refPdb,
-                                                      config=config)
+                                                inpcrd = inpcrd,
+                                                sim = firstAidSimInfo,
+                                                saveFile= saveFile,
+                                                    outDir = outDir,
+                                                    platform = platform,
+                                                    refPdb= refPdb,
+                                                    config=config)
+
+
     return firstAidSaveFile
 
 #######################################################################
+def run_energy_minimisation_then_npt(prmtop: str, inpcrd: str, sim: dict, saveFile: str, outDir: str, platform: openmm.Platform, refPdb: str, firstAidTries: int, config: dict) -> str:
 
-def run_energy_minimisation_then_npt(prmtop: str, inpcrd: str, sim: dict, outDir: str, platform: openmm.Platform, refPdb: str, saveFile: str, firstAidTries: int) -> str:
-    firstAidSaveFile_energyMinimisation = run_firstAid_energy_minimisation(prmtop = prmtop, inpcrd = inpcrd, sim = sim, outDir = outDir, platform = platform, refPdb = refPdb, saveFile = saveFile, firstAidTries=firstAidTries)
-    firstAidSaveFile_nptSimulation = run_firstAid_npt_simulation(prmtop = prmtop, inpcrd = inpcrd, sim = sim, outDir = outDir, platform = platform, refPdb = refPdb, saveFile = firstAidSaveFile_energyMinimisation, firstAidTries=firstAidTries)
 
-    return firstAidSaveFile_nptSimulation
+    emFailed: bool = False
+    try:
+        firstAidSaveFile_energyMinimisation = run_firstAid_energy_minimisation(prmtop = prmtop,
+                                                                            inpcrd = inpcrd,
+                                                                              sim = sim,
+                                                                                outDir = outDir,
+                                                                                  platform = platform,
+                                                                                    refPdb = refPdb,
+                                                                                      saveFile = saveFile,
+                                                                                        firstAidTries=firstAidTries,
+                                                                                          config=config)
+    ## if em step fails, just run npt
+    except Exception as e:
+        emFailed = True
+    if emFailed:
+        firstAidSaveFile_energyMinimisation  = saveFile
+    nptFailed = False
+    try:
+        firstAidSaveFile_nptSimulation = run_firstAid_npt_simulation(prmtop = prmtop,
+                                                                  inpcrd = inpcrd,
+                                                                    sim = sim,
+                                                                      outDir = outDir,
+                                                                        platform = platform,
+                                                                          refPdb = refPdb,
+                                                                            saveFile = firstAidSaveFile_energyMinimisation,
+                                                                              firstAidTries=firstAidTries,
+                                                                                config=config)
+    ## if npt step fails, return em savefile
+    except Exception as e:
+        nptFailed = True
+               
+    ## depending on what step worked, return appropriate savefile
+    if nptFailed and emFailed:
+        return saveFile
+    elif nptFailed:
+        return firstAidSaveFile_energyMinimisation
+    else:
+        return firstAidSaveFile_nptSimulation
+    

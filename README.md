@@ -1142,7 +1142,7 @@ We have set up the config file as follows:
   - We will let drMD use defaults for `timestep` (4 fs when heavyProtons is True), `temperature` (300 K) , `logInterval` (10 ps) and `simulationType` (NpT). 
   - Where we do not want a default value to be used, we have specified a value: For the`02_NVT_pre-equilibration` step we want use the *canonical (NVT)* ensemble, so we have specified the `simulationType` as `NVT`. For the `04_slow_step` step, we we have specified a `timestep` of 0.5 fs.
 
-After we run drMD, a per-run config file will be created in the `/path/to/outputDir/00_configs' directory:
+After we run drMD, a per-run config file will be created in the `/path/to/outputDir/00_configs' directory. You can see that 
 
 ```yaml
 hardwareInfo:
@@ -1175,28 +1175,28 @@ simulationInfo:
   heavyProtons: true
   logInterval: 10 ps
   simulationType: NVT
-  stepName: 02_NVT_pre-equilibraition
+  stepName: 02_NVT_pre-equilibration
   temperature: 300
   timestep: 4 fs
 - duration: 100 ps
   heavyProtons: true
   logInterval: 10 ps
   simulationType: NPT
-  stepName: 03_NPT_pre-equilibraition
+  stepName: 03_NPT_pre-equilibration
   temperature: 300
   timestep: 4 fs
 - duration: 50 ps
   heavyProtons: true
   logInterval: 10 ps
   simulationType: NPT
-  stepName: 04_slow_intergration_step
+  stepName: 04_slow_integration_step
   temperature: 300
   timestep: 0.5 fs
 - duration: 5 ns
   heavyProtons: true
   logInterval: 10 ps
   simulationType: NPT
-  stepName: 05_equilibriation
+  stepName: 05_equilibration
   temperature: 300
   timestep: 4 fs
 - duration: 50 ns

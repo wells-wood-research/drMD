@@ -18,7 +18,7 @@ from UtilitiesCloset import drSelector, drFixer
 ########################################################################################################
 ########################################################################################################
 @drLogger.monitor_progress_decorator()
-@drFirstAid.firstAid_handler(drFirstAid.run_firstAid_energy_minimisation)
+@drFirstAid.firstAid_handler()
 @drCheckup.check_up_handler()
 def run_metadynamics(prmtop: app.Topology,
                       inpcrd: any,

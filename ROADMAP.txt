@@ -18,6 +18,7 @@ PostSimulation --> AfterCare
 
 ## drFirstAid
 [] alternate between em and 0.1 fs x 10 ps NpT // NVT (use same as sim in question??)
+[] overlap between progress decorator when firstAid is running
 
 ## drSelector
 [] "all" --> "*" as a wildcard
@@ -30,5 +31,3 @@ PostSimulation --> AfterCare
 ## drSim
 [] em steps don't need a temperature
 
-## drFixer
-[] shape-based alignment for mapping resID and chainID ??
