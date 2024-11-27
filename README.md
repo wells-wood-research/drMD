@@ -58,14 +58,14 @@ If you want to integrate **drMD** into a python-based pipeline, you can install 
 
 1. Create and activate conda environment
 ```bash
-conda create -n **drMD** python=3.10
+conda create -n drMD python=3.10
 ```
 ```bash
-conda activate **drMD**
+conda activate drMD
 ```
 2. Install **drMD** with pip
 ```bash
-pip install **drMD**
+pip install drMD
 ```
 3. Install AmberTools (needs to be before OpenMM) with conda
 ```bash
@@ -91,7 +91,7 @@ Now that you have successfully set up the dependencies for **drMD**, you are nea
 If you have used the GitHub installation method, you can run **drMD** using the following command:
 
 ```bash
-python /path/to/**drMD**.py --config config.yaml
+python /path/to/drMD.py --config config.yaml
 ```
 <a id="run-as-python-module"></a>
 ## :brain: Running **drMD** as a python module
