@@ -3,7 +3,5 @@ include LICENSE
 include setup.py
 include drMD.py
 recursive-include drMD/Prescriptions
-recursive-include drMD/Surgery
-recursive-include drMD/UtilitiesCloset
-recursive-include drMD/ExaminationRoom
-recursive-include drMD/Triage
+recursive-include drMD/src/
+recursive-include drMD/ExampleInputs
