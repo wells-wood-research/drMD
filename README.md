@@ -15,7 +15,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
    - **Aftercare Info**: 
      - **End Point Info**: [stepNames](#stepnamesendpoint), [removeAtoms](#removeatomsendpoint)
      - **Cluster Info**: [stepNames](#stepnamescluster), [removeAtoms](#removeatomscluster), [nClusters](#nclusters), [clusterBy](#clusterby)
-4. ****drMD** Selection Syntax**: [keyword](#keyword), [customSelection](#customselection)
+4. **drMD Selection Syntax**: [keyword](#keyword), [customSelection](#customselection)
 5. **Adding Restraints in **drMD****: [restraintInfo](#restraintinfo), [restraintType](#restrainttype), [parameters](#parameters)
 6. **Running Metadynamics with **drMD****: [metaDynamicsInfo](#metadynamicsinfo), [height](#height), [biasFactor](#biasfactor), [frequency](#frequency), [biases](#biases)
 7. **Worked Examples**
