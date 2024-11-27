@@ -832,7 +832,7 @@ python ./src/drMD.py ./inputFiles/isPETase_standard_MD.yaml
 First, you will see the **drMD** logo in your terminal. 
 The output text immediately below the logo will keep you updated with what is going on in your simulation.
 
-<img src="./images/**drMD**_logo.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+<img src="./images/drMD_logo.png" alt="drMD logo with loading bar" width="500"/>
 
 *An example of **drMD** command line output. Here we can see that **drMD** is running prep steps for system 6eqe_1*
 
