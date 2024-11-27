@@ -19,9 +19,12 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 5. **Adding Restraints in **drMD****: [restraintInfo](#restraintinfo), [restraintType](#restrainttype), [parameters](#parameters)
 6. **Running Metadynamics with **drMD****: [metaDynamicsInfo](#metadynamicsinfo), [height](#height), [biasFactor](#biasfactor), [frequency](#frequency), [biases](#biases)
 7. **Worked Examples**
-   - [Example 1: MD Simulation of a Protein](#worked-example-1)
-   - [Example 2: Restrained MD of Protein-Ligand Complex](#worked-example-2)
-   - [Example 3: Energy Minimisation of Structures](#worked-example-3)
+    - [Example 1: MD Simulation of a Protein](#worked-example-1)
+    - [Example 2: Restrained MD of Protein-Ligand Complex](#worked-example-2)
+    - [Example 3: Energy Minimisation of Structures](#worked-example-3)
+    - [Example 4: Using drMD default settings](#worked-example-4)
+    - [Example 5: Metadynamics Simulation of Alanine Dipeptide](#worked-example-5)
+    - [Example 6: Metadynamics Simulation of Chignolin Peptide](#worked-example-6)
 
 # :medical_symbol: GitHub Installation :medical_symbol:
 We recommend that you use the following steps to install **drMD**:
@@ -1083,6 +1086,7 @@ When we run these simulations, **drMD** will display a progress bar for each cal
 
 *Loading bars for each energy minimisation calculation*
 
+<a id="worked-example-4"></a>
 ## Worked Example 4: Using **drMD** defaults
 In this example, we will run the same simulation as in [Worked Example 1](#worked-example-1) using a very minimal config file.
 
@@ -1286,7 +1290,7 @@ Once our `06_Metadynamics` step is complete, **drMD** will automatically create 
 
 We can compare our results with [other studies](https://pubs.acs.org/doi/10.1021/jz401366j). If we run our simulations for more time, it is likely that our results will compare more favorably with literature.
 
-
+<a name="worked-example-6"></a>
 ## Worked Example 6: Metadynamics Simulation of Chignolin Peptide
 *This section was written by [Eva Notari](https://x.com/evanotari) (Thanks Eva!)*
 
