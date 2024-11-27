@@ -1,5 +1,3 @@
-<img src="./images/**drMD**_logo_cropped.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
-
 # :medical_symbol: **drMD**: Molecular Dynamics for Experimentalists :medical_symbol:
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
 # :medical_symbol: README Contents :medical_symbol:
