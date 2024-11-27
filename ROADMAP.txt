@@ -4,21 +4,18 @@
 ## tests
 [] look through and see what needs to be done!
 
-
-## drPdbChecker
-
 ## General
-PostSimulation --> AfterCare
+[x] PostSimulation --> AfterCare
 
 ## drPrep
 [x] cope with two-letter elements better
 
 ## real time updates after crash
-[] kill job upon crash
+[x] kill job upon crash
 
 ## drFirstAid
-[] alternate between em and 0.1 fs x 10 ps NpT // NVT (use same as sim in question??)
-[] overlap between progress decorator when firstAid is running
+[x] alternate between em and 0.1 fs x 10 ps NpT // NVT (use same as sim in question??)
+[x] overlap between progress decorator when firstAid is running
 
 ## drSelector
 [] "all" --> "*" as a wildcard
@@ -26,7 +23,6 @@ PostSimulation --> AfterCare
 ## drConfigTriage
 [] better errors upon YAML format error
 [] defaults for each simulation step?
-
 
 ## drSim
 [] em steps don't need a temperature

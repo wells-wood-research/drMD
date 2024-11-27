@@ -15,19 +15,19 @@ pathInfo:
   outputDir: NOTaDIR
 ########################################################################
 hardwareInfo:
-  platform: CUDA
+  platform: saugsasfd
   subprocessCpus: 1
   parallelCPU: 100
 
 ligandInfo:
-  - ligandName: FAD
-    toppar: No
-    mol2: yesplease
-    charge: -2
-  - ligandName: PLM
-    toppar: True
-    mol2: nothanks
-    charge: -2
+      - ligandName: FAD
+        toppar: No
+        mol2: yesplease
+        charge: -2
+        - ligandName: PLM
+          toppar: True
+          mol2: nothanks
+    
 ########################################################################
 miscInfo:
   pH: 25
@@ -89,7 +89,7 @@ aftercareInfo:
       - selection:
           keyword: custom
           customSelection:
-          - {RES_NAME: all, RES_ID:  rubbish, ATOM_NAME: CA}
+          - {RES_NAME: all, RES_ID:  rubbish, ATOM_NAME: CA, STAR_SIGN: aquarius}
   collateVitalsReports: True
   endPointInfo:
     stepNames: [01_energy_minimisation]

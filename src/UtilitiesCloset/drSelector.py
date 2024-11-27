@@ -78,7 +78,7 @@ def get_atom_indexes(selection: Dict, pdbFile: FilePath) -> List[int]:
             ## for each selection key...
             for selctionKey in ["CHAIN_ID", "RES_NAME", "RES_ID", "ATOM_NAME"]:
                 ## "all" inputs create no condition
-                if selection[selctionKey] == "all":
+                if selection[selctionKey] == "_":
                     continue
                 ## use list inputs to create a .isin() condition
                 if isinstance(selection[selctionKey], list):

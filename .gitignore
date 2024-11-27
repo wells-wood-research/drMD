@@ -2,3 +2,6 @@ __pycache__
 0*
 0*/
 tmp*
+outputs
+outputs/*
+cspell.json

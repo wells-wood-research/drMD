@@ -21,7 +21,7 @@ from UtilitiesCloset.drCustomClasses import FilePath, DirectoryPath
 
 
 #####################################################################################
-def validate_config(config) -> FilePath:
+def validate_config(config: dict) -> FilePath:
     """
     Main script for drConfigInspector:
     1. Accepts --config flag arg with argpass, reads yaml file into a dict
@@ -1190,19 +1190,39 @@ def read_input_yaml(configFile: FilePath) -> dict:
     """
     Reads YAML file into a dict
 
+    Args:
+    - configFile (str): Path to the YAML configuration file.
+
     Returns:
-    - config (dict)
+    - config (dict): Parsed YAML content as a dictionary.
     """
-    # Read config.yaml into a dictionary
+    yellow = "\033[33m"
+    reset = "\033[0m"
+    teal = "\033[38;5;37m"
     try:
         with open(configFile, "r") as yamlFile:
             config: dict = yaml.safe_load(yamlFile)
             return config
     except FileNotFoundError:
-        raise FileNotFoundError(f"config file {configFile} not found")
+        print(f"-->    Config file {configFile} not found.")
+        exit(1)
     except yaml.YAMLError as exc:
-        raise yaml.YAMLError(f"Error parsing YAML file:", exc)
+        print(f"-->{' '*4}{yellow}Error while parsing YAML file:{reset}")
+        if hasattr(exc, 'problem_mark'):
+            mark = exc.problem_mark
+            print(f"{' '*7}Problem found at line {mark.line + 1}, column {mark.column + 1}:")
+            if exc.context:
+                print(f"{' '*7}{exc.problem} {exc.context}")
+            else:
+                print(f"{' '*7}{exc.problem}")
+            print(f"{' '*7}Please correct the data and retry.")
+        else:
+            print(f"{' '*7}Something went wrong while parsing the YAML file.")
+            print(f"{' '*7}Please check the file for syntax errors.")
+        print(f"\n{teal}TIP:{reset} Large language models (LLMs) like GPT-4 can be helpful for debugging YAML files.")
+        print(f"{' '*5}If you get stuck with the formatting, ask a LLM for help!")
 
+        exit(1)
 
 
 #####################################################################################
@@ -1217,9 +1237,14 @@ def read_config(configYaml: str) -> dict:
     Returns:
         dict: The contents of the config.yaml file as a dictionary.
     """
-    # Open the config.yaml file and read its contents into a dictionary
-    with open(configYaml, "r") as yamlFile:
-        config: dict = yaml.safe_load(yamlFile)
+    try:
+        # Open the config.yaml file and read its contents into a dictionary
+        with open(configYaml, "r") as yamlFile:
+            config: dict = yaml.safe_load(yamlFile)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"config file {configYaml} not found")
+    except yaml.YAMLError as exc:
+        raise yaml.YAMLError(f"Error parsing YAML file:", exc)
 
     return config
 

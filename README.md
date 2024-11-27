@@ -460,6 +460,7 @@ When creating restraints, metadynamics bias variables or running post-simulation
 <a id="keyword"></a>
 ### :anatomical_heart: keyword
 *(str)* This is the keyword that will be used to specify the selection. Accepted arguments are:
+  - **"all"** : This will select all atoms in your system
   - **"protein"** : This will select all protein atoms in your system
   - **"water"** : This will select all water molecules in your system
   - **"ions"**: This will select all ions in your system
@@ -484,27 +485,25 @@ Each dictionary in the list must contain the following parameters:
 
 <a id="chainid"></a>
 #### :anatomical_heart: CHAIN_ID
- *(str, list of str, or "all")* This is the chain ID of the atom to be selected
+ *(str, list of str, or _)* This is the chain ID of the atom to be selected
 
  <a id="resname"></a>
 #### :anatomical_heart: RES_NAME
- *(str, list of str, or "all")*  This is the three-letter residue name of the atom to be selected
+ *(str, list of str, or _)*  This is the three-letter residue name of the atom to be selected
 
 <a id="resid"></a>
 #### :anatomical_heart: RES_ID
- *(int, list of int, or "all")* This  is the residue ID of the atom to be selected
+ *(int, list of int, or _)* This  is the residue ID of the atom to be selected
 
 <a id="atomname"></a>
 #### :anatomical_heart: ATOM_NAME
-*(str, list of str, or "all")*  This is the atom name of the atom to be selected
+*(str, list of str, or _)*  This is the atom name of the atom to be selected
 
 
 For the above parameters:
 - if a single string (or int for **RES_ID**) is provided, the selection will match that value for the given parameter
 - if a list is provided, the selection will match any value in the list for the given parameter
-- if the wildcard string "all" is provided, the selection will match all values for the given parameter
-
-:biohazard: WARNING: PLEASE DON'T CALL ANY OF YOUR RESIDUE NAMES IN YOUR PDB FILE "ALL" AS THIS WILL CAUSE PROBLEMS
+- if the wildcard character "_" is provided, the selection will match all values for the given parameter
 
 > :medical_symbol:
 > This selection method is used to match atoms using columns of your PDB files. To work out how to identify what inputs you need to select your atoms of interest, simply open your input PDB file in PyMOL and use labels to identify the relevant **CHAIN_ID**, **RES_NAME**, **RES_ID**, and **ATOM_NAME** values
@@ -513,11 +512,11 @@ Example customSelection syntax, (this is probably more complex than you will nee
 
 ```yaml
 selection:
-  keyword: "custom"
+  keyword: custom
   customSelection:
-    - {CHAIN_ID: ["A","B"], RES_NAME: "all", RES_ID:  "all", ATOM_NAME: "CA"}
-    - {CHAIN_ID: "A", RES_NAME: "SER", RES_ID: "131", ATOM_NAME: ["CB", "HB1", "HB2", "OG", "HG1"]}
-    - {CHAIN_ID: "C", RES_NAME: "FMN", RES_ID: "all", ATOM_NAME: "all"}
+    - {CHAIN_ID: [A,B], RES_NAME: _, RES_ID:  _, ATOM_NAME: CA}
+    - {CHAIN_ID: A, RES_NAME: SER, RES_ID: 131, ATOM_NAME: [CB, HB1, HB2, OG, HG1]}
+    - {CHAIN_ID: C, RES_NAME: FMN, RES_ID: _, ATOM_NAME: _}
 ```
 In the above example, a selection containing the following:
 - all CA atoms in chains A and B
@@ -1208,4 +1207,139 @@ simulationInfo:
   timestep: 4 fs
 ```
 
+<a id="worked-example-5"></a>
+## Worked Example 5: Metadynamics Simulation of Alanine Dipeptide
 
+*This section was written by [Eva Notari](https://x.com/evanotari) (Thanks Eva!)*
+
+In this example, we will run a metadynamics simulation to explore the φ and ψ angles of alanine-dipeptide.
+
+This example introduces the following concepts:
+- Metadynamics in drMD
+- Collective Variables (CVs)
+- Metadynamics parameters
+- Construction of Bias Variables in drMD
+- Free Energy Landscapes
+
+Molecular Dynamics simulations can normally be run in the ns or μs timescales. However, a variety of events of interest to protein scientists, such as protein folding, protein-ligand binding, and transport of molecules through biological membranes, occur on larger timescales (ms or even s). As a consequence, these processes cannot be adequately sampled with standard Molecular Dynamics simulations. Metadynamics is an enhanced sampling technique that helps accelerate such rare events and can also provide quantitative descriptions of the processes under study by computing their free energies.
+
+Metadynamics accelerates sampling along one or more user-specified variables, called Collective Variables (CVs). The chosen CVs should describe the process of interest. For example, if the process being studied is the stretching of a peptide, the CV could be the distance between the first and the last Cα atoms. Metadynamics will then output the ΔG of the process as a function of the chosen CV(s).
+
+### Config file setup
+
+A simple example to illustrate the use of metadynamics is alanine dipeptide (an alanine residue capped with acetyl and N-methyl groups). Alanine dipeptide is commonly used as a toy system for simulations, with the two backbone torsions φ (C-N-Cα-C) and ψ (N-Cα-C-N) used as the CVs. 
+
+<img src="./images/Alanine_dipeptide.png" alt="Alanine dipeptide with Phi and Psi angles annotated" width="400"/>
+
+*Alanine dipeptide with φ and ψ backbone torsions shown*
+
+For each CV, we need to select appropriate metadynamics parameters. We recommend surveying the literature for suitable parameters, as they will depend on the process of interest and the nature of the variables chosen. 
+
+For our alanine dipeptide example, we can specify the CVs and their parameters in our config file during the `06_Metadynamics` step, which in this case replaces the standard MD production step used in [Worked Example 1](#worked-example-1). 
+
+```yaml
+  - stepName: 06_Metadynamics
+    simulationType: META
+    duration: 5 ns
+    timestep: 2 fs
+    heavyProtons: False
+    temperature: 300
+    logInterval: 2 ps
+    metaDynamicsInfo:
+      height: 0.8
+      biasFactor: 10
+      frequency: 500
+      biases:
+        - biasVar: torsion
+          minValue: -180
+          maxValue: 180
+          biasWidth: 5.73
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ACE, RES_ID: 1, ATOM_NAME: C}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: N}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: CA}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: C}
+        - biasVar:  torsion
+          minValue: -180
+          maxValue: 180
+          biasWidth: 5.73
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: N}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: CA}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: C}
+            - {CHAIN_ID: A, RES_NAME: NME, RES_ID: 3, ATOM_NAME: N}
+
+```
+
+The above config sets up a metadynamics simulation with the backbone torsions φ and ψ as the CVs. The simulation will explore a range of [-180,180] degrees for each CV. Gaussians will be deposited every 500 simulation steps (1 ps), with a Gaussian width of 0.1 rad (5.73 degrees) for each CV. The height of the initial Gaussian will be 0.8 kJ/mol and the bias (temperature) factor is set to 10. 
+
+For a detailed technical description of metadynamics, we recommend [this review](https://www.nature.com/articles/s42254-020-0153-0). Note that drMD implements [Well-Tempered metadynamics](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.100.020603).
+
+### Free energy landscape of collective variables
+Once our `06_Metadynamics` step is complete, drMD will automatically create a file called `freeEnergy.csv`, located in the `/path/to/06_Metadynamics/reporters_and_plots` directory. This file contains the free energy landscape of the with respect to our chosen collective variables. When we plot this free energy landscape, we see the following:
+
+<img src="./images/Alanine_dipeptide_FEL.png" alt="The Free Energy Landscape of φ and ψ torsions of alanine dipeptide" width="400"/>
+
+*The Free energy landscape of φ and ψ torsions of alanine dipeptide*
+
+We can compare our results with [other studies](https://pubs.acs.org/doi/10.1021/jz401366j). If we run our simulations for more time, it is likely that our results will compare more favorably with literature.
+
+
+## Worked Example 6: Metadynamics Simulation of Chignolin Peptide
+*This section was written by [Eva Notari](https://x.com/evanotari) (Thanks Eva!)*
+
+In this example, we will run a metadynamics simulation to explore the folding of the chignolin peptide.
+
+This example introduces the following concepts:
+- TODO
+
+Chignolin [PDB 1UAO](https://www.rcsb.org/3d-view/1UAO/0) is another toy system commonly used in Molecular Dynamics simulations. It is a fast folding, 10 -residue miniprotein. There are two hydrogen bonds that are key to the folding of the chignolin peptide:
+- Asp3-O --- Gly7-N
+- Asp3-N –-- Thr8 O
+
+
+<img src="./images/Chignolin.png" alt="Chignolin Peptide with key hydrogen bonds annotated" width="400"/>
+
+*Chignolin structure showing hydrogen bonds important for its secondary structure (Asp3 O – Gly7 N and Asp3 N – Thr8 O)*
+
+### Config file setup
+We will use the distances between chignolin's hydrogen bond donor-acceptor pairs to define our collective variables. As with the [previous example](#worked-example-5), we will create a new `05_Metadynamics` step in the place of the `05_Production_MD` step used in the config file from [worked example 1](#worked-example-1)
+
+```yaml
+- stepName: 05_Metadynamics
+    simulationType: META
+    duration: 10 ns
+    timestep: 2 fs
+    heavyProtons: False
+    temperature: 300
+    logInterval: 10 ps
+    metaDynamicsInfo:
+      height: 0.8
+      biasFactor: 10
+      frequency: 500
+      biases:
+        - biasVar: distance
+          minValue: 2.7
+          maxValue: 10
+          biasWidth: 0.5
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ASP, RES_ID: 3, ATOM_NAME: O}
+            - {CHAIN_ID: A, RES_NAME: GLY, RES_ID: 7, ATOM_NAME: N}
+        - biasVar:  distance
+          minValue: 2.7
+          maxValue: 10
+          biasWidth: 0.5
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ASP, RES_ID: 3, ATOM_NAME: N}
+            - {CHAIN_ID: A, RES_NAME: THR, RES_ID: 8, ATOM_NAME: O}
+```
+
+In this `05_Metadynamics` step, we have set the `height`, `biasFactor` and `frequency` parameters for the metadynamics simulation. We also have created two distance bias variables, one for each hydrogen bond.

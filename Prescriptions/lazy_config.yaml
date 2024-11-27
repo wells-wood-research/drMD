@@ -5,18 +5,6 @@ pathInfo:
 hardwareInfo:
   platform: CUDA
 ## no miscInfo
-ligandInfo:
-  - ligandName: HEM
-    charge: -4
-    protons: True
-    toppar: False
-    mol2: False
-
-miscInfo:
-  skipPdbTriage: True
-
-
-
 ## sparse simulationInfo
 simulationInfo:
   - stepName: 01_energy_minimisation

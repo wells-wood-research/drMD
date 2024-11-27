@@ -52,8 +52,6 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
         pdbFile: FilePath = p.join(pdbDir, file)
         # Check for common problems in the PDB file
         problemsDict = pdb_triage_protocol(pdbFile, pdbDir, config)
-        print(problemsDict)
-        print(commonPdbProblems)
         # Update the dictionary that looks at all PDB files
         commonPdbProblems = update_problem_dict(commonPdbProblems, problemsDict)
     # Print the results to the terminal
