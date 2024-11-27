@@ -6,3 +6,4 @@ outputs
 outputs/*
 cspell.json
 ROADMAP.txt
+.pypirc
