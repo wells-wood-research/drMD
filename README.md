@@ -1104,7 +1104,7 @@ In the `Prescriptions` directory, we have a config file named `lazy_config.yaml`
 ```yaml
 ## sparse pathInfo
 pathInfo: 
-  inputDir: "/home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard"
+  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard"
 ## sparse hardwareInfo
 hardwareInfo:
   platform: CUDA
@@ -1160,9 +1160,9 @@ miscInfo:
       keyword: all
   writeMyMethodsSection: true
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard
-  inputPdb: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard/6eqe_1.pdb
-  outputDir: /home/esp/scriptDevelopment/**drMD**/outputs/6eqe_1
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
+  inputPdb: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard/6eqe_1.pdb
+  outputDir: /home/esp/scriptDevelopment/drMD/outputs/6eqe_1
   outputName: 6eqe_1
 proteinInfo:
   proteinName: 6eqe_1
