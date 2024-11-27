@@ -1204,7 +1204,7 @@ def read_input_yaml(configFile: FilePath) -> dict:
             config: dict = yaml.safe_load(yamlFile)
             return config
     except FileNotFoundError:
-        print(f"-->    Config file {configFile} not found.")
+        print(f"-->{' '*4}Config file {configFile} not found.")
         exit(1)
     except yaml.YAMLError as exc:
         print(f"-->{' '*4}{yellow}Error while parsing YAML file:{reset}")
@@ -1221,7 +1221,6 @@ def read_input_yaml(configFile: FilePath) -> dict:
             print(f"{' '*7}Please check the file for syntax errors.")
         print(f"\n{teal}TIP:{reset} Large language models (LLMs) like GPT-4 can be helpful for debugging YAML files.")
         print(f"{' '*5}If you get stuck with the formatting, ask a LLM for help!")
-
         exit(1)
 
 

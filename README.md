@@ -1,13 +1,13 @@
-<img src="./images/drMD_logo_cropped.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
+<img src="./images/**drMD**_logo_cropped.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
 
-# :medical_symbol: drMD: Molecular Dynamics for Experimentalists :medical_symbol:
+# :medical_symbol: **drMD**: Molecular Dynamics for Experimentalists :medical_symbol:
 Automated workflow for running molecular dynamics simulations with Amber and Openmm
 # :medical_symbol: README Contents :medical_symbol:
 
 1. **Installation**
    - [GitHub Installation](#github-installation)
    - [Pip Installation](#pip-installation)
-2. **Running drMD**: [Running drMD from the command line](#run-from-cmd-line), [Running drMD as a Python Module](#run-from-python)
+2. **Running **drMD****: [Running **drMD** from the command line](#run-from-cmd-line), [Running **drMD** as a Python Module](#run-from-python)
 3. **Config Syntax**
    - **Path Info**: [inputDir](#inputdir), [outputDir](#outputdir)
    - **Hardware Info**: [platform](#platform), [parallelCPU](#parallelcpu), [subprocessCpus](#subprocesscpus)
@@ -17,26 +17,26 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
    - **Aftercare Info**: 
      - **End Point Info**: [stepNames](#stepnamesendpoint), [removeAtoms](#removeatomsendpoint)
      - **Cluster Info**: [stepNames](#stepnamescluster), [removeAtoms](#removeatomscluster), [nClusters](#nclusters), [clusterBy](#clusterby)
-4. **drMD Selection Syntax**: [keyword](#keyword), [customSelection](#customselection)
-5. **Adding Restraints in drMD**: [restraintInfo](#restraintinfo), [restraintType](#restrainttype), [parameters](#parameters)
-6. **Running Metadynamics with drMD**: [metaDynamicsInfo](#metadynamicsinfo), [height](#height), [biasFactor](#biasfactor), [frequency](#frequency), [biases](#biases)
+4. ****drMD** Selection Syntax**: [keyword](#keyword), [customSelection](#customselection)
+5. **Adding Restraints in **drMD****: [restraintInfo](#restraintinfo), [restraintType](#restrainttype), [parameters](#parameters)
+6. **Running Metadynamics with **drMD****: [metaDynamicsInfo](#metadynamicsinfo), [height](#height), [biasFactor](#biasfactor), [frequency](#frequency), [biases](#biases)
 7. **Worked Examples**
    - [Example 1: MD Simulation of a Protein](#worked-example-1)
    - [Example 2: Restrained MD of Protein-Ligand Complex](#worked-example-2)
    - [Example 3: Energy Minimisation of Structures](#worked-example-3)
 
 # :medical_symbol: GitHub Installation :medical_symbol:
-We recommend that you use the following steps to install drMD:
+We recommend that you use the following steps to install **drMD**:
 1. Clone this repository
 ```bash
-git clone https://github.com/wells-wood-research/drMD
+git clone https://github.com/wells-wood-research/**drMD**
 ```
 2. Create and activate conda environment
 ```bash
-conda create -n drMD python=3.10
+conda create -n **drMD** python=3.10
 ```
 ```bash
-conda activate drMD
+conda activate **drMD**
 ```
 3. Install AmberTools (needs to be before OpenMM) with conda
 ```bash
@@ -56,18 +56,18 @@ pip install -r requirements.txt
 ```
 
 # :medical_symbol: Pip Installation :medical_symbol:
-If you want to integrate drMD into a python-based pipeline, you can install drMD with pip and use it as a python module:
+If you want to integrate **drMD** into a python-based pipeline, you can install **drMD** with pip and use it as a python module:
 
 1. Create and activate conda environment
 ```bash
-conda create -n drMD python=3.10
+conda create -n **drMD** python=3.10
 ```
 ```bash
-conda activate drMD
+conda activate **drMD**
 ```
-2. Install drMD with pip
+2. Install **drMD** with pip
 ```bash
-pip install drMD
+pip install **drMD**
 ```
 3. Install AmberTools (needs to be before OpenMM) with conda
 ```bash
@@ -83,31 +83,31 @@ conda install -c conda-forge openbabel
 ```
 
 <a id="running-drmd"></a>
-# :medical_symbol: Running drMD :medical_symbol:
+# :medical_symbol: Running **drMD** :medical_symbol:
 
-Now that you have successfully set up the dependencies for drMD, you are nearly ready to run some bimolecular simulations!
+Now that you have successfully set up the dependencies for **drMD**, you are nearly ready to run some bimolecular simulations!
 
 <a id="run-from-cmd-line"></a>
-## :brain: Running drMD from the command line
+## :brain: Running **drMD** from the command line
 
-If you have used the GitHub installation method, you can run drMD using the following command:
+If you have used the GitHub installation method, you can run **drMD** using the following command:
 
 ```bash
-python /path/to/drMD.py --config config.yaml
+python /path/to/**drMD**.py --config config.yaml
 ```
 <a id="run-as-python-module"></a>
-## :brain: Running drMD as a python module
-If you have used the Pip installation method, you can import drMD as a python module, and as following:
+## :brain: Running **drMD** as a python module
+If you have used the Pip installation method, you can import **drMD** as a python module, and as following:
 
 ```python
-import drMD
+import **drMD**
 
 myBatchConfig = "/path/to/config.yaml"
 
-drMD.main(myBatchConfig)
+**drMD**.main(myBatchConfig)
 ```
 
-This config file contains all of the user inputs drMD needs to run a series of bimolecular simulations.
+This config file contains all of the user inputs **drMD** needs to run a series of bimolecular simulations.
 The following section will detail the correct formatting of this config.yaml file
 
 <a id="configSyntax"></a>
@@ -117,7 +117,7 @@ Inputs are grouped by theme and are stored as nested dictionaries and lists.
 The next few sections will detail the correct formatting of the config.yaml file
 
 For most entries in the config file, the default value will be used unless otherwise specified.
-If your config file is improperly formatted, or contains a parameter that is not supported, drMD provide useful guidance to help you fix this issue.
+If your config file is improperly formatted, or contains a parameter that is not supported, **drMD** provide useful guidance to help you fix this issue.
 
 <a id="pathinfo"></a>
 ## :brain: pathInfo
@@ -134,12 +134,12 @@ The **pathInfo** entry in the config file is a dictionary containing two paramet
 
 <a id="outputdir"></a>
 ### :anatomical_heart:  outputDir  
-*(DirectoryPath)*  This is the absolute path towards a directory that you want your drMD outputs to be written to.
+*(DirectoryPath)*  This is the absolute path towards a directory that you want your **drMD** outputs to be written to.
 
 **Default Value**: `/inputDir/outputs` 
 
   > :medical_symbol:
-  > The outputDir will be created if it does not already exist at the point of running drMD
+  > The outputDir will be created if it does not already exist at the point of running **drMD**
 
   > :medical_symbol:
   > Within outputDir, a directory will be created for each PDB file contained in inputDir, in this document, these subdirectories will be referred to
@@ -148,12 +148,12 @@ The **pathInfo** entry in the config file is a dictionary containing two paramet
 Example pathInfo:
 ```yaml
 pathInfo:
-  inputDir: "/home/esp/scriptDevelopment/drMD/01_inputs"
-  outputDir: "/home/esp/scriptDevelopment/drMD/02_outputs"
+  inputDir: "/home/esp/scriptDevelopment/**drMD**/01_inputs"
+  outputDir: "/home/esp/scriptDevelopment/**drMD**/02_outputs"
 ```
 <a id="hardwareinfo"></a>
 ## :brain: hardwareInfo
-This config entry tells drMD about your computer hardware and how you want to use it to run your simulations
+This config entry tells **drMD** about your computer hardware and how you want to use it to run your simulations
 The **hardwareInfo** entry in the config file is a dictionary containing three parameters:
 
 <a id="platform"></a>
@@ -203,7 +203,7 @@ This section allows you to set some general options for your simulations:
 
 <a id="firstaidmaxretries"></a>
 ### :anatomical_heart:  firstAidMaxRetries
-*(int)* This is the maximum number of times that drMD will attempt to recover from an error in a simulation
+*(int)* This is the maximum number of times that **drMD** will attempt to recover from an error in a simulation
 
 **Default Value**: `10`
 
@@ -219,23 +219,23 @@ This section allows you to set some general options for your simulations:
 
 <a id="writemymethodsection"></a>
 ### :anatomical_heart:  writeMyMethodsSection
-*(bool)* If set to TRUE, drMD will automatically write a methods section for you to use in your publications or thesis
+*(bool)* If set to TRUE, **drMD** will automatically write a methods section for you to use in your publications or thesis
 
 **Default Value**: `True`
 
-> :medical_symbol: drMD methods sections contain all of the information one might need to replicate your simulations.
+> :medical_symbol: **drMD** methods sections contain all of the information one might need to replicate your simulations.
 > The formatting of these methods section may be too robotic and repetitive for you, feel free to reformat them as you see fit. 
 
 <a id="skippdbtriage"></a>
 ### :anatomical_heart:  skipPdbTriage
-*(bool)* drMD runs a pdbTriage protocol to check the validity of your PDB files before running your simulations. To disable this step, set this parameter to `True`
+*(bool)* **drMD** runs a pdbTriage protocol to check the validity of your PDB files before running your simulations. To disable this step, set this parameter to `True`
 
 **Default Value**: `False`
 
 <a id="trajectoryselections"></a>
 ### :anatomical_heart:  trajectorySelections
 
-*(list of dicts)* This entry controls the atoms that are written to your MD trajectories. You can specify any selection of atoms that you whish to write to your trajectories. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+*(list of dicts)* This entry controls the atoms that are written to your MD trajectories. You can specify any selection of atoms that you whish to write to your trajectories. For a full description of how to do this, see [**drMD** Selection syntax](#drmd-selection-syntax)
 
 **Default Value**: `[{"selection": {"keyword": 'all'}}]}` (this will write all atoms to your trajectory files)
 
@@ -254,11 +254,11 @@ Simulations will be run with a pH of 7.4 in a cubic solvation box. The maximum n
 <a id="ligandinfo"></a>
 ## :brain: ligandInfo
 The `ligandInfo` entry in the config file is optional and may be used if your PDB files have organic ligand or cofactors.
-These small molecules will not have parameters in the AMBER forcefield, drMD will run an automated protocol to generate these parameters for you.
-To do this, you will need to tell drMD some things about each ligand you whish tp simulate.
+These small molecules will not have parameters in the AMBER forcefield, **drMD** will run an automated protocol to generate these parameters for you.
+To do this, you will need to tell **drMD** some things about each ligand you whish tp simulate.
 
 > :medical_symbol:
-The `ligandInfo` entry is *optional*. drMD will automatically detect ligand in your PDB files. It will also detect
+The `ligandInfo` entry is *optional*. **drMD** will automatically detect ligand in your PDB files. It will also detect
 parameter files in your input directory. If you have frcmod and mol2 files for your ligand already made, they must be located in your `inputDir`
 
 **ligandInfo** is a list of dictionaries that contain the following parameters:
@@ -269,14 +269,14 @@ parameter files in your input directory. If you have frcmod and mol2 files for y
 
 <a id="protons"></a>
 ### :anatomical_heart:  protons
-  *(bool)*  This is a to tell drMD whether you have protons on your ligand. 
-              If set to FALSE, drMD will run an automated protonation protocol to add protons to your ligand
+  *(bool)*  This is a to tell **drMD** whether you have protons on your ligand. 
+              If set to FALSE, **drMD** will run an automated protonation protocol to add protons to your ligand
 
   > :medical_symbol:
   > The automatic protonation protocol only works reliably for simple organic ligands.
 
   > :medical_symbol:
-  > For more complex ligand, we recommended that you manually add protons in your input PDB file prior to running drMD
+  > For more complex ligand, we recommended that you manually add protons in your input PDB file prior to running **drMD**
 
 <a id="charge"></a>
 ### :anatomical_heart: charge
@@ -284,12 +284,12 @@ parameter files in your input directory. If you have frcmod and mol2 files for y
 
 <a id="toppar"></a>
 ### :anatomical_heart: toppar
-*(bool)*  This is to tell drMD whether you have an frcmod file for your ligand already made.
+*(bool)*  This is to tell **drMD** whether you have an frcmod file for your ligand already made.
                 If you already have one, it must be located in the `01_ligand_parameters` directory within your outputDir
 
 <a id="mol2"></a>
 ### :anatomical_heart:  mol2
-*(bool)*   This is to tell drMD whether you have a mol2 file for your ligand already made.
+*(bool)*   This is to tell **drMD** whether you have a mol2 file for your ligand already made.
                 If you already have one, it must be located in the `01_ligand_parameters` directory within your outputDir
 
 Example ligandInfo:
@@ -306,13 +306,13 @@ ligandInfo:
     toppar: False
     mol2: False
 ```
-This `ligandInfo` tells drMD to expect two ligands: FMN and TPA. FMN has a formal charge of -1 and TPA has a formal charge of -2. Both ligands already have protons, so drMD will not add any. For both ligands the toppar and mol2 parameters are set to False, drMD will automatically generate these files for you
+This `ligandInfo` tells **drMD** to expect two ligands: FMN and TPA. FMN has a formal charge of -1 and TPA has a formal charge of -2. Both ligands already have protons, so **drMD** will not add any. For both ligands the toppar and mol2 parameters are set to False, **drMD** will automatically generate these files for you
 
 ---
 
 <a id="simulationinfo"></a>
 ## :brain: simulationInfo
-This is the real meat and potatoes of the drMD config file. 
+This is the real meat and potatoes of the **drMD** config file. 
 
 The `simulationInfo` entry in the config file is a list of dictionaries containing information about each simulation.
 
@@ -402,7 +402,7 @@ This will run a 100 ps NVT molecular dynamics simulation with a timestep of 2 fs
 ---
 
 ### :medical_symbol: Simulation Aftercare :medical_symbol:
-After all of your simulations have been run, drMD contains some simple utilities for organising your output files and deleting any unwanted files.
+After all of your simulations have been run, **drMD** contains some simple utilities for organising your output files and deleting any unwanted files.
 
 If you want to do any post-processing, you will need to provide the following parameter in your config file:
 
@@ -422,9 +422,9 @@ If you wish to collect PDB files that represent the last frame of each simulatio
 
 <a id="removeatomsendpoint"></a>
 #### :anatomical_heart: removeAtoms
-*(list)* This is a list of dictionaries containing the selections of atoms to be removed from the PDB files. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+*(list)* This is a list of dictionaries containing the selections of atoms to be removed from the PDB files. For a full description of how to do this, see [**drMD** Selection syntax](#drmd-selection-syntax)
 
-Molecular Dynamics simulations can generate very large output files that can become rather unwieldy and difficult to analyse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with drMD, include the following parameter in your config file:
+Molecular Dynamics simulations can generate very large output files that can become rather unwieldy and difficult to analyse. One way to quickly see the most important parts of your simulation is to perform clustering on your simulation trajectories. To do this with **drMD**, include the following parameter in your config file:
 
 <a id="clusterinfo"></a>
 ### :brain: clusterInfo
@@ -440,11 +440,11 @@ Molecular Dynamics simulations can generate very large output files that can bec
 
 <a id="clusterby"></a>
 #### :anatomical_heart: clusterBy
-*(list)* This is a list of selections of atoms to cluster on. If you want to explore the motions of one particular group of atoms in your system (e.g. the backbone of a protein), you can include a selection of these atoms in this parameter. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+*(list)* This is a list of selections of atoms to cluster on. If you want to explore the motions of one particular group of atoms in your system (e.g. the backbone of a protein), you can include a selection of these atoms in this parameter. For a full description of how to do this, see [**drMD** Selection syntax](#drmd-selection-syntax)
 
 <a id="removeatomscluster"></a>
 #### :anatomical_heart: removeAtoms
-*(list)* This is a list of dictionaries containing the selections of atoms to be removed from the output cluster PDB files.  For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+*(list)* This is a list of dictionaries containing the selections of atoms to be removed from the output cluster PDB files.  For a full description of how to do this, see [**drMD** Selection syntax](#drmd-selection-syntax)
 
 
 <a id="collatevitalsreports"></a>
@@ -454,7 +454,7 @@ Molecular Dynamics simulations can generate very large output files that can bec
 ---
 
 <a id="drmdselectionsyntax"></a>
-## :medical_symbol: drMD Selection syntax :medical_symbol:
+## :medical_symbol: **drMD** Selection syntax :medical_symbol:
 When creating restraints, metadynamics bias variables or running post-simulation clustering, you will need to specify the selection of atoms that the restraints will be applied to. To do this, you will need to supply a "selection" dictionary. This dictionary must contain the following parameter:
 
 <a id="keyword"></a>
@@ -524,7 +524,7 @@ In the above example, a selection containing the following:
 - all atoms in the residue FMN in chain C
 ---
 <a id="addingrestraints"></a>
-## :medical_symbol: Adding Restraints with drMD :medical_symbol:
+## :medical_symbol: Adding Restraints with **drMD** :medical_symbol:
 If you wish to perform simulations with restraints, create a *restraintsInfo* dictionary in the simulation step:
 
 <a id="restraintinfo"></a>
@@ -562,14 +562,14 @@ Additional entries in the parameters dictionary depend on the type of restraints
 ###### :anatomical_heart: phi0
 *(int or float)*  *Required for torsion restraints*. This is the angle in degrees that the dihedral should be constrained to
 
-All restraints require the selection parameter. This tells drMD what atoms to apply the restraint to
+All restraints require the selection parameter. This tells **drMD** what atoms to apply the restraint to
 
 <a id="selectionrestraints"></a>
 #### :anatomical_heart: selection
     - **selection**:  *(list of dicts)*  This is a dictionary containing information on the selection of atoms that the restraints will be applied to.
 
 > :medical_symbol:
->The selection method is shared between multiple different inputs in the drMD config file. This is described in more detail in the next section
+>The selection method is shared between multiple different inputs in the **drMD** config file. This is described in more detail in the next section
 
 
 Example restraints syntax:
@@ -598,12 +598,12 @@ This example will add the following restraints:
 - Position restraints to the protein atoms with a force constant of 1000 kJ/mol 
 - A 3 Angstrom distance restraint between the CA atoms of residues 1 and 2 of the protein, with a force constant of 1000 kJ/mol
 
-For a detailed explanation of how to select chains, residues, and atoms for restraints, see the [drMD Selection syntax](#drmd-selection-syntax) section.
+For a detailed explanation of how to select chains, residues, and atoms for restraints, see the [**drMD** Selection syntax](#drmd-selection-syntax) section.
 
 ---
 
 <a id="runningmetadynamics"></a>
-## :medical_symbol: Running Metadynamics with drMD :medical_symbol:
+## :medical_symbol: Running Metadynamics with **drMD** :medical_symbol:
 To run a metadynamics simulation, first set the **simulationType** to **"META"**.
 
 Once you have selected your **simulationType**, you will need to include an additional **metaDynamicsInfo** dictionary in your simulation dictionary:
@@ -652,7 +652,7 @@ Within each dictionary in **biases** you must provide the following parameters:
 
 <a id="selectiometadynamics"></a>
 ##### :anatomical_heart: selection
-*(dict)*  This is a dictionary containing information on the selection of atoms that the biasVariable will be applied to. The selection syntax is identical to that used for the restraints. For a full description of how to do this, see [drMD Selection syntax](#drmd-selection-syntax)
+*(dict)*  This is a dictionary containing information on the selection of atoms that the biasVariable will be applied to. The selection syntax is identical to that used for the restraints. For a full description of how to do this, see [**drMD** Selection syntax](#drmd-selection-syntax)
 
 > :medical_symbol:
 > Depending on the type of bias variable, different numbers of atoms must be selected:
@@ -785,7 +785,7 @@ In this example, we want to simulate the dynamics of the protein isPETase.
 This example introduces the following concepts:
 - Removal of co-crystalised ions and small molecules
 - Changing `pathInfo` in a config file
-- Running drMD from command line
+- Running **drMD** from command line
 - Simple equilibrium protocol
 - Production MD simulations
 
@@ -815,25 +815,25 @@ pathInfo:
 
 We don't need to change anything else in the config file. If you want to change anything else, refer to the [Config Syntax](#config-syntax) section of this README for more information.
 
-To run our simulations, we first navigate to the main drMD directory:
+To run our simulations, we first navigate to the main **drMD** directory:
 ```bash
-cd /path/to/drMD
+cd /path/to/**drMD**
 ```
 Then we activate our conda environment (see [Installation](#installation) for more information):
 ```bash
-conda activate drMD
+conda activate **drMD**
 ```
-Finally we run drMD using our config file:
+Finally we run **drMD** using our config file:
 ```bash
-python ./src/drMD.py ./inputFiles/isPETase_standard_MD.yaml
+python ./src/**drMD**.py ./inputFiles/isPETase_standard_MD.yaml
 ```
 ***
-First, you will see the drMD logo in your terminal. 
+First, you will see the **drMD** logo in your terminal. 
 The output text immediately below the logo will keep you updated with what is going on in your simulation.
 
-<img src="./images/drMD_logo.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+<img src="./images/**drMD**_logo.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
 
-*An example of drMD command line output. Here we can see that drMD is running prep steps for system 6eqe_1*
+*An example of **drMD** command line output. Here we can see that **drMD** is running prep steps for system 6eqe_1*
 
 ### Preparation steps
 Initially  prep steps are being performed. During this step the following are performed:
@@ -844,7 +844,7 @@ Initially  prep steps are being performed. During this step the following are pe
 
 To see output files associated with this step, check the `./outputFiles/6eqe/00_prep` directory. 
 
-Once the prep steps have finished, our `isPETase_standard_MD.yaml` file instructs drMD to perform an energy minimisation step. The resulting file can be found in the `./outputFiles/6eqe/01_minimisation` directory.
+Once the prep steps have finished, our `isPETase_standard_MD.yaml` file instructs **drMD** to perform an energy minimisation step. The resulting file can be found in the `./outputFiles/6eqe/01_minimisation` directory.
 
 > We recommend that you open PDB file in Pymol to check the results of this step. If you slowly rotate the structure, you >will be able to see that the water molecules have a strange, unphysical order to them. This is due to the imperfections in the algorithm used to place the waters in the first place. The purpose of the next two simulation steps is to remove this unphysical behavior.
 
@@ -852,7 +852,7 @@ Once the prep steps have finished, our `isPETase_standard_MD.yaml` file instruct
  
 The steps `02_NVT_pre-equilibration` and `03_NPT_pre-equilibration` are used to equilibriate the water molecules in our system.
 
-As we are only equilibrating water, we apply position restraints to the protein and ligand. This is done using the `restraintInfo` section of our config file (see [Adding Restraints with drMD](#adding-restraints-with-drmd) and [Advanced YAML-ing with variables](#advanced-yaml-ing-with-variables) for more information).
+As we are only equilibrating water, we apply position restraints to the protein and ligand. This is done using the `restraintInfo` section of our config file (see [Adding Restraints with **drMD**](#adding-restraints-with-drmd) and [Advanced YAML-ing with variables](#advanced-yaml-ing-with-variables) for more information).
 
 The `02_NVT_pre-equilibration` step is performed under the NVT ensemble. This means that the number of particles (N), the volume of the system (V), and the temperature (T) are all constant. Under the NVT ensemble the pressure of the system is allowed to change.
 
@@ -869,11 +869,11 @@ Sometimes the removal of restraints can cause numerical errors. To prevent this,
 
 ### Equilibriation step
 
-The `05_Equilibration` step is run under the NPT ensemble for 5 nanoseconds. The purpose of this step is to ensure that our system is equilibrated. To make sure of this, we can check the vitals report that drMD generates. If the vitals report indicates that the system is not equilibrated, we can extend the duration of this step before running our production simulation.
+The `05_Equilibration` step is run under the NPT ensemble for 5 nanoseconds. The purpose of this step is to ensure that our system is equilibrated. To make sure of this, we can check the vitals report that **drMD** generates. If the vitals report indicates that the system is not equilibrated, we can extend the duration of this step before running our production simulation.
 
 <img src="./images/Equilibriation_vitals_report.png" alt="Removal of co-crystalised ions and small molecules" width="1000"/>
 
-*An example of drMD vitals report for the 05_Equilibration step. We can see that all of the key simulation properties have converged. This gives us good confidence that our system is equilibrated*
+*An example of **drMD** vitals report for the 05_Equilibration step. We can see that all of the key simulation properties have converged. This gives us good confidence that our system is equilibrated*
 
 ### Production MD
 The `06_Production_MD` step is run under the NPT ensemble for 50 nanoseconds. This is the production simulation that we are interested in. Depending on our research goals, we will take measurements and/or extract structures from the trajectory of this step. 
@@ -888,7 +888,7 @@ In this example, we want to investigate the catalytic pose of the ligand PET-tet
 This example introduces the following concepts:
 - Ligand preparation
 - The `ligandInfo` section of the config file
-- Creation of custom restraints in drMD
+- Creation of custom restraints in **drMD**
 - Clustering simulation trajectories
 
 ### PDB preparation
@@ -897,7 +897,7 @@ For this set of simulations, we need to prepare a PDB file of our protein-ligand
 
 <img src="./images/molecular_docking.png" alt="Molecular docking of PET-tetramer ligand to isPETase" width="1000"/>
 
-*An example of a protein-ligand complex generated by GNINA. Note that GNINA generates a large number of alternate conformations for the ligand. It will be up to you to decide which conformations to use as input(s) to drMD*
+*An example of a protein-ligand complex generated by GNINA. Note that GNINA generates a large number of alternate conformations for the ligand. It will be up to you to decide which conformations to use as input(s) to **drMD***
 
 ### Config file setup
 
@@ -908,7 +908,7 @@ cp ./Prescriptions/standard_MD_config.yaml ./inputFiles/isPETase_ligand_MD.yaml
 
 We then need to modify the `inputFiles/isPETase_ligand_MD.yaml` file. First we need to change the `pathInfo` section [see previous example](#config-file-setup).
 
-Next we need to add a `ligandInfo` section to our config file. This section will tell drMD useful information about our PET-tetramer ligand.
+Next we need to add a `ligandInfo` section to our config file. This section will tell **drMD** useful information about our PET-tetramer ligand.
 
 ```yaml 
 ligandInfo:
@@ -918,7 +918,7 @@ ligandInfo:
     toppar: False
     mol2: False
 ```
-Here we have told drMD that our ligand is called "PET" and has a formal charge of 0. We have also told drMD that it needs to add protons to our ligand and that it does not already have a toppar or mol2 file for our ligand - these will be automatically generated by drMD.
+Here we have told **drMD** that our ligand is called "PET" and has a formal charge of 0. We have also told **drMD** that it needs to add protons to our ligand and that it does not already have a toppar or mol2 file for our ligand - these will be automatically generated by **drMD**.
 
 We will use the same pre-equilibration and equilibration steps as our [previous worked example](#config-file-setup).
 
@@ -1013,7 +1013,7 @@ aftercareInfo:
       - selection:
           keyword: "ions"
 ```
-Here we have told drMD to cluster the trajectory generated by our `06_Production_MD` step. 10 PDB files will be created in the `path/to/outputDir/00_clustered_pdbs` directory. These files can be used as a starting point for your analysis or an input structures for further computational tools.
+Here we have told **drMD** to cluster the trajectory generated by our `06_Production_MD` step. 10 PDB files will be created in the `path/to/outputDir/00_clustered_pdbs` directory. These files can be used as a starting point for your analysis or an input structures for further computational tools.
 
 <a id="worked-example-3"></a>
 ## Worked Example 3: Energy Minimisation of Multiple Structures
@@ -1021,10 +1021,10 @@ Here we have told drMD to cluster the trajectory generated by our `06_Production
 In this example, we want to perform an energy minimisation calculation on multiple structures.
 
 This example introduces the following concepts:
-- Parallelisation of calculations in drMD
+- Parallelisation of calculations in **drMD**
 - Cleanup of directories
 
-There are many situations in computational protein science where one may want to perform an energy minimisation calculation on a large library of structures. With the explosion of AI-driven structure prediction tools, this is becoming more common. Some of these tools (such as Alphafold 2) have an energy minimisation step built-in, while others (such as Omegafold) do not. In these cases, drMD can be used to perform the energy minimisation step for you.
+There are many situations in computational protein science where one may want to perform an energy minimisation calculation on a large library of structures. With the explosion of AI-driven structure prediction tools, this is becoming more common. Some of these tools (such as Alphafold 2) have an energy minimisation step built-in, while others (such as Omegafold) do not. In these cases, **drMD** can be used to perform the energy minimisation step for you.
 
 ### PDB preparation
 
@@ -1074,26 +1074,26 @@ aftercareInfo:
   removeAllSimulationDirs: True
 ```
 
-The `endpointInfo` section tells drMD to collect the final PDB file generated from each energy minimisation calculation and place them in the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. Within the `endPointInfo` section, we have specified that we want to remove all water and ion atoms from the PDB file. This ensures that we have the same atoms in our output files as our input files.
-The `removeAllSimulationDirs` parameter tells drMD to delete all prep and simulation directories once the job is complete. This will leave us with only the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. This can be useful as it saves on disk space.
+The `endpointInfo` section tells **drMD** to collect the final PDB file generated from each energy minimisation calculation and place them in the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. Within the `endPointInfo` section, we have specified that we want to remove all water and ion atoms from the PDB file. This ensures that we have the same atoms in our output files as our input files.
+The `removeAllSimulationDirs` parameter tells **drMD** to delete all prep and simulation directories once the job is complete. This will leave us with only the `path/to/outputDir/00_collated_pdbs/01_energy_minimisation` directory. This can be useful as it saves on disk space.
 
 ### Running Energy Minimisation
 
-When we run these simulations, drMD will display a progress bar for each calculation:
+When we run these simulations, **drMD** will display a progress bar for each calculation:
 
 <img src="./images/energy_minimisation_loading_bar.png" alt="Loading Bars" width="1000"/>
 
 *Loading bars for each energy minimisation calculation*
 
-## Worked Example 4: Using drMD defaults
+## Worked Example 4: Using **drMD** defaults
 In this example, we will run the same simulation as in [Worked Example 1](#worked-example-1) using a very minimal config file.
 
 This example introduces the following concepts:
-- Default values in drMD
+- Default values in **drMD**
 
-As you read the [configSyntax](#configSyntax) section of this README you will notice that for most config entries, drMD can provide a default value. This means that if you do not specify a value for a parameter, drMD will use the default value provided for that parameter. 
+As you read the [configSyntax](#configSyntax) section of this README you will notice that for most config entries, **drMD** can provide a default value. This means that if you do not specify a value for a parameter, **drMD** will use the default value provided for that parameter. 
 
-> :biohazard: WARNING: If you do specify a value for a parameter but it is incorrect, drMD will not attempt to use a default value. Instead a handy error message will be displayed.
+> :biohazard: WARNING: If you do specify a value for a parameter but it is incorrect, **drMD** will not attempt to use a default value. Instead a handy error message will be displayed.
 
 ### Config file setup
 
@@ -1102,7 +1102,7 @@ In the `Prescriptions` directory, we have a config file named `lazy_config.yaml`
 ```yaml
 ## sparse pathInfo
 pathInfo: 
-  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard"
+  inputDir: "/home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard"
 ## sparse hardwareInfo
 hardwareInfo:
   platform: CUDA
@@ -1130,18 +1130,18 @@ simulationInfo:
     heavyProtons: True   
 ```
 We have set up the config file as follows:
-- In the `pathInfo` section, we have not specified the `outputDir` . drMD will use a default value for `outputDir`, which is `/current/working/directory/outputs`.
+- In the `pathInfo` section, we have not specified the `outputDir` . **drMD** will use a default value for `outputDir`, which is `/current/working/directory/outputs`.
 
-- In `hardwareInfo` we have only specified `platform`, so drMD will use a default value for `parallelCPU` and `subprocessCpus` (both values are set to 1). 
-- We have completely neglected to include a `miscInfo` section. drMD will create this section from scratch with default values. 
-- In the `simulationInfo` section, we have included the minimal amount of information that drMD needs to reproduce the simulation in [Worked Example 1](#worked-example-1). 
+- In `hardwareInfo` we have only specified `platform`, so **drMD** will use a default value for `parallelCPU` and `subprocessCpus` (both values are set to 1). 
+- We have completely neglected to include a `miscInfo` section. **drMD** will create this section from scratch with default values. 
+- In the `simulationInfo` section, we have included the minimal amount of information that **drMD** needs to reproduce the simulation in [Worked Example 1](#worked-example-1). 
   - Each simulation step has a `stepName` entry, this is mandatory. 
-  - For the `01_energy_minimisation` step, we have specified a `simulationType` of `EM`. For energy minimisation calculations a `maxIterations` parameter is required, drMD will use a default value of -1 (this means that the step will run until it reaches convergence). 
+  - For the `01_energy_minimisation` step, we have specified a `simulationType` of `EM`. For energy minimisation calculations a `maxIterations` parameter is required, **drMD** will use a default value of -1 (this means that the step will run until it reaches convergence). 
   - For the remaining simulation steps, we have specified the `duration` and `heavyProtons` parameters. 
-  - We will let drMD use defaults for `timestep` (4 fs when heavyProtons is True), `temperature` (300 K) , `logInterval` (10 ps) and `simulationType` (NpT). 
+  - We will let **drMD** use defaults for `timestep` (4 fs when heavyProtons is True), `temperature` (300 K) , `logInterval` (10 ps) and `simulationType` (NpT). 
   - Where we do not want a default value to be used, we have specified a value: For the`02_NVT_pre-equilibration` step we want use the *canonical (NVT)* ensemble, so we have specified the `simulationType` as `NVT`. For the `04_slow_step` step, we we have specified a `timestep` of 0.5 fs.
 
-After we run drMD, a per-run config file will be created in the `/path/to/outputDir/00_configs' directory. You can see that 
+After we run **drMD**, a per-run config file will be created in the `/path/to/outputDir/00_configs' directory. You can see that 
 
 ```yaml
 hardwareInfo:
@@ -1158,9 +1158,9 @@ miscInfo:
       keyword: all
   writeMyMethodsSection: true
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
-  inputPdb: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard/6eqe_1.pdb
-  outputDir: /home/esp/scriptDevelopment/drMD/outputs/6eqe_1
+  inputDir: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard
+  inputPdb: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard/6eqe_1.pdb
+  outputDir: /home/esp/scriptDevelopment/**drMD**/outputs/6eqe_1
   outputName: 6eqe_1
 proteinInfo:
   proteinName: 6eqe_1
@@ -1215,10 +1215,10 @@ simulationInfo:
 In this example, we will run a metadynamics simulation to explore the φ and ψ angles of alanine-dipeptide.
 
 This example introduces the following concepts:
-- Metadynamics in drMD
+- Metadynamics in **drMD**
 - Collective Variables (CVs)
 - Metadynamics parameters
-- Construction of Bias Variables in drMD
+- Construction of Bias Variables in **drMD**
 - Free Energy Landscapes
 
 Molecular Dynamics simulations can normally be run in the ns or μs timescales. However, a variety of events of interest to protein scientists, such as protein folding, protein-ligand binding, and transport of molecules through biological membranes, occur on larger timescales (ms or even s). As a consequence, these processes cannot be adequately sampled with standard Molecular Dynamics simulations. Metadynamics is an enhanced sampling technique that helps accelerate such rare events and can also provide quantitative descriptions of the processes under study by computing their free energies.
@@ -1277,10 +1277,10 @@ For our alanine dipeptide example, we can specify the CVs and their parameters i
 
 The above config sets up a metadynamics simulation with the backbone torsions φ and ψ as the CVs. The simulation will explore a range of [-180,180] degrees for each CV. Gaussians will be deposited every 500 simulation steps (1 ps), with a Gaussian width of 0.1 rad (5.73 degrees) for each CV. The height of the initial Gaussian will be 0.8 kJ/mol and the bias (temperature) factor is set to 10. 
 
-For a detailed technical description of metadynamics, we recommend [this review](https://www.nature.com/articles/s42254-020-0153-0). Note that drMD implements [Well-Tempered metadynamics](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.100.020603).
+For a detailed technical description of metadynamics, we recommend [this review](https://www.nature.com/articles/s42254-020-0153-0). Note that **drMD** implements [Well-Tempered metadynamics](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.100.020603).
 
 ### Free energy landscape of collective variables
-Once our `06_Metadynamics` step is complete, drMD will automatically create a file called `freeEnergy.csv`, located in the `/path/to/06_Metadynamics/reporters_and_plots` directory. This file contains the free energy landscape of the with respect to our chosen collective variables. When we plot this free energy landscape, we see the following:
+Once our `06_Metadynamics` step is complete, **drMD** will automatically create a file called `freeEnergy.csv`, located in the `/path/to/06_Metadynamics/reporters_and_plots` directory. This file contains the free energy landscape of the with respect to our chosen collective variables. When we plot this free energy landscape, we see the following:
 
 <img src="./images/Alanine_dipeptide_FEL.png" alt="The Free Energy Landscape of φ and ψ torsions of alanine dipeptide" width="400"/>
 

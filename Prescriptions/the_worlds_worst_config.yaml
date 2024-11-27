@@ -24,10 +24,10 @@ ligandInfo:
         toppar: No
         mol2: yesplease
         charge: -2
-        - ligandName: PLM
-          toppar: True
-          mol2: nothanks
-    
+      - ligandName: PLM
+        toppar: True
+        mol2: nothanks
+  
 ########################################################################
 miscInfo:
   pH: 25
