@@ -27,7 +27,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 We recommend that you use the following steps to install **drMD**:
 1. Clone this repository
 ```bash
-git clone https://github.com/wells-wood-research/**drMD**
+git clone https://github.com/wells-wood-research/drMD
 ```
 2. Create and activate conda environment
 ```bash
