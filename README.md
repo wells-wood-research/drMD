@@ -31,10 +31,10 @@ git clone https://github.com/wells-wood-research/**drMD**
 ```
 2. Create and activate conda environment
 ```bash
-conda create -n **drMD** python=3.10
+conda create -n drMD python=3.10
 ```
 ```bash
-conda activate **drMD**
+conda activate drMD
 ```
 3. Install AmberTools (needs to be before OpenMM) with conda
 ```bash
