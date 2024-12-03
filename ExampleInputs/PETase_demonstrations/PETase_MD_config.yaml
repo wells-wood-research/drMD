@@ -24,8 +24,8 @@
 #   of the simulation outputs
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/PET_proj
-  outputDir: /home/esp/scriptDevelopment/drMD/04_PET_proj_outputs
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/PETase_demonstrations
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/PETase_demonstrations/outputs
   
 ########################################################################
 miscInfo:

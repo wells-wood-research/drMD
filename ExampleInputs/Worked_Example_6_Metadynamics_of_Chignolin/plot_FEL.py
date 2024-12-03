@@ -34,7 +34,7 @@ def main():
     freeEnergyDf = freeEnergyDf.iloc[::-1]
     # Assuming freeEnergyDf is your DataFrame
     plt.figure(figsize=(10, 8))
-    ax = sns.heatmap(freeEnergyDf, cmap='plasma', annot=False)
+    ax = sns.heatmap(freeEnergyDf, cmap='coolwarm', annot=False)
 
     # Set x and y tick labels to 2 decimal places
     ax.set_xticklabels([f'{float(label):.2f}' for label in ax.get_xticks()], rotation=45)

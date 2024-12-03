@@ -36,105 +36,117 @@
 #         pathToInput/6eqe_replicate3.pdb
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
-  outputDir: "/home/esp/scriptDevelopment/drMD/03_standard_outputs"
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_1_MD_Simulation_of_a_Protein
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_1_MD_Simulation_of_a_Protein/outputs
   
 ########################################################################
 hardwareInfo:
   parallelCPU: 1
-  platform: "CUDA"
+  platform: CUDA
   subprocessCpus: 1
 ########################################################################
 miscInfo:
   pH: 7.4
   firstAidMaxRetries: 10
-  boxGeometry: "cubic"
+  boxGeometry: cubic
   writeMyMethodsSection: True
   skipPdbTriage: False
   trajectorySelections:
   - selection:
-      keyword: "protein"
+      keyword: protein
   - selection:
-      keyword: "ligand"
+      keyword: ligand
   - selection:
-      keyword: "water"
+      keyword: water
 
 ########################################################################
 equilibriationRestraints: &equilibriationRestraints
-    - restraintType: "position"
+    - restraintType: position
       parameters:
         k: 1000
       selection:
-        keyword: "protein"
+        keyword: protein
 
-    - restraintType: "position"
+    - restraintType: position
       selection: 
-        keyword: "ligand"  
+        keyword: ligand  
       parameters:
         k: 1000
 
 ########################################################################
 simulationInfo:
-  - stepName: "01_energy_minimisation"
-    simulationType: "EM"
+  - stepName: 01_energy_minimisation
+    simulationType: EM
     temperature: 300
     maxIterations: -1
 ########################################################################
-  - stepName: "02_NVT_pre-equilibriation"
-    simulationType: "NVT"
-    duration: "100 ps"
-    timestep: "4 fs"
+  - stepName: 02_NVT_pre-equilibriation
+    simulationType: NVT
+    duration: 100 ps
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
     restraintInfo: *equilibriationRestraints
-
 #########################################################################
-  - stepName: "03_NPT_pre-equilibriation"
-    simulationType: "NPT"
-    duration: "100 ps"
-    timestep: "4 fs"
+  - stepName: 03_NPT_pre-equilibriation
+    simulationType: NPT
+    duration: 100 ps
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
     restraintInfo: *equilibriationRestraints
-
 ########################################################################
-  - stepName: "04_NpT_slowIntergrator"
-    simulationType: "NpT"
-    duration: "10 ps"
-    timestep: "0.5 fs"
+  - stepName: 04_NpT_slowTimeStep
+    simulationType: NpT
+    duration: 10 ps
+    timestep: 0.5 fs
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
 ########################################################################
-  - stepName: "05_Equilibriation"
-    simulationType: "NpT"
-    duration: "5 ns"
-    timestep: "4 fs"
+  - stepName: 05_Equilibriation
+    simulationType: NpT
+    duration: 5 ns
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "500 ps"
-
+    logInterval: 500 ps
 ########################################################################
-  - stepName: "06_Production_MD"
-    simulationType: "NpT"
-    duration: "50 ns"
-    timestep: "4 fs"
-    heavyProtons: True
+  - stepName: 06_Metadynamics
+    simulationType: META
+    duration: 5 ns
+    timestep: 2 fs
+    heavyProtons: False
     temperature: 300
-    logInterval: "50 ps"
+    logInterval: 2 ps
+    metaDynamicsInfo:
+      height: 0.8
+      biasFactor: 10
+      frequency: 500
+      biases:
+        - biasVar: torsion
+          minValue: -180
+          maxValue: 180
+          biasWidth: 5.73
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ACE, RES_ID: 1, ATOM_NAME: C}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: N}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: CA}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: C}
+        - biasVar:  torsion
+          minValue: -180
+          maxValue: 180
+          biasWidth: 5.73
+          selection: 
+            keyword: custom
+            customSelection:
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: N}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: CA}
+            - {CHAIN_ID: A, RES_NAME: ALA, RES_ID: 2, ATOM_NAME: C}
+            - {CHAIN_ID: A, RES_NAME: NME, RES_ID: 3, ATOM_NAME: N}
 ################################################
-aftercareInfo:
-  clusterInfo:
-    stepNames: ["05_Production_MD"] 
-    nClusters: 25
-    clusterBy:
-    - selection:
-        keyword: "protein"
-    removeAtoms:
-      - selection:
-          keyword: "water"
-      - selection:
-          keyword: "ions"
-  collateVitalsReports: True
+
 
