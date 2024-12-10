@@ -88,7 +88,6 @@ def firstAid_handler():
                 ## if our simulation crashes due to a numerical error or an OpenMM exception
                 ## run firstAid protocol to try and recover
                 except (OpenMMException, ValueError) as errorOpenMM:
-                    print("Run firstAid")
                     saveFile, retries = run_first_aid_protocol(retries, maxRetries, *args, **kwargs)
                 except Exception as error:
                     drLogger.log_info(f"Unexpected Error for {kwargs['sim']['stepName']}:\n{error}", True, True)
@@ -110,7 +109,6 @@ def firstAid_handler():
             retries: int = 0
             maxRetries: int = kwargs["config"]["miscInfo"].get("firstAidMaxRetries", 10)
             lastError = None
-            print(maxRetries)
             while retries < maxRetries:
                 try:
                     saveFile: Union[str, PathLike] = simulationFunction(*args, **kwargs)

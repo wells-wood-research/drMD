@@ -288,7 +288,6 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     stepName = sim["stepName"]
     drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
-    print("simulating",stepName)
     sim = process_sim_data(sim)
     ## create simulation directory
     simDir: str = p.join(outDir, sim["stepName"])
@@ -311,10 +310,8 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
                                 dcdAtomSelections= config["miscInfo"]["trajectorySelections"],
                                 refPdb=refPdb
                                 )
-    print("stepping")
     # run NVT / NPT simulation
     simulation: app.Simulation = step_simulation(simulation, integrator, sim)
-    print("done stepping")
 
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
@@ -339,26 +336,21 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
 ##########################################################################################
 
 def step_simulation(simulation: app.Simulation, integrator: openmm.Integrator, sim: Dict) ->  app.Simulation:
-    print("stepping in function")
     ## for simulations with constant temperature
     if "temperature" in sim:
-        print("stepping at constant temperature")
         try:
             simulation.step(sim["nSteps"])
-            print("that worked")
             return simulation
         except Exception as e:
             raise e
     ## for simulations with stepped temperature
     nTempSteps = len(sim["temperatureRange"])
     nStepsPerTempStep = round(sim["nSteps"] / nTempSteps)
-    print("stepping at with stepped temperature")
 
     try:
         for temperature in sim["temperatureRange"]:
             integrator.setTemperature(temperature)
             simulation.step(nStepsPerTempStep)
-        print("that worked")
         return simulation
     except Exception as e:
         raise e
