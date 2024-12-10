@@ -101,11 +101,11 @@ python /path/to/drMD.py --config config.yaml
 If you have used the Pip installation method, you can import **drMD** as a python module, and as following:
 
 ```python
-import **drMD**
+import drMD
 
 myBatchConfig = "/path/to/config.yaml"
 
-**drMD**.main(myBatchConfig)
+drMD.main(myBatchConfig)
 ```
 
 This config file contains all of the user inputs **drMD** needs to run a series of bimolecular simulations.
@@ -149,8 +149,8 @@ The **pathInfo** entry in the config file is a dictionary containing two paramet
 Example pathInfo:
 ```yaml
 pathInfo:
-  inputDir: "/home/esp/scriptDevelopment/**drMD**/01_inputs"
-  outputDir: "/home/esp/scriptDevelopment/**drMD**/02_outputs"
+  inputDir: "/home/esp/scriptDevelopment/drMD/01_inputs"
+  outputDir: "/home/esp/scriptDevelopment/drMD/02_outputs"
 ```
 <a id="hardwareinfo"></a>
 ## :brain: hardwareInfo
@@ -567,7 +567,7 @@ All restraints require the selection parameter. This tells **drMD** what atoms t
 
 <a id="selectionrestraints"></a>
 #### :anatomical_heart: selection
-    - **selection**:  *(list of dicts)*  This is a dictionary containing information on the selection of atoms that the restraints will be applied to.
+ *(list of dicts)*  This is a dictionary containing information on the selection of atoms that the restraints will be applied to.
 
 > :medical_symbol:
 >The selection method is shared between multiple different inputs in the **drMD** config file. This is described in more detail in the next section

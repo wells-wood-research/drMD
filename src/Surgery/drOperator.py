@@ -115,7 +115,7 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
                                           config=config)
         except Exception as e:
             errorMessage = f"Error running simulation: {e}"
-            drLogger.log_info(errorMessage, True, True)
+            drLogger.log_info(errorMessage, True)
             raise e
 
 
