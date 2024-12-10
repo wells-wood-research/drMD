@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='drMD',
-    version = '1.0.1',
+    version = '1.0.2',
     description='drMD: Molecular Dynamics for Protein Scientists',
     author="Dr Eugene Shrimpton-Phoenix",
     author_email="eshrimpt@ed.ac.uk",

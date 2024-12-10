@@ -88,19 +88,64 @@ def firstAid_handler():
                 ## if our simulation crashes due to a numerical error or an OpenMM exception
                 ## run firstAid protocol to try and recover
                 except (OpenMMException, ValueError) as errorOpenMM:
+                    print("Run firstAid")
                     saveFile, retries = run_first_aid_protocol(retries, maxRetries, *args, **kwargs)
                 except Exception as error:
                     drLogger.log_info(f"Unexpected Error for {kwargs['sim']['stepName']}:\n{error}", True, True)
-
+                    raise error
             else:
                 ## If we have got here, the firstAid has failed
                 ## let user know and merge output reporters and trajectories
                 drLogger.log_info(f"Max retries reached. Stopping.", True, True)
                 drSplash.print_first_aid_failed("Particle coordinate NaN")
+                raise OpenMMException
         return wrapper
     return decorator
 
-def  run_first_aid_protocol(retries: int, maxRetries: int, *args, **kwargs):
+#########################################################################################################################
+def firstAid_handler():
+    def decorator(simulationFunction):
+        @wraps(simulationFunction)
+        def wrapper(*args, **kwargs):
+            retries: int = 0
+            maxRetries: int = kwargs["config"]["miscInfo"].get("firstAidMaxRetries", 10)
+            lastError = None
+            print(maxRetries)
+            while retries < maxRetries:
+                try:
+                    saveFile: Union[str, PathLike] = simulationFunction(*args, **kwargs)
+                    if retries > 0:
+                        drLogger.log_info(f"Success after {retries} tries.", True)
+                        runOutDir: Union[str, PathLike] = kwargs["outDir"]
+                        simDir: Union[str, PathLike] = p.join(runOutDir, kwargs["sim"]["stepName"])
+                        drSplicer.merge_partial_outputs(simDir=simDir,
+                                                        pdbFile=kwargs["refPdb"],
+                                                        simInfo=kwargs["sim"],
+                                                        config=kwargs["config"])
+                    return saveFile
+                except (OpenMMException, ValueError) as errorOpenMM:
+                    lastError = errorOpenMM
+                    saveFile, retries = run_first_aid_protocol(retries, maxRetries, *args, **kwargs)
+                except Exception as error:
+                    drLogger.log_info(f"Unexpected Error for {kwargs['sim']['stepName']}:\n{error}", True, True)
+                    raise error
+                retries += 1
+            
+            # If max retries are reached, raise the last caught OpenMMException or ValueError
+            drLogger.log_info(f"Max retries reached. Stopping.", True, True)
+            drSplash.print_first_aid_failed("Particle coordinate NaN")
+            if lastError:
+                raise lastError
+            else:
+                raise "Unknown Error"
+
+        return wrapper
+    return decorator
+
+
+#########################################################################################################################
+
+def run_first_aid_protocol(retries: int, maxRetries: int, *args, **kwargs):
     retries += 1
     ## let user know whats going on
     if retries == 1:

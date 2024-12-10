@@ -7,6 +7,8 @@ import yaml
 ## drMD LIBRARIES
 from Surgery import drPrep
 from UtilitiesCloset import drListInitiator
+from ExaminationRoom import drLogger
+
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
 
@@ -46,10 +48,12 @@ def make_per_protein_config(
     runDir: DirectoryPath = p.join(outDir, protName)
     os.makedirs(runDir, exist_ok=True)
 
-    ## if config file has already been made, skip and return it
+    ## if config file has already been made, back it up, then make a new one
     configYaml: FilePath = p.join(yamlDir, f"{protName}_config.yaml")
     if p.exists(configYaml):
-        return configYaml
+        drLogger.log_info("WARNING: config file already exists, backing up existing config file", True)
+        backupConfig: FilePath = p.join(yamlDir, f"{protName}_config.yaml.bak")
+        os.rename(configYaml, backupConfig)
 
 
     ## load pdb file into DataFrame

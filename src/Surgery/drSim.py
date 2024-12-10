@@ -261,7 +261,7 @@ def load_simulation_state(simulation: app.Simulation, saveFile: FilePath) -> app
     return simulation
 ###########################################################################################
 @drLogger.monitor_progress_decorator()
-@drFirstAid.firstAid_handler()
+# @drFirstAid.firstAid_handler()
 @drCheckup.check_up_handler()
 def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
                            inpcrd: app.AmberInpcrdFile,
@@ -285,14 +285,12 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
         refPdb (str): The path to the reference PDB file.
         config (Dict): Dictionary containing information for all simluations in this run
     """
-
     stepName = sim["stepName"]
-
+    drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
-
-    drLogger.log_info(f"Running {stepName} Step for: {protName}",True)
+    print("simulating",stepName)
     sim = process_sim_data(sim)
-    ## create simluation directory
+    ## create simulation directory
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)
 
@@ -313,8 +311,10 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
                                 dcdAtomSelections= config["miscInfo"]["trajectorySelections"],
                                 refPdb=refPdb
                                 )
+    print("stepping")
     # run NVT / NPT simulation
     simulation: app.Simulation = step_simulation(simulation, integrator, sim)
+    print("done stepping")
 
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
@@ -333,24 +333,35 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     saveXml: str = p.join(simDir, f"{stepName}.xml")
     simulation.saveState(saveXml)
 
-    drLogger.log_info(f"Completed {stepName} Step for: {protName}",True)
     return saveXml
 
 
 ##########################################################################################
+
 def step_simulation(simulation: app.Simulation, integrator: openmm.Integrator, sim: Dict) ->  app.Simulation:
+    print("stepping in function")
     ## for simulations with constant temperature
     if "temperature" in sim:
-        simulation.step(sim["nSteps"])
-        return simulation
+        print("stepping at constant temperature")
+        try:
+            simulation.step(sim["nSteps"])
+            print("that worked")
+            return simulation
+        except Exception as e:
+            raise e
     ## for simulations with stepped temperature
     nTempSteps = len(sim["temperatureRange"])
     nStepsPerTempStep = round(sim["nSteps"] / nTempSteps)
-    for temperature in sim["temperatureRange"]:
-        integrator.setTemperature(temperature)
-        simulation.step(nStepsPerTempStep)
-    return simulation
+    print("stepping at with stepped temperature")
 
+    try:
+        for temperature in sim["temperatureRange"]:
+            integrator.setTemperature(temperature)
+            simulation.step(nStepsPerTempStep)
+        print("that worked")
+        return simulation
+    except Exception as e:
+        raise e
 
 ###########################################################################################
 def run_energy_minimisation(prmtop: app.AmberPrmtopFile,

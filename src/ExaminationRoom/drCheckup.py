@@ -418,8 +418,10 @@ def check_up_handler():
                             vitalsFiles = vitalsFiles)
             except FileNotFoundError as e:
                 drLogger.log_info(f"Error running checkup: File not found: {e}", True, True)
+                raise e
             except Exception as e:
                 drLogger.log_info(f"Error running checkup: {e}", True,True)
+                raise e
             return saveFile
         return wrapper
     return decorator

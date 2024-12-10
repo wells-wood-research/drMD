@@ -8,7 +8,7 @@ import openmm.app as app
 import openmm as openmm
 
 ## drMD LIBRARIES
-from Surgery import drPrep, drSim, drMeta
+from Surgery import drPrep, drSim, drMeta, drFirstAid
 from Triage import drConfigTriage
 from ExaminationRoom import drLogger
 
@@ -76,16 +76,16 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
     simulations = config["simulationInfo"]
     for i in range(len(simulations)):
         sim: dict = simulations[i]
-        simDir: str = p.join(outDir,sim["stepName"])
+        simDir: str = p.join(outDir, sim["stepName"])
 
         saveFile = None
         # Decide whether to skip, resume, or start a new simulation
         skipResumeSim, foundSaveFile = skip_resume_or_simulate(simDir=simDir,
-                                                           simulations = simulations,
-                                                           i = i, 
-                                                           outDir=outDir)
+                                                               simulations=simulations,
+                                                               i=i, 
+                                                               outDir=outDir)
 
-        if not foundSaveFile == None:
+        if foundSaveFile is not None:
             saveFile = foundSaveFile
 
         # Skip or resume simulation
@@ -99,18 +99,24 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
 
         # Run simulation
         simulationFunction = choose_simulation_function(sim["simulationType"])
+
+        firstAidMaxRetries = config["miscInfo"]["firstAidMaxRetries"]
+        if firstAidMaxRetries > 0 and not sim["simulationType"] == "EM":
+            simulationFunction = drFirstAid.firstAid_handler()(simulationFunction)
+
         try:
-            saveFile = simulationFunction(prmtop = prmtop,
-                                       inpcrd = inpcrd,
-                                         sim = sim,
-                                           saveFile = saveFile,
-                                             outDir = outDir,
-                                               platform = platform,
-                                                 refPdb = pdbFile,
-                                                   config = config)
+            saveFile = simulationFunction(prmtop=prmtop,
+                                          inpcrd=inpcrd,
+                                          sim=sim,
+                                          saveFile=saveFile,
+                                          outDir=outDir,
+                                          platform=platform,
+                                          refPdb=pdbFile,
+                                          config=config)
         except Exception as e:
-            drLogger.log_info(f"Error running simulation: {e}", True, True)
-            continue
+            errorMessage = f"Error running simulation: {e}"
+            drLogger.log_info(errorMessage, True, True)
+            raise e
 
 
 ###########################################################################################

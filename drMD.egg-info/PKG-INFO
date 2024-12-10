@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: drMD
-Version: 1.0.1
+Version: 1.0.2
 Summary: drMD: Molecular Dynamics for Protein Scientists
 Home-page: https://github.com/wells-wood-research/drMD
 Author: Dr Eugene Shrimpton-Phoenix
@@ -850,21 +850,21 @@ We don't need to change anything else in the config file. If you want to change 
 
 To run our simulations, we first navigate to the main **drMD** directory:
 ```bash
-cd /path/to/**drMD**
+cd /path/to/drMD
 ```
 Then we activate our conda environment (see [Installation](#installation) for more information):
 ```bash
-conda activate **drMD**
+conda activate drMD
 ```
 Finally we run **drMD** using our config file:
 ```bash
-python ./src/**drMD**.py ./inputFiles/isPETase_standard_MD.yaml
+python ./src/drMD.py ./inputFiles/isPETase_standard_MD.yaml
 ```
 ***
 First, you will see the **drMD** logo in your terminal. 
 The output text immediately below the logo will keep you updated with what is going on in your simulation.
 
-<img src="./images/**drMD**_logo.png" alt="Removal of co-crystalised ions and small molecules" width="500"/>
+<img src="./images/drMD_logo.png" alt="drMD logo with loading bar" width="500"/>
 
 *An example of **drMD** command line output. Here we can see that **drMD** is running prep steps for system 6eqe_1*
 
@@ -1136,7 +1136,7 @@ In the `Prescriptions` directory, we have a config file named `lazy_config.yaml`
 ```yaml
 ## sparse pathInfo
 pathInfo: 
-  inputDir: "/home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard"
+  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard"
 ## sparse hardwareInfo
 hardwareInfo:
   platform: CUDA
@@ -1192,9 +1192,9 @@ miscInfo:
       keyword: all
   writeMyMethodsSection: true
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard
-  inputPdb: /home/esp/scriptDevelopment/**drMD**/ExampleInputs/test_standard/6eqe_1.pdb
-  outputDir: /home/esp/scriptDevelopment/**drMD**/outputs/6eqe_1
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
+  inputPdb: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard/6eqe_1.pdb
+  outputDir: /home/esp/scriptDevelopment/drMD/outputs/6eqe_1
   outputName: 6eqe_1
 proteinInfo:
   proteinName: 6eqe_1

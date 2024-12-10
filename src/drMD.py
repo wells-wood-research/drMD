@@ -153,12 +153,13 @@ def run_serial(batchConfig: Dict) -> None:
             drOperator.drMD_protocol(runConfigYaml)
             botchedSimulations.append(None)
         except Exception as e:
+            print(f"Error processing {pdbFile}: {e}")
             pdbName = p.splitext(p.basename(pdbFile))[0]
-            botchedSimulations.append({"pdbName": pdbName, "errorMessage": str(e)})
+            botchedSimulations.append({"pdbName": pdbName, "errorMessage":str(e)})
             continue
 
-
-
+    if any(report["errorMessage"] is not None for report in botchedSimulations):
+         drSplash.print_botched(botchedSimulations)
 ######################################################################################################
 def run_parallel(batchConfig: Dict) -> None:
     """

@@ -105,7 +105,7 @@ def read_simulation_progress(progressReporterCsv: FilePath) -> Tuple[str, str]:
         return "N/A", "N/A", "N/A"
     
 #################################################################################################
-def monitor_progress_decorator(checkInterval: int=3):
+def monitor_progress_decorator(checkInterval: int = 3):
     """
     Decorator used to monitor the progress of a simulation.
     Prints key simulation monitoring information to the terminal.
@@ -115,60 +115,48 @@ def monitor_progress_decorator(checkInterval: int=3):
     """
 
     teal = "\033[38;5;37m" 
-    red = "\033[31m"
-    yellow = "\033[33m"
-    orange = "\033[38;5;208m"
-    green = "\033[32m"
     reset = "\033[0m"
     coral = "\033[38;5;203m"       # Soft red-orange
     gold = "\033[38;5;220m"        # Warm yellow
     violet = "\033[38;5;135m"      # Purple
-    ## set up decorator and wrapper
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-
-            ##  set up monitoring 
             monitoring = threading.Event()
+
             def monitor_progress():
                 """
                 Function used to monitor the progress of a simulation.
                 """
-                ## get names, directory paths and progress report file path
                 stepName: str = kwargs["sim"]["stepName"]
                 protName: str = kwargs["config"]["proteinInfo"]["proteinName"]
-                outDir: DirectoryPath = kwargs["outDir"]
-                simDir: DirectoryPath = p.join(outDir, stepName)
-                progressReporterCsv: FilePath = p.join(simDir, "progress_report.csv")
-                ## run logging while simulation is running
+                outDir: str = kwargs["outDir"]
+                simDir: str = p.join(outDir, stepName)
+                progressReporterCsv: str = p.join(simDir, "progress_report.csv")
                 cachedProgress: str = "N/A"
                 while not monitoring.is_set():
-                    ## get key simulation monitoring information
-                    progressPercent, timeRemaining, averageSpeed = read_simulation_progress(
-                        progressReporterCsv)
+                    progressPercent, timeRemaining, averageSpeed = read_simulation_progress(progressReporterCsv)
                     if progressPercent != cachedProgress:
-                        ## print to terminal and log file
                         log_info(f"Running {teal}{stepName}{reset} Step for: "
-                                f"{teal}{protName}{reset} | Progress: {violet}{progressPercent}{reset} | "
-                                f"Time Remaining: {coral}{timeRemaining}{reset} | "
-                                f"Average Speed: {gold}{averageSpeed} ns/day {reset}", True)
+                                 f"{teal}{protName}{reset} | Progress: {violet}{progressPercent}{reset} | "
+                                 f"Time Remaining: {coral}{timeRemaining}{reset} | "
+                                 f"Average Speed: {gold}{averageSpeed} ns/day {reset}", True)
                     cachedProgress = progressPercent
-                    ## wait for check interval
                     time.sleep(checkInterval)
-            ## set up monitoring thread
+
             monitorThread = threading.Thread(target=monitor_progress)
             monitorThread.start()
-            ## run simulation
-            saveFile = kwargs["saveFile"]
+
             try:
                 saveFile = func(*args, **kwargs)
-            ## if simulation fails, raise error
-            except Exception  as e:
-                pass ## errors handled elsewhere
+                return saveFile
+            except Exception as e:
+                raise e
             finally:
                 monitoring.set()
                 monitorThread.join()
-                return saveFile
+
         return wrapper
     return decorator
 #################################################################################################
