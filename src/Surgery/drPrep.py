@@ -599,7 +599,8 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     proteinInfo: Dict = config.get("proteinInfo")
     isProteinProtonated: bool = proteinInfo.get("protons")
     if isProteinProtonated:
-        return protPdb
+        newHisPdb = sort_out_histidine_names(protPdb)
+        return newHisPdb
 
     ## use pdb2pqr to protonate the protein at a specific pH
     pH: int = str(float(config["miscInfo"]["pH"]))
@@ -626,6 +627,35 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
 
     return protonatedPdb
 
+#################################################################################
+def sort_out_histidine_names(protPdb: str) -> str:
+    """
+    Rename histidine residues in a PDB file, according to presence of hydrogen names.
+    """
+    pdbDf = pdbUtils.pdb2df(protPdb)
+    histidineNames = {"HIS", "HID", "HIE", "HIP"}
+
+    # Filter for histidine residues
+    histDf = pdbDf[pdbDf["RES_NAME"].isin(histidineNames)]
+
+    for chainId, chainDf in histDf.groupby("CHAIN_ID"):
+        for resId, resDf in chainDf.groupby("RES_ID"):
+            resAtomNames = resDf["ATOM_NAME"].tolist()
+            if "HD1" in resAtomNames and "HE2" in resAtomNames:
+                # Rename to HIP
+                pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HIP"
+            elif "HD1" in resAtomNames:
+                # Rename to HID
+                pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HID"
+            elif "HE2" in resAtomNames:
+                # Rename to HIE
+                pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HIE"
+
+    # Save the modified DataFrame back to a PDB file
+    outputPdb = protPdb.replace(".pdb", "_newHis.pdb")
+    pdbUtils.df2pdb(pdbDf, outputPdb)
+
+    return outputPdb
 #################################################################################
 def detect_disulphides(pdbFile: FilePath) -> List[str]:
     """
