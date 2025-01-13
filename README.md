@@ -367,7 +367,7 @@ simulationInfo:
     temp: 300
     maxIterations: -1
 ```
-This will run a energy minimisation until the energy converges
+This will run an energy minimisation until the energy converges
 
 ### Generic Simulation Parameters
 For "normal" MD simulations using NVT or NpT ensembles, as well as for Metadynamics simulations, the following additional parameters are required:
