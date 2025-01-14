@@ -32,6 +32,24 @@ We recommend that you use the following steps to install **drMD**:
 ```bash
 git clone https://github.com/wells-wood-research/drMD
 ```
+
+2. Create conda environment using the environment.yml file
+```bash
+conda env create -f environment.yml
+```
+
+3. Activate conda environment
+```bash
+conda activate drMD
+```
+
+## :medical_symbol: Step-by-step installation :medical_symbol:
+You may instead wish to install the dependencies in a stepwise manner:
+1. Clone this repository
+```bash
+git clone https://github.com/wells-wood-research/drMD
+```
+
 2. Create and activate conda environment
 ```bash
 conda create -n drMD python=3.10
@@ -45,7 +63,7 @@ conda install -c conda-forge ambertools=23
 ``` 
 4. Install OpenMM with conda
 ```bash
-conda install -c omnia openmm
+conda install -c conda-forge openmm
 ``` 
 5. Install OpenBabel with conda
 ```bash
@@ -76,7 +94,7 @@ conda install -c conda-forge ambertools=23
 ``` 
 4. Install OpenMM with conda
 ```bash
-conda install -c omnia openmm
+conda install -c conda-forge openmm
 ``` 
 5. Install OpenBabel with conda
 ```bash

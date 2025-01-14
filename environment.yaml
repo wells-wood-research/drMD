@@ -1,0 +1,11 @@
+name: drMD
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - ambertools=23
+  - openmm
+  - openbabel
+  - pip
+  - pip:
+    - -r requirements.txt
