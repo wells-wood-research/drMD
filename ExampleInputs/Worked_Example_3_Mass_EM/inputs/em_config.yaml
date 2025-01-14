@@ -1,0 +1,59 @@
+
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription is used to perform energy minimisations on a large set of pdb files
+#   
+#   As each energy minimisation step is rather quick, and does not effectively use GPU acceleration,
+#   these calculations are greatly sped up by performing them in parallel
+#   To do this, we have used a value of 16 for the parallelCPU parameter
+#   
+#   For this type of simulation, we are rarely interested in all of the files
+#   generated in the preparation steps. 
+#   We have used the endpointInfo section to collate all of our optimised geometries in one output directory.
+#   Finally, we have used the removeAllSimulationDirs parameter to remove extra files and directories
+#
+########################################################################
+pathInfo:
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_example_3_Mass_EM/inputs
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_example_3_Mass_EM/outputs
+  
+########################################################################
+hardwareInfo:
+  parallelCPU: 16
+  platform: CUDA
+  subprocessCpus: 1
+
+########################################################################
+miscInfo:
+  pH: 7.4
+  boxGeometry: cubic
+
+########################################################################
+loggingInfo:
+  trajectorySelections:
+  - selection:
+      keyword: protein
+  - selection:  
+      keyword: ligand
+########################################################################
+
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+
+################################################
+
+aftercareInfo:
+  endPointInfo:
+    stepNames: [01_energy_minimisation]
+    removeAtoms: 
+    - selection:
+        keyword: ions
+    - selection:
+        keyword: water
+  removeAllSimulationDirs: True
+
+
+

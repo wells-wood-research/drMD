@@ -8,7 +8,7 @@ import pandas as pd
 import openmm.app as app
 from openmm.app import metadynamics
 import openmm as openmm
-import  simtk.unit  as unit
+import  openmm.unit  as unit
 
 ## drMD LIBRARIES
 from Surgery import drSim, drRestraints, drFirstAid

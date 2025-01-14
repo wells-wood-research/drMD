@@ -5,7 +5,7 @@ import math
 
 ## OPENMM LIBRARIES
 import openmm as openmm
-import simtk.unit as unit
+import openmm.unit as unit
 from openmm import app
 
 ## drMD LIBRARIES

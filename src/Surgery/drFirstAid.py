@@ -7,7 +7,7 @@ from functools import wraps
 import openmm
 from openmm import app
 from openmm import OpenMMException
-import  simtk.unit  as unit
+import  openmm.unit  as unit
 
 ## drMD LIBRARIES
 from Surgery import drSim

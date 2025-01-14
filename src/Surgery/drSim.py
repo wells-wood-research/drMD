@@ -7,7 +7,7 @@ import sys
 ## OPENMM LIBRARIES
 import openmm.app as app
 import openmm as openmm
-import  simtk.unit  as unit
+import  openmm.unit  as unit
 ## MDTRAJ LIBRARIES // DISABLE WARNINGS
 import mdtraj 
 import warnings

@@ -36,8 +36,8 @@
 #         pathToInput/6eqe_replicate3.pdb
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_1_MD_Simulation_of_a_Protein
-  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_1_MD_Simulation_of_a_Protein/outputs
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_5_Metadynamics_of_Alanine_Dipeptide
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_5_Metadynamics_of_Alanine_Dipeptide/outputs
   
 ########################################################################
 hardwareInfo:
@@ -50,7 +50,7 @@ miscInfo:
   firstAidMaxRetries: 10
   boxGeometry: cubic
   writeMyMethodsSection: True
-  skipPdbTriage: False
+  skipPdbTriage: True
   trajectorySelections:
   - selection:
       keyword: protein

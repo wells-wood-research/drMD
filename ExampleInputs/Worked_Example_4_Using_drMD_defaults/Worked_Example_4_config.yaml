@@ -1,6 +1,6 @@
 ## sparse pathInfo
 pathInfo: 
-  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard"
+  inputDir: "/home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_4_Using_drMD_defaults"
 ## sparse hardwareInfo
 hardwareInfo:
   platform: CUDA

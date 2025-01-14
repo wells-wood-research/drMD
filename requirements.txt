@@ -2,7 +2,7 @@ pyyaml
 argpass
 pandas
 mdtraj
-numpy
+numpy<2
 matplotlib
 weasyprint
 scipy

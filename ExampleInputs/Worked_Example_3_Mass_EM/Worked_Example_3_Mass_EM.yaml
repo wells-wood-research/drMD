@@ -14,8 +14,8 @@
 #
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_example_3_Mass_EM
-  outputDir: /home/esp/scriptDevelopment/drMD/03_em_outputs
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_example_3_Mass_EM/inputs
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_example_3_Mass_EM/outputs
   
 ########################################################################
 hardwareInfo:
