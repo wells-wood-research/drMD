@@ -221,7 +221,7 @@ def pdb_triage_protocol(pdbFile: FilePath, inputDir: DirectoryPath, config: dict
 
     return problemsDict
 
-def check_for_shared_chains(pdbDf: pd.DataFrame, config: dict) -> tuple[bool, Optional[Dict[str, int]]]:
+def check_for_shared_chains(pdbDf: pd.DataFrame, config: dict) -> Tuple[bool, Optional[Dict[str, int]]]:
     """
     Check to see if ligand and proteins are in the same chain
 
@@ -248,7 +248,7 @@ def check_for_shared_chains(pdbDf: pd.DataFrame, config: dict) -> tuple[bool, Op
 
 
 #################################################################################################
-def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict] = None) -> tuple[bool, Optional[Dict[str, int]]]:
+def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict] = None) -> Tuple[bool, Optional[Dict[str, int]]]:
     """
     Check for organometallic ligand in a pdb dataframe.
 
@@ -296,7 +296,7 @@ def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict]
 
     
 #################################################################################################
-def check_for_non_canonical_amino_acids(pdbDf: pd.DataFrame, inputDir: DirectoryPath, config: dict) -> tuple[bool, Optional[Dict[str, int]]]:
+def check_for_non_canonical_amino_acids(pdbDf: pd.DataFrame, inputDir: DirectoryPath, config: dict) -> Tuple[bool, Optional[Dict[str, int]]]:
     """
     Check for non-canonical amino acids in the pdb dataframe.
 
@@ -341,7 +341,7 @@ def check_for_non_canonical_amino_acids(pdbDf: pd.DataFrame, inputDir: Directory
     return bool(nonCanonicalAminoAcids), nonCanonicalAminoAcids or None
                 
 #################################################################################################
-def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
     """
     Checks if a pdb dataframe contains missing sidechains.
     
@@ -382,7 +382,7 @@ def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Di
     return bool(missingSidechains), missingSidechains or None
 
 #################################################################################################
-def check_for_broken_chains(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_broken_chains(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
     """
     Check for broken chains in the protein dataframe.
     
@@ -450,7 +450,7 @@ def are_consecutive(intList: List[int]) -> bool:
     
     return True, None
 #################################################################################################
-def check_for_multiple_conformers(pdbDf: pd.DataFrame) -> tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_multiple_conformers(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
     """
     Checks for multiple conformers in a pdb dataframe.
 

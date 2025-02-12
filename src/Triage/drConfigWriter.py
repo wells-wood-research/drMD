@@ -19,7 +19,7 @@ from UtilitiesCloset.drCustomClasses import FilePath, DirectoryPath
 def make_per_protein_config(
     pdbFile: FilePath,
     batchConfig: dict,
-) -> tuple[dict, Optional[dict], dict]:
+) -> Tuple[dict, Optional[dict], dict]:
     """
     This function writes a config.yaml file for each MD simulation
 
@@ -29,7 +29,7 @@ def make_per_protein_config(
         batchConfig (dict): Batch configuration dictionary
 
     Returns:
-        tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
+        Tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
     """    
 
     # Skip if not a PDB file
@@ -120,7 +120,7 @@ def make_proteinInfo(
         batchConfig (dict): Batch configuration dictionary
 
     Returns:
-        tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
+        Tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
     """
     
     ## GET PROTEIN AND ION ATOMS IN INPUT GEOMETRY
@@ -154,7 +154,7 @@ def make_ligandInfo(
         batchConfig (dict): Batch configuration dictionary
 
     Returns:
-        tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
+        Tuple[dict, Optional[dict], dict]: A tuple containing proteinInfo, ligandInfo, and hardwareInfo
     """
     
 
