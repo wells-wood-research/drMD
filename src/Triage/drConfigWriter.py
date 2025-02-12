@@ -13,7 +13,7 @@ from ExaminationRoom import drLogger
 from pdbUtils import pdbUtils
 
 ## CLEAN CODE
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 from UtilitiesCloset.drCustomClasses import FilePath, DirectoryPath
 ######################################################################################
 def make_per_protein_config(
