@@ -1,0 +1,116 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   This prescription is used to perform a standard MD simulation of a protein-ligand complex
+#   
+#   A simple equilibriation protocol is used to equilibrate the system:
+#     1. ENERGY MINIMISATION
+#        An energy minimisation is performed to relex the system into a local minimum
+#     2. NVT PRE-EQUILIBRIATION
+#        An NVT simulation is performed at 300 K, this is used to equilibrate the system's water molecules
+#        This allows the pressure of the system to reach equilibrium
+#        Position restraints are applied to the protein and ligand, as we are just equilibrating water
+#     3. NPT PRE-EQUILIBRIATION
+#        An NPT simulation is performed at 300 K, this is used to further equilibrate the system's water molecules
+#        This allows the box size of the system to reach equilibrium
+#        Position restraints are applied to the protein and ligand, as we are just equilibrating water
+#     4. SLOW INTERGRATOR STEP
+#        This step is run without any restraints, sometimes the removal of restraints can cause numerical errors
+#        To prevent this, we run this step using a small timestep of 0.5 fs
+#     5. EQUILIBRIATION
+#        An unrestrained NPT simulation is performed for 5 nanoseconds
+#        No measurements are taken during this simulation, we are just equilibrating the system
+#        Before you run any analysis on the following PRODUCTION MD step, check the vitals report for this step
+#        If this step has not reached equilibriation, it is best practace to extend the duration of this step 
+#        before running your PRODUCTION MD step
+#     6. PRODUCTION MD
+#        A long(ish) production MD simulation is performed for 50 nanoseconds
+#        Measurements should be taken during this step, provided it starts at equilibriation conditions (see above)
+#        At 50 ns, you should see many interesting interactions.
+#        You may need a longer production simulation to see large-scale motions 
+#
+#
+#         Note that we recommend that you use three replicates per protein 
+#         To do this, simply place three copies of your PDB file in the input directory, for example:
+#         pathToInput/6eqe_replicate1.pdb
+#         pathToInput/6eqe_replicate2.pdb 
+#         pathToInput/6eqe_replicate3.pdb
+########################################################################
+pathInfo:
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_tadas
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_tadas/outputs
+  
+########################################################################
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+########################################################################
+miscInfo:
+  pH: 7.4
+  firstAidMaxRetries: 10
+  boxGeometry: cubic
+  writeMyMethodsSection: True
+  skipPdbTriage: True
+  trajectorySelections:
+  - selection:
+      keyword: protein
+  - selection:
+      keyword: ligand
+  - selection:
+      keyword: water
+
+########################################################################
+equilibriationRestraints: &equilibriationRestraints
+    - restraintType: position
+      parameters:
+        k: 100
+      selection:
+        keyword: protein
+########################################################################
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+########################################################################
+  - stepName: 02_NVT_pre-equilibriation
+    simulationType: NVT
+    duration: 100 ps
+    timestep: 0.1 fs
+    temperature: 300
+    logInterval: 1 ps
+    restraintInfo: *equilibriationRestraints
+#########################################################################
+  - stepName: 03_NPT_pre-equilibriation
+    simulationType: NPT
+    duration: 100 ps
+    timestep: 1 fs
+    temperature: 300
+    logInterval: 1 ps
+    restraintInfo: *equilibriationRestraints
+########################################################################
+  - stepName: 04_NpT_slowTimeStep
+    simulationType: NpT
+    duration: 10 ps
+    timestep: 0.5 fs
+    temperature: 300
+    logInterval: 1 ps
+########################################################################
+  - stepName: 05_Equilibriation
+    simulationType: NpT
+    duration: 5 ns
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 500 ps
+########################################################################
+  - stepName: 06_Production_MD
+    simulationType: NpT
+    duration: 50 ns
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 50 ps
+################################################
+
+

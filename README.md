@@ -33,9 +33,9 @@ We recommend that you use the following steps to install **drMD**:
 git clone https://github.com/wells-wood-research/drMD
 ```
 
-2. Create conda environment using the environment.yml file
+2. Create conda environment using the environment.yaml file
 ```bash
-conda env create -f environment.yml
+conda env create -f environment.yaml
 ```
 
 3. Activate conda environment

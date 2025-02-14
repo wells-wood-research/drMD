@@ -261,6 +261,8 @@ def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict]
     """
     # Initialize lists
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
+    ionResNames = drListInitiator.get_ion_residue_names()
+    
     organicElements = {"C", "N", "H", "O", "S", "P", "F", "CL",
                         "BR", "I", "SE", "B", "SI"}
 
@@ -271,9 +273,15 @@ def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict]
     # Loop through chains and residues in the pdb dataframe
     for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
         for resId, resDf in chainDf.groupby(f"RES_ID"):
-            resName: str = resDf["RES_NAME"].iloc[0]
+            ## skip if ion
+            atomNames = resDf["ATOM_NAME"]
+            if len(atomNames) == 1:
+                atomName = atomNames.iloc[0]
+                if atomName in ionResNames:
+                    continue
 
             # Skip if amino acid residue
+            resName: str = resDf["RES_NAME"].iloc[0]
             if resName in aminoAcidResNames:
                 continue
             try: 

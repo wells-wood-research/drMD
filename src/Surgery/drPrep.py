@@ -93,14 +93,31 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
     return solvatedPdb, inputCoords, amberParams
 #####################################################################################
 def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[FilePath, FilePath, FilePath]:
+    ## SPLIT INPUT PDB INTO PROT AND IONS IF PRESENT
+    inputPdb: FilePath = config["pathInfo"]["inputPdb"]
+    split_input_pdb(inputPdb =inputPdb,
+                    config = config,
+                    outDir=prepDir)
     ## PREPARE PROTEIN STRUCTURE
     protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir)  
+
+
+    protPrepDir = p.join(prepDir,"PROT")
+    if p.isdir(p.join(prepDir, "IONS")):
+        wholePrepDir: DirectoryPath = p.join(prepDir,"WHOLE")
+        os.makedirs(wholePrepDir,exist_ok=True)
+        allPdbs =  [protPdb, p.join(prepDir, "IONS", f"IONS.pdb")]
+        mergedPdb: FilePath = p.join(wholePrepDir,f"{protName}.pdb")
+        pdbUtils.mergePdbs(pdbList=allPdbs, outFile = mergedPdb)
+        mergedPdb: FilePath = drFixer.reset_atom_numbers(pdbFile = mergedPdb)
+        protPdb = mergedPdb
+        protPrepDir = p.join(prepDir,"WHOLE")
     ## MERGE PROTEIN PDBS
     outName: str = config["pathInfo"]["outputName"]
     ## MAKE AMBER PARAMETER FILES WITH TLEAP
     drLogger.log_info(f"Solvating, Charge Balencing and Creating parameters for {protName}...")
 
-    inputCoords, amberParams, solvatedPdb = make_amber_params(outDir = p.join(prepDir,"PROT"),
+    inputCoords, amberParams, solvatedPdb = make_amber_params(outDir = protPrepDir,
                                                     pdbFile= protPdb,
                                                 outName= outName, 
                                                 config = config)
@@ -271,17 +288,19 @@ def split_input_pdb(inputPdb: FilePath, config: Dict, outDir: DirectoryPath) -> 
     # Read whole pdb into a df
     pdbDf: pd.DataFrame = pdbUtils.pdb2df(inputPdb)
     # Write each ligand to a separate pdb file
-    ligandInfo: List[dict] = config["ligandInfo"]
-    for ligand in ligandInfo:
-        ligandName: str = ligand["ligandName"]
-        ligPrepDir: DirectoryPath = p.join(outDir, ligandName)
-        os.makedirs(ligPrepDir, exist_ok=True)
-        ligDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"] == ligandName]
-        pdbUtils.df2pdb(ligDf, p.join(ligPrepDir, f"{ligandName}.pdb"), chain=False)
-        pdbDf.drop(pdbDf[pdbDf["RES_NAME"] == ligandName].index, inplace=True)
+    ligandInfo: List[dict] = config.get("ligandInfo", None)
+    if not ligandInfo is None:
+        for ligand in ligandInfo:
+            ligandName: str = ligand["ligandName"]
+            ligPrepDir: DirectoryPath = p.join(outDir, ligandName)
+            os.makedirs(ligPrepDir, exist_ok=True)
+            ligDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"] == ligandName]
+            pdbUtils.df2pdb(ligDf, p.join(ligPrepDir, f"{ligandName}.pdb"), chain=False)
+            pdbDf.drop(pdbDf[pdbDf["RES_NAME"] == ligandName].index, inplace=True)
 
     ## extract ions from pdb dataframe
     ionResidueNames = drListInitiator.get_ion_residue_names()
+
     ionDf = pdbDf[pdbDf["RES_NAME"].isin(ionResidueNames)]
     if len(ionDf) > 0:
         # Write ions to pdb file    

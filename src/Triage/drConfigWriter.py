@@ -168,7 +168,7 @@ def make_ligandInfo(
     ionNames: set = drListInitiator.get_ion_residue_names()
 
     ligandDf: pd.DataFrame = pdbDf[~pdbDf["RES_NAME"].isin(aminoAcidNames) &
-                   ~pdbDf["ATOM_NAME"].str.upper().isin(ionNames)]
+                   ~pdbDf["ATOM_NAME"].isin(ionNames)]
 
     ## GET NAMES OF LIGANDS
     ligNames: list = ligandDf["RES_NAME"].unique().tolist()

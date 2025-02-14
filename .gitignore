@@ -7,3 +7,8 @@ outputs/*
 cspell.json
 ROADMAP.txt
 .pypirc
+
+*/outputs/*
+.vscode
+build
+build/*

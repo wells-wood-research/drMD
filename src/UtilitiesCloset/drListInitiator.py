@@ -54,13 +54,16 @@ def get_ion_residue_names() -> set:
     """ 
     Returns a list of the ion atom names.
     """
-    return {"Cl-", "Na+", ## counter-ions
-        "LI", "NA", "K", "RB", "CS", "TL", "CU", "AG", "NH4", "H3O", "F", "CL", "BR", "I",
-        "BE2", "CU2", "NI2", "PT2", "ZN2", "CO2", "PD2", "AG2", "CR2", "FE2", 
-        "MG2", "V2", "MN2", "HG2", "CD2", "YB2", "CA2", "SN2", "PB2", "EU2", 
-        "SR2", "SM2", "BA2", "RA2", "AL3", "FE3", "CR3", "IN3", "TL3", "Y3", 
-        "LA3", "CE3", "PR3", "ND3", "SM3", "EU3", "GD3", "TB3", "DY3", "ER3", 
-        "TM3", "LU3", "HF4", "ZR4", "CE4", "U4", "PU4", "TH4"}
+    return {
+    "AG", "AL", "Ag", "BA", "BR", "Be", "CA", "CD", "CE", "CL", "CO",
+    "CR", "CS", "CU", "CU1", "Ce", "Cl-", "Cr", "Dy", "EU", "EU3", "Er",
+    "F", "FE", "FE2", "GD3", "H3O+", "HE+", "HG", "HZ+", "Hf", "IN", "IOD",
+    "K", "K+", "LA", "LI", "LU", "MG", "MN", "NA", "NH4", "NI", "Na+",
+    "Nd", "PB", "PD", "PR", "PT", "Pu", "RB", "Ra", "SM", "SR", "Sm",
+    "Sn", "TB", "TL", "Th", "Tl", "Tm", "U4+", "V2+", "Y", "YB2", "ZN", "Zr"
+}
+
+
 
 ##################################################################################
 def get_backbone_atom_names() -> set:
