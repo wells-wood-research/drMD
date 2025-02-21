@@ -151,7 +151,7 @@ def run_serial(batchConfig: Dict) -> None:
         runConfigYaml: FilePath = drConfigWriter.make_per_protein_config(pdbFile, batchConfig)
         try:
             drOperator.drMD_protocol(runConfigYaml)
-            botchedSimulations.append(None)
+            botchedSimulations.append({"pdbName": pdbName, "errorMessage": None})
         except Exception as e:
             print(f"Error processing {pdbFile}: {e}")
             pdbName = p.splitext(p.basename(pdbFile))[0]

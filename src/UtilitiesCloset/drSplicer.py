@@ -131,7 +131,7 @@ def merge_partial_trajectories(config: Dict,
         pdbFile (Union[PathLike, str]): The path to the pdb file
         removePartials (bool, optional): Whether to remove partial trajectories. Defaults to False.  
     """
-    trajectorySelections = config["loggingInfo"]["trajectorySelections"]
+    trajectorySelections = config["miscInfo"]["trajectorySelections"]
     trajectoryPdb = make_trajectory_pdb(trajectorySelections, pdbFile, simDir)
     ## rename last trajectory to be made
     lastTrajectory = p.join(simDir, "trajectory.dcd")
