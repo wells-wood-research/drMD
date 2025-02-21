@@ -285,7 +285,9 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
         refPdb (str): The path to the reference PDB file.
         config (Dict): Dictionary containing information for all simluations in this run
     """
-    stepName = sim["stepName"]
+
+    ##TODO: REMOVE
+    stepName = sim["SMEG"]
     drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
     sim = process_sim_data(sim)

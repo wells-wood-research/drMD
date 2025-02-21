@@ -3,7 +3,11 @@ import os
 from os import path as p
 import numpy as np
 import yaml
+
+## ERROR HANDLING ##
+import traceback
 import inspect
+
 ## PARALLELISATION LIBRARIES
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
@@ -154,14 +158,31 @@ def run_serial(batchConfig: Dict) -> None:
             pdbName = p.splitext(p.basename(pdbFile))[0]
             botchedSimulations.append({"pdbName": pdbName, "errorMessage": None})
         except Exception as e:
-            currentFrame = inspect.currentframe()
-            functionName = inspect.getframeinfo(currentFrame).function
-        
+            tb = traceback.extract_tb(e.__traceback__)
+            if tb:
+                last_frame = tb[-1]
+                functionName = last_frame.name
+                lineNumber = last_frame.lineno
+                lineOfCode = last_frame.line
+                scriptName = last_frame.filename
+            else:
+                functionName = 'Unknown'
+                lineNumber = 'Unknown'
+                lineOfCode = 'Unknown'
+            
+            errorType = type(e).__name__
             print(f"Error processing {pdbFile}: {e}: during {functionName}")
             pdbName = p.splitext(p.basename(pdbFile))[0]
-            botchedSimulations.append({"pdbName": pdbName, "errorMessage":str(e), "functionName": functionName})
+            botchedSimulations.append({
+                "pdbName": pdbName,
+                "errorType": errorType,
+                "errorMessage": str(e),
+                "functionName": functionName,
+                "lineNumber": lineNumber,
+                "lineOfCode": lineOfCode,
+                "scriptName": scriptName
+            })
             continue
-
     if any(report["errorMessage"] is not None for report in botchedSimulations):
          drSplash.print_botched(botchedSimulations)
 ######################################################################################################

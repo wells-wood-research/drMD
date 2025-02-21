@@ -45,8 +45,9 @@ d::::::ddddd::::::ddr:::::r            M::::::M               M::::::MDDD:::::DD
     +resetTextColor)
 ###########################################################################################
 def print_botched(simulationReport: List[Union[None, dict]]) -> None:
-
+    greenText = "\033[32m"
     redText = "\033[31m"
+    orangeText = "\033[38;5;172m"
     yellowText = "\033[33m"
     resetTextColor = "\033[0m"
     # run(["clear"])
@@ -81,12 +82,16 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
     print(f"-->{' '*4}Simluations on the following systems failed to complete: ")
     for botchedSimulation in botchedSimulations:
         if botchedSimulation is not None:
-            print(f"{' '*7}System: {yellowText}{botchedSimulation['pdbName']}{resetTextColor}")
-            print(f"{' '*7}Error: {redText}{botchedSimulation['errorMessage']}{resetTextColor}")
+            print(f"{' '*7}For System:\t\t{yellowText}{botchedSimulation['pdbName']}{resetTextColor}")
+            print("")
+            print(f"{yellowText}{' '*7}{' '*7}{'#'*4}{' '*7}Traceback{' '*7}{'#'*4}{resetTextColor}")
+            print(f"{' '*7}In Script:\t\t{orangeText}{botchedSimulation['scriptName']}{resetTextColor}")
+            print(f"{' '*7}In Function:\t\t{orangeText}{botchedSimulation['functionName']}{resetTextColor}")
 
 
-
-
+            print(f"{' '*7}With Error:\t\t{redText}{botchedSimulation['errorType']}{resetTextColor}")
+            print(f"{' '*7}With Message:\t\t{redText}{botchedSimulation['errorMessage']}{resetTextColor}")
+            print(f"{' '*7}At Line Number:\t\t{redText}{botchedSimulation['lineNumber']}{resetTextColor}")
 
 ###########################################################################################
 
