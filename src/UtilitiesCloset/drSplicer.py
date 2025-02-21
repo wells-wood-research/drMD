@@ -148,7 +148,6 @@ def merge_partial_trajectories(config: Dict,
     ## sort the list so that trajectories are in chronological order
     trajectories = sorted(trajectories)
 
-
     ## merge trajectories
     merge_dcd_files(trajectories, trajectoryPdb,  lastTrajectory)
 

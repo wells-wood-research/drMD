@@ -3,7 +3,7 @@ import os
 from os import path as p
 import numpy as np
 import yaml
-
+import inspect
 ## PARALLELISATION LIBRARIES
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
@@ -151,11 +151,15 @@ def run_serial(batchConfig: Dict) -> None:
         runConfigYaml: FilePath = drConfigWriter.make_per_protein_config(pdbFile, batchConfig)
         try:
             drOperator.drMD_protocol(runConfigYaml)
+            pdbName = p.splitext(p.basename(pdbFile))[0]
             botchedSimulations.append({"pdbName": pdbName, "errorMessage": None})
         except Exception as e:
-            print(f"Error processing {pdbFile}: {e}")
+            currentFrame = inspect.currentframe()
+            functionName = inspect.getframeinfo(currentFrame).function
+        
+            print(f"Error processing {pdbFile}: {e}: during {functionName}")
             pdbName = p.splitext(p.basename(pdbFile))[0]
-            botchedSimulations.append({"pdbName": pdbName, "errorMessage":str(e)})
+            botchedSimulations.append({"pdbName": pdbName, "errorMessage":str(e), "functionName": functionName})
             continue
 
     if any(report["errorMessage"] is not None for report in botchedSimulations):
