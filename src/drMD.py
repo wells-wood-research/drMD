@@ -182,7 +182,7 @@ def run_serial(batchConfig: Dict) -> None:
                 "functionName": functionName,
                 "lineNumber": lineNumber,
                 "lineOfCode": lineOfCode,
-                "scriptName": scriptName
+                "scriptName": scriptName,
                 "fullTraceBack": fullTraceBack
             })
             continue
