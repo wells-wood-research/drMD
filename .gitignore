@@ -12,3 +12,5 @@ ROADMAP.txt
 .vscode
 build
 build/*
+
+test*
