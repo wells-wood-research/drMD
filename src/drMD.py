@@ -160,6 +160,8 @@ def run_serial(batchConfig: Dict) -> None:
         except Exception as e:
             tb = traceback.extract_tb(e.__traceback__)
             if tb:
+                tb.reverse()
+                fullTraceBack = [f"{frame.filename}:{frame.lineno} in {frame.name}" for frame in tb]
                 last_frame = tb[-1]
                 functionName = last_frame.name
                 lineNumber = last_frame.lineno
@@ -181,6 +183,7 @@ def run_serial(batchConfig: Dict) -> None:
                 "lineNumber": lineNumber,
                 "lineOfCode": lineOfCode,
                 "scriptName": scriptName
+                "fullTraceBack": fullTraceBack
             })
             continue
     if any(report["errorMessage"] is not None for report in botchedSimulations):

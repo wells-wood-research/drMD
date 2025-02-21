@@ -287,7 +287,7 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     """
 
     ##TODO: REMOVE
-    stepName = sim["SMEG"]
+    stepName = sim["stepName"]
     drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
     sim = process_sim_data(sim)

@@ -93,6 +93,10 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
             print(f"{' '*7}With Message:\t\t{redText}{botchedSimulation['errorMessage']}{resetTextColor}")
             print(f"{' '*7}At Line Number:\t\t{redText}{botchedSimulation['lineNumber']}{resetTextColor}")
 
+            print(f"Full debug traceback:")
+            for tracebackLine in botchedSimulation["fullTraceBack"]:
+                print(f"\t{tracebackLine}")
+
 ###########################################################################################
 
 def print_prep_failed(errorMessage: str, stepName) -> None:
