@@ -12,5 +12,5 @@ ROADMAP.txt
 .vscode
 build
 build/*
-
+test_tadas_crahs
 test*

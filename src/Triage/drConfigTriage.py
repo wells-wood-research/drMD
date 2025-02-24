@@ -826,8 +826,8 @@ def check_selection(selection: dict) -> list:
                 pass
             elif not isinstance(resName, str):
                 selectionDisorders.append("RES_NAME must be a three-letter string")
-            elif len(resName) != 3:
-                selectionDisorders.append("RES_NAME must be a three-letter string")
+            elif len(resName) > 3:
+                selectionDisorders.append("RES_NAME must be an up-to three-letter string")
             ## check resId
             resId = customSelctionDict.get("RES_ID", None)
             if resId is None:
