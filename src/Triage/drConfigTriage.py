@@ -832,7 +832,7 @@ def check_selection(selection: dict) -> list:
             resId = customSelctionDict.get("RES_ID", None)
             if resId is None:
                 selectionDisorders.append("No RES_ID specified in selection")
-            elif resId == "all":
+            elif resId == "_":
                 pass
             elif not isinstance(resId, int):
                 selectionDisorders.append("RES_ID must be an integer")
