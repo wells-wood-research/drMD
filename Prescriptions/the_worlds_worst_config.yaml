@@ -21,11 +21,11 @@ hardwareInfo:
 
 ligandInfo:
       - ligandName: FAD
-        toppar: No
+        frcmod: No
         mol2: yesplease
         charge: -2
       - ligandName: PLM
-        toppar: True
+        frcmod: True
         mol2: nothanks
   
 ########################################################################

@@ -414,7 +414,7 @@ def ligand_mol2(
 
     return ligMol2, ligandFileDict
 ######################### TOPPAR CREATION ##########################################
-def ligand_toppar(ligand: dict,
+def ligand_frcmod(ligand: dict,
                    inputDir: DirectoryPath,
                      ligandName: str,
                        ligParamDir: DirectoryPath,
@@ -439,7 +439,7 @@ def ligand_toppar(ligand: dict,
     """
 
     # Look for frcmod from config, then in ligParamDir, if not found, create new frcmod
-    if ligand.get("toppar"):  # Look in config
+    if ligand.get("frcmod"):  # Look in config
         # Use the frcmod file from the config
         ligFrcmod: FilePath = p.join(inputDir, f"{ligandName}.frcmod")
 
@@ -511,7 +511,7 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
         
         # Create frcmod file
         drLogger.log_info(f"Creating parameter files for ligand {ligandName}...",True)
-        ligFileDict = ligand_toppar(ligand,inputDir,ligandName,ligParamDir,
+        ligFileDict = ligand_frcmod(ligand,inputDir,ligandName,ligParamDir,
                                     ligPrepDir,ligMol2,ligFileDict)
 
         ligandFileDict.update({ligandName:ligFileDict})

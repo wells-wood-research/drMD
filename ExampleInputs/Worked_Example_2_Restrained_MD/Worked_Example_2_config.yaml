@@ -43,7 +43,7 @@ ligandInfo:
   - ligandName: "PET"
     charge: 0
     protons: False
-    toppar: False
+    frcmod: False
     mol2: False
 ########################################################################
 hardwareInfo:

@@ -671,7 +671,7 @@ def check_ligandInfo(config: dict) -> Tuple[dict, bool]:
 
     Raises:
         TypeError: If ligandInfo is not a list of dictionaries, or if ligandName is not a string
-        TypeError: If protons, charge, toppar, or mol2 is not a boolean
+        TypeError: If protons, charge, frcmod, or mol2 is not a boolean
         ValueError: If ligandInfo is an empty list
         ValueError: If ligandInfo does not have at least one entry
     """
@@ -709,7 +709,7 @@ def check_ligandInfo(config: dict) -> Tuple[dict, bool]:
             ligandInfoDisorders[ligandName]["ligandName"] = None
 
         ## check boolean flags
-        for argName in ["protons", "toppar", "mol2"]:
+        for argName in ["protons", "frcmod", "mol2"]:
             argValue = ligand.get(argName, None)
             if argValue is None:
                 ligandInfoDisorders[ligandName][argName] = f"each ligand entry must have a {argName} entry as a bool"

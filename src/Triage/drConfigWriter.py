@@ -207,7 +207,7 @@ def make_ligandInfo(
             tmpDict: dict = {"ligandName": ligName,
                        "protons": isLigandProtonated,
                        "mol2": isLigandMol2,
-                       "toppar": isLigandFrcmod,
+                       "frcmod": isLigandFrcmod,
                        "charge": charge}
             ligandInfo.append(tmpDict)
 

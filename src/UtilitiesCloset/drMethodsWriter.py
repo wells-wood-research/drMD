@@ -148,7 +148,7 @@ def write_ligand_parameterisation_methods(configDicts: List[dict], methodsFile: 
                 obabelProtonatedLigands.add(ligand["ligandName"])
             if ligand["mol2"]:
                 antechamberChargesLigands.add(ligand["ligandName"])
-            if ligand["toppar"]:
+            if ligand["frcmod"]:
                 parmchkParamsLigands.add(ligand["ligandName"])
 
     ## if no ligand in ligandInfo, then return an empty string 

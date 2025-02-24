@@ -5,7 +5,7 @@
 [] look through and see what needs to be done!
 
 ## configs
-[] toppar --> frcmod
+[] frcmod --> frcmod
 
 ## error handling
 [] report what function died "__name__" dunder method
