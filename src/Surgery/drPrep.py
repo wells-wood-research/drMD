@@ -681,33 +681,30 @@ def detect_disulphides(pdbFile: FilePath) -> List[str]:
     Detect disulphides in a PDB file.
     """
     pdbDf: pd.DataFrame = pdbUtils.pdb2df(pdbFile)
-    cyxDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"] == "CYX"]
+    cysteineDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(["CYX", "CYS"])]
 
-    sgDf: pd.DataFrame = cyxDf[cyxDf["ATOM_NAME"] == "SG"]
-
+    sgDf: pd.DataFrame = cysteineDf[cysteineDf["ATOM_NAME"] == "SG"]
 
     sgCoords: np.array = sgDf[["X", "Y", "Z"]].values
 
-
     distanceMatrixDf = pd.DataFrame(np.sqrt(np.sum((sgCoords[:, np.newaxis, :] - sgCoords[np.newaxis, :, :])**2, axis=-1)),
-                                   index=sgDf["RES_ID"], columns=sgDf["RES_ID"])
+                                   index=sgDf["RES_ID"].values, columns=sgDf["RES_ID"].values)
     
-    disulphidesDf = distanceMatrixDf[(distanceMatrixDf < 2.5) & (distanceMatrixDf != 0)]
+    disulphidesDf = distanceMatrixDf.applymap(
+        lambda x: x < 3.0 and x != 0
+    )
 
 
-    disulphidePairs = [sorted((index, col)) for index, row in disulphidesDf.iterrows() for col in disulphidesDf.columns if not pd.isna(row[col])]
-
-    uniqueDisulphidePairs = {tuple(pair) for pair in disulphidePairs}
+    disulphidePairs = [
+        (row, col)
+        for (row, col), value in disulphidesDf.stack().items()
+        if value
+    ]
+    uniqueDisulphidePairs = {tuple(sorted(pair)) for pair in disulphidePairs}
 
     return uniqueDisulphidePairs
 
     
-
-
-
-
-
-
 #####################################################################################
 def make_amber_params(
     outDir: DirectoryPath,
@@ -738,7 +735,18 @@ def make_amber_params(
 
 
     ## find dusulphides
-    disulphidePairs: List[Tuple[int, int]] = detect_disulphides(pdbFile)
+    disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(pdbFile)
+
+    ## to cope with disulphides between different chains, we need to first renumber the residues
+    ## then redetect the disulphides
+    if len(disulphideAtomPairs) > 0:
+        amberNumberedPdb: FilePath = p.join(outDir, f"PROT_renumbered.pdb") 
+        make_amber_renumbered_pdb(pdbFile, amberNumberedPdb)
+        disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(amberNumberedPdb)
+        change_cys_to_cyx(amberNumberedPdb, disulphideAtomPairs)
+        remove_hydrogens_for_disulfides(amberNumberedPdb, disulphideAtomPairs)
+        pdbFile = amberNumberedPdb
+
 
     boxGeometry: str = config["miscInfo"]["boxGeometry"]
     if boxGeometry == "cubic":
@@ -771,7 +779,7 @@ def make_amber_params(
                 if p.isfile(ligLib):
                     f.write(f"loadoff {ligLib}\n")
 
-
+  
         # Load the protein structure
         f.write(f"mol = loadpdb {pdbFile}\n")
 
@@ -782,8 +790,8 @@ def make_amber_params(
         f.write("addions mol Cl- 0\n")
 
         ## make disulphide bonds
-        for disulphidePair in disulphidePairs:
-            f.write(f"bond mol.{disulphidePair[0]}.SG mol.{disulphidePair[1]}.SG\n")
+        for disulphideAtomPair in disulphideAtomPairs:
+            f.write(f"bond mol.{disulphideAtomPair[0]}.SG mol.{disulphideAtomPair[1]}.SG\n")
 
         # Save the solvated protein structure and parameter files
         solvatedPdb: str = f"{outName}_solvated.pdb"
@@ -805,6 +813,47 @@ def make_amber_params(
     ## reset chain and residue IDs in amber PDB
     solvatedPdb: FilePath = p.join(outDir, solvatedPdb)
     return inputCoords, amberParams, solvatedPdb
+
+def make_amber_renumbered_pdb(inPdb, outPdb):
+    inDf = pdbUtils.pdb2df(inPdb)
+
+    outDf = inDf.copy()
+
+    newResId = 0
+    for chainId, chainDf in inDf.groupby("CHAIN_ID"):
+        for resId, resDf in chainDf.groupby("RES_ID"):
+            newResId += 1
+            outDf.loc[(outDf["CHAIN_ID"] == chainId) & (outDf["RES_ID"] == resId), "RES_ID"] = newResId
+
+    pdbUtils.df2pdb(outDf, outPdb)
+
+
+
+def remove_hydrogens_for_disulfides(inPdb, disulphideAtomPairs):
+    """
+    Deletes HG atoms in Cys residues that form disulphide bonds
+    """
+    inDf = pdbUtils.pdb2df(inPdb)
+
+    for disulphideAtomPair in disulphideAtomPairs:
+        inDf = inDf[~((inDf["RES_ID"] == disulphideAtomPair[0]) & (inDf["ATOM_NAME"] == "HG"))]
+        inDf = inDf[~((inDf["RES_ID"] == disulphideAtomPair[1]) & (inDf["ATOM_NAME"] == "HG"))]
+
+    inDf["ATOM_ID"] = range(1, len(inDf) + 1)
+
+    pdbUtils.df2pdb(inDf, inPdb)
+
+
+def change_cys_to_cyx(inPdb, disulphideAtomPairs):
+    """
+    Changes Cys residues that form disulphide bonds to CYX"""
+    inDf = pdbUtils.pdb2df(inPdb)
+
+    for disulphideAtomPair in disulphideAtomPairs:
+        inDf.loc[(inDf["RES_ID"] == disulphideAtomPair[0]), "RES_NAME"] = "CYX"
+        inDf.loc[(inDf["RES_ID"] == disulphideAtomPair[1]), "RES_NAME"] = "CYX"
+
+    pdbUtils.df2pdb(inDf, inPdb)
 #####################################################################################
 def run_with_log(
     command: str,

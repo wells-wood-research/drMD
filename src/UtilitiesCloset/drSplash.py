@@ -1,7 +1,7 @@
 ## BASIC PYTHON LIBRARIES
 from subprocess import run
 import textwrap
-
+from os import path as p
 ##  CLEAN CODE
 from typing import Optional, Union, List
 
@@ -50,6 +50,8 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
     orangeText = "\033[38;5;172m"
     yellowText = "\033[33m"
     resetTextColor = "\033[0m"
+    tealColor = "\033[38;5;37m" 
+
     # run(["clear"])
     print(redText+
           f"""
@@ -80,11 +82,14 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
     botchedSimulations = [sim for sim in simulationReport if sim["errorMessage"] is not None]
     print(f"-->{' '*4}drMD failed to complete simulations for {redText}{str(len(botchedSimulations))}{resetTextColor} out of {str(len(simulationReport))} input systems")
     print(f"-->{' '*4}Simluations on the following systems failed to complete: ")
+
+
     for botchedSimulation in botchedSimulations:
         if botchedSimulation is not None:
+            print(f"{redText}{' '*7}⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕{resetTextColor}")
             print(f"{' '*7}For System:\t\t{yellowText}{botchedSimulation['pdbName']}{resetTextColor}")
             print("")
-            print(f"{yellowText}{' '*7}{' '*7}{'#'*4}{' '*7}Traceback{' '*7}{'#'*4}{resetTextColor}")
+            print(f"{tealColor}{' '*7}{'#'*4}{' '*7}Traceback{' '*7}{'#'*4}{resetTextColor}")
             print(f"{' '*7}In Script:\t\t{orangeText}{botchedSimulation['scriptName']}{resetTextColor}")
             print(f"{' '*7}In Function:\t\t{orangeText}{botchedSimulation['functionName']}{resetTextColor}")
 
@@ -93,10 +98,19 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
             print(f"{' '*7}With Message:\t\t{redText}{botchedSimulation['errorMessage']}{resetTextColor}")
             print(f"{' '*7}At Line Number:\t\t{redText}{botchedSimulation['lineNumber']}{resetTextColor}")
 
-            print(f"Full debug traceback:")
-            for tracebackLine in botchedSimulation["fullTraceBack"]:
-                print(f"\t{tracebackLine}")
+            print(f"{tealColor}{' '*7}{'#'*4}{' '*7}Full Debug Traceback{' '*7}{'#'*4}{resetTextColor}")
 
+            print(f"\t{orangeText}{'LINE NUMBER':<10}{yellowText}{'FUNCTION':>30}{resetTextColor}\t/path/to/crashed/{tealColor}script_name.py{resetTextColor}")
+            print(f"\t{'---':<10}{'---':>30}\t{'---'}")
+            for tracebackLine in botchedSimulation["fullTraceBack"]:
+                scriptPath = tracebackLine.split(":")[0]
+                scriptDir = p.dirname(scriptPath)
+                scriptName = p.basename(scriptPath)
+                lineNumber = tracebackLine.split(":")[1].split("in")[0].strip()
+                functionName = tracebackLine.split(":")[1].split("in")[1].strip()
+                print(f"\t{orangeText}{lineNumber:<10}{yellowText}{functionName:>30}{resetTextColor}\t{scriptDir}/{tealColor}{scriptName}{resetTextColor}")
+    print(f"{redText}⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕")
+    print(resetTextColor)
 ###########################################################################################
 
 def print_prep_failed(errorMessage: str, stepName) -> None:
@@ -243,7 +257,6 @@ def print_config_error(configDisorders) -> None:
 ░       ░ ░ ░ ▒     ░   ░ ░  ░ ░    ▒ ░ ░   ░       ░     ░░   ░   ░░   ░ ░ ░ ░ ▒    ░░   ░ 
 ░ ░         ░ ░           ░         ░       ░       ░  ░   ░        ░         ░ ░     ░     
 ░          
-⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
           """)
     print(f"{resetTextColor}The following disorders have been found in your config file:")    
     print(f"{resetTextColor}Colour Key: | {greenText}Input Correct{resetTextColor} | {orangeText}Non Fatal, Default Used{resetTextColor} | {redText}Fatal Issue{resetTextColor} |")    
@@ -284,6 +297,8 @@ def print_config_error(configDisorders) -> None:
                     print_config_text(argName, argDisorder, redText, 0)
             elif isinstance(argDisorder, dict):
                 loop_disorder_dict(argName, argDisorder)
+
+    print(f"{redText}⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕")
 
     print(resetTextColor)
     exit(1)

@@ -186,7 +186,7 @@ The **hardwareInfo** entry in the config file is a dictionary containing three p
   > If you don't have a GPU you can use the CPU option, this will be a lot slower.
   > Energy minimisation calculations do not benefit from GPU acceleration, so you should use the CPU option for these
 
-<a id="parallelcpu"></a>
+<a id="parallelCPU"></a>
 ### :anatomical_heart:  parallelCPU
 *(int)* This is the number  of simulations that will be run in parallel
 

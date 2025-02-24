@@ -3,6 +3,7 @@ import os
 from os import path as p
 import numpy as np
 import yaml
+import itertools
 
 ## ERROR HANDLING ##
 import traceback
@@ -50,7 +51,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     except (FileNotFoundError, yaml.YAMLError, KeyError, TypeError, ValueError) as e:
         drSplash.print_config_error(e)
 
-    batchConfig, configTriageLog  = drConfigTriage.validate_config(batchConfig)
+    batchConfig  = drConfigTriage.validate_config(batchConfig)
 
     ## unpack batchConfig into variables for this function
     outDir: DirectoryPath = batchConfig["pathInfo"]["outputDir"]
@@ -62,7 +63,6 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     ## create logDir if it doesn't exist
     logDir: DirectoryPath = p.join(outDir, "00_drMD_logs")
     os.makedirs(logDir, exist_ok=True)
-    os.replace(configTriageLog, p.join(logDir,"config_triage.log"))
 
     skipPdbTriage = batchConfig["miscInfo"].get("skipPdbTriage", False)
     if not skipPdbTriage:
@@ -153,41 +153,45 @@ def run_serial(batchConfig: Dict) -> None:
     for pdbFile in pdbFiles:
         # Process the PDB file
         runConfigYaml: FilePath = drConfigWriter.make_per_protein_config(pdbFile, batchConfig)
+        pdbName = p.splitext(p.basename(pdbFile))[0]
         try:
             drOperator.drMD_protocol(runConfigYaml)
-            pdbName = p.splitext(p.basename(pdbFile))[0]
-            botchedSimulations.append({"pdbName": pdbName, "errorMessage": None})
         except Exception as e:
-            tb = traceback.extract_tb(e.__traceback__)
-            if tb:
-                tb.reverse()
-                fullTraceBack = [f"{frame.filename}:{frame.lineno} in {frame.name}" for frame in tb]
-                last_frame = tb[-1]
-                functionName = last_frame.name
-                lineNumber = last_frame.lineno
-                lineOfCode = last_frame.line
-                scriptName = last_frame.filename
-            else:
-                functionName = 'Unknown'
-                lineNumber = 'Unknown'
-                lineOfCode = 'Unknown'
-            
-            errorType = type(e).__name__
-            print(f"Error processing {pdbFile}: {e}: during {functionName}")
-            pdbName = p.splitext(p.basename(pdbFile))[0]
-            botchedSimulations.append({
-                "pdbName": pdbName,
-                "errorType": errorType,
-                "errorMessage": str(e),
-                "functionName": functionName,
-                "lineNumber": lineNumber,
-                "lineOfCode": lineOfCode,
-                "scriptName": scriptName,
-                "fullTraceBack": fullTraceBack
-            })
-            continue
-    if any(report["errorMessage"] is not None for report in botchedSimulations):
+            errorData = handle_exceptions(e, pdbName)
+            botchedSimulations.append(errorData)
+
+    if len(botchedSimulations) > 0:
          drSplash.print_botched(botchedSimulations)
+######################################################################################################
+def handle_exceptions(e, pdbName):
+    tb = traceback.extract_tb(e.__traceback__)
+    if tb:
+        tb.reverse()
+        fullTraceBack = [f"{frame.filename}:{frame.lineno} in {frame.name}" for frame in tb]
+        last_frame = tb[-1]
+        functionName = last_frame.name
+        lineNumber = last_frame.lineno
+        lineOfCode = last_frame.line
+        scriptName = last_frame.filename
+    else:
+        functionName = 'Unknown'
+        lineNumber = 'Unknown'
+        lineOfCode = 'Unknown'
+    
+    errorType = type(e).__name__
+    errorData: dict = {
+        "pdbName": pdbName,
+        "errorType": errorType,
+        "errorMessage": str(e),
+        "functionName": functionName,
+        "lineNumber": lineNumber,
+        "lineOfCode": lineOfCode,
+        "scriptName": scriptName,
+        "fullTraceBack": fullTraceBack
+    }
+    return errorData
+
+
 ######################################################################################################
 def run_parallel(batchConfig: Dict) -> None:
     """
@@ -220,17 +224,15 @@ def run_parallel(batchConfig: Dict) -> None:
 
     try:
         ## run simulations in parallel
-        simulationReports = process_map(per_core_worker, batchedArgsWithPos, 
+        botchedSimulations = process_map(per_core_worker, batchedArgsWithPos, 
                     max_workers=parallelCpus)
     except BrokenProcessPool:
         print("BrokenProcessPool: Terminating remaining processes")
 
-    simulationReport = []
-    for report in simulationReports:
-        simulationReport.extend(report)
+    botchedSimulations = list(itertools.chain.from_iterable(botchedSimulations))
 
-    if any(report["errorMessage"] is not None for report in simulationReport):
-         drSplash.print_botched(simulationReport)
+    if len(botchedSimulations) > 0:
+         drSplash.print_botched(botchedSimulations)
 ######################################################################################################
 def per_core_worker(batchedArgsWithPos: Tuple[Dict, int]) -> None:
     """
@@ -244,7 +246,7 @@ def per_core_worker(batchedArgsWithPos: Tuple[Dict, int]) -> None:
     Returns:
         None
     """
-    perWorkerSimulationReport: list[Dict] = []
+    perWorkerBotchedSimulations: list[Dict] = []
     ## unpack batchedArgsWithPos into the batch of arguments for 
     batchedArgs, pos = batchedArgsWithPos
 
@@ -268,13 +270,14 @@ def per_core_worker(batchedArgsWithPos: Tuple[Dict, int]) -> None:
                 runConfigYaml: FilePath = drConfigWriter.make_per_protein_config(pdbFile, batchConfig)
                 try:
                     drOperator.drMD_protocol(runConfigYaml)
-                    perWorkerSimulationReport.append({"pdbName": pdbName, "errorMessage": None})
+        
                 except Exception as e:
-                    perWorkerSimulationReport.append({"pdbName": pdbName, "errorMessage": str(e)})
+                    errorData = handle_exceptions(e, pdbName)
+                    perWorkerBotchedSimulations.append(errorData)
                     continue
                 progress.update(1)
             progress.close()  
-    return perWorkerSimulationReport
+    return perWorkerBotchedSimulations
 ######################################################################################################
 
 if __name__ == "__main__":

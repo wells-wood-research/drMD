@@ -360,7 +360,7 @@ def run_firstAid_npt_simulation(prmtop: str, inpcrd: str, sim: dict, saveFile: s
     firstAidSimInfo =  {
         "stepName" : f"firstAid_step_NpT_{firstAidTries}",
         "simulationType": "NPT",
-        "duration" : "10 ps",
+        "duration" : "100 ps",
         "timestep" : "0.1 fs",
         "temperature" : 10,
         "logInterval" : "1 ps",

@@ -56,8 +56,11 @@ def log_info(message: str, printToTerminal: bool = False, persist: bool = False)
 
     message = f"-->{' '*4}{message}"
     # Log to the file
-    logging.info(message)
-    
+    # Set up logging format
+    logging.basicConfig(format='%(message)s', level=logging.INFO)
+
+    # Log to the file
+    logging.info(message)    
     # Optionally print to the terminal
     if printToTerminal:
         if persist:

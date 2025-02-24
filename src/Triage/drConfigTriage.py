@@ -33,33 +33,39 @@ def validate_config(config: dict) -> FilePath:
     - config (dict)
     """
 
-    ## set up logging
+    # ## set up logging
     topDir: DirectoryPath = os.getcwd()
-    configTriageLog: FilePath = p.join(topDir,"config_triage.log")
-    drLogger.setup_logging(configTriageLog)
-    drLogger.log_info(f"Checking config file...",True)
+    # configTriageLog: FilePath = p.join(topDir,"config_triage.log")
+    # drLogger.setup_logging(configTriageLog)
+    # configTriageLogData.append(f"Checking config file...",True)
 
+
+        ## DEFAULTS ###
     ## get some defaults for config
-    configDefaults = init_config_defaults(topDir)
+    configDefaults: dict = init_config_defaults(topDir)
+    ## merge with config to apply defaults to empty fields
     config = {**configDefaults, **config}
+
     ## check each major section in config file
     ## throw errors with a nice splash screen if something goes wrong
-    noDisordersFound = True
     configDisorders = {}
-    config, configDisorders["miscInfo"], noDisordersFound = check_miscInfo(config, configDefaults, noDisordersFound)
+    config, configDisorders["miscInfo"], miscInfoOk = check_miscInfo(config, configDefaults)
 
-    config, configDisorders["pathInfo"], noDisordersFound = check_pathInfo(config, configDefaults, noDisordersFound)
-    config, configDisorders["hardwareInfo"], noDisordersFound  = check_hardwareInfo(config, configDefaults, noDisordersFound)
+    config, configDisorders["pathInfo"], pathInfoOk = check_pathInfo(config, configDefaults)
+    config, configDisorders["hardwareInfo"], hardwareInfoOk  = check_hardwareInfo(config, configDefaults)
 
-    configDisorders["simulationInfo"], noDisordersFound, config  = check_simulationInfo(config, noDisordersFound)
+    config, configDisorders["simulationInfo"], simulationInfoOk = check_simulationInfo(config)
 
-    configDisorders["aftercareInfo"], noDisordersFound  = check_aftercareInfo(config,noDisordersFound)
+    configDisorders["aftercareInfo"], aftercareInfoOk  = check_aftercareInfo(config)
   
-    configDisorders["ligandInfo"], noDisordersFound  = check_ligandInfo(config, noDisordersFound)
+    configDisorders["ligandInfo"], ligandInfoOk  = check_ligandInfo(config)
                 
-    if noDisordersFound:
-        drLogger.log_info("No disorders found in batch config, proceeding with simulations...", True)
-        return config, configTriageLog
+
+    allInfoOk = miscInfoOk * pathInfoOk * hardwareInfoOk * simulationInfoOk * aftercareInfoOk * ligandInfoOk
+
+    ## TODO: write configDisorders to file in all cases
+    if allInfoOk:
+        return config
     else:
         drSplash.print_config_error(configDisorders)
        
@@ -102,22 +108,20 @@ def init_config_defaults(topDir: DirectoryPath) -> dict:
 
 
 #####################################################################################
-def check_pathInfo(config: dict, configDefaults: dict, noDisorders: bool) -> Tuple[dict, dict, bool]:
+def check_pathInfo(config: dict, configDefaults: dict) -> Tuple[dict, dict, bool]:
     """
     Checks for pathInfo entry in config
     Checks paths in pathInfo to see if they are real
     Don't check outputDir, this will be made automatically
     """
-    noDisorders = True
+    pathInfoOk = True
     pathInfoDisorders = {}
     ## log this check
-    drLogger.log_info(f"Checking pathInfo...")
 
     ## check to see if pathInfo in config
     pathInfo = config.get("pathInfo", None)
     if pathInfo is None:
         config["pathInfo"] = configDefaults["pathInfo"]
-        drLogger.log_info(f"No pathInfo specified, using defaults")
         pathInfoDisorders["inputDir"] = "Automatic Default Used!"
         pathInfoDisorders["outputDir"] = "Automatic Default Used!"
 
@@ -128,12 +132,12 @@ def check_pathInfo(config: dict, configDefaults: dict, noDisorders: bool) -> Tup
     if inputDir is None:
         config["pathInfo"]["inputDir"] = configDefaults["pathInfo"]["inputDir"]
         pathInfoDisorders["inputDir"] = "Automatic Default Used!"
-        noDisorders = False
+        pathInfoOk = False
     else:
         inputDirPathProblem = validate_path(f"inputDir", inputDir)
         if inputDirPathProblem is not None:
             pathInfoDisorders["inputDir"] = inputDirPathProblem
-            noDisorders = False
+            pathInfoOk = False
         else:
             pathInfoDisorders["inputDir"] = None
 
@@ -142,32 +146,27 @@ def check_pathInfo(config: dict, configDefaults: dict, noDisorders: bool) -> Tup
     if outputDir is None:
         config["pathInfo"]["outputDir"] = configDefaults["pathInfo"]["outputDir"]
         pathInfoDisorders["outputDir"] = "Automatic Default Used!"
-        noDisorders = False
+        pathInfoOk = False
     else:
         if not isinstance(Path(outputDir), PathLike):
             pathInfoDisorders["outputDir"] = "outputDir must be a PathLike string!"
-            noDisorders = False
+            pathInfoOk = False
         else:
             pathInfoDisorders["outputDir"] = None
 
-    ## log that pathInfo is correct
-    drLogger.log_info(f"pathInfo is correct...")
-
-    return config, pathInfoDisorders, noDisorders
+    return config, pathInfoDisorders, pathInfoOk
 
 
 
 
 #####################################################################################
-def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple[dict, dict, bool]:
+def check_hardwareInfo(config: dict, configDefaults: dict) -> Tuple[dict, dict, bool]:
     """
     Checks hardwareInfo in config
     Makes sure that CPU allocations are properly formatted
     Makes sure that the "Platform" specified is an allowed value 
     """
-    ## log this check
-    drLogger.log_info(f"Checking hardwareInfo...")
-    noDisorders = True
+    haredwareInfoOk = True
     hardwareInfoDisorders = {}
     ## check if hardwareInfo in config
     hardwareInfo = config.get("hardwareInfo", None)
@@ -176,7 +175,6 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
         for argName in ["parallelCPU", "platform", "subprocessCpus"]:
             config["hardwareInfo"][argName] = configDefaults["hardwareInfo"][argName]
             hardwareInfoDisorders[argName] = "Automatic Default Used!"
-        drLogger.log_info(f"No hardwareInfo specified, using defaults")
         return config, hardwareInfoDisorders, True
 
     ## validate parallelCPU
@@ -188,11 +186,11 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
     else:
         if not isinstance(parallelCPU, int):
             hardwareInfoDisorders["parallelCPU"] = "parallelCPU is not an int"
-            noDisorders = False
+            haredwareInfoOk = False
         else:
             if parallelCPU < 1:
                 hardwareInfoDisorders["parallelCPU"] = "parallelCPU is less than 1, this must be a positive integer"
-                noDisorders = False
+                haredwareInfoOk = False
             else:
                 hardwareInfoDisorders["parallelCPU"] = None
 
@@ -206,11 +204,11 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
     else:
         if not isinstance(subprocessCpus, int):
             hardwareInfoDisorders["subprocessCpus"] = "subprocessCpus is not an int"
-            noDisorders = False
+            haredwareInfoOk = False
         else:
             if subprocessCpus < 1:
                 hardwareInfoDisorders["subprocessCpus"] = "subprocessCpus is less than 1, this must be a positive integer"
-                noDisorders = False
+                haredwareInfoOk = False
             else:
                 hardwareInfoDisorders["subprocessCpus"] = None
 
@@ -219,7 +217,7 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
         systemCpus = mp.cpu_count()
         if parallelCPU * subprocessCpus > systemCpus:
             hardwareInfoDisorders["totalCpuUseage"] = "Number for CPU cores requested exceeds number of CPU cores available, change the values of parallelCPU and subprocessCpus"
-            noDisorders = False
+            haredwareInfoOk = False
     ## validate platform
     platform = hardwareInfo.get("platform", None)
     if platform is None:
@@ -229,20 +227,18 @@ def check_hardwareInfo(config: dict, configDefaults: dict, noDisorders) -> Tuple
     else:
         if platform not in ["CUDA", "OPENCL", "CPU"]:
             hardwareInfoDisorders["platform"] = "platform is not 'CUDA', 'OPENCL', or 'CPU'"
-            noDisorders = False
+            haredwareInfoOk = False
         else:
             hardwareInfoDisorders["platform"] = None
 
 
-    return config, hardwareInfoDisorders, noDisorders
+    return config, hardwareInfoDisorders, haredwareInfoOk
 
 
 
 #####################################################################################
-def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]:
-    ## log this check
-    drLogger.log_info(f"Checking miscInfo...")
-    noDisorders = True
+def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
+    miscInfoOk = True
     miscInfoDisorders = {}
 
     miscInfo = config.get("miscInfo", None)
@@ -268,11 +264,11 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
     else:
         if not isinstance(pH, (int, float)):
             miscInfoDisorders["pH"] = "pH must be an int or float between 0 and 14"
-            noDisorders = False
+            miscInfoOk = False
         else:
             if pH < 0 or pH > 14:
                 miscInfoDisorders["pH"] = "pH must be an int or float between 0 and 14"
-                noDisorders = False
+                miscInfoOk = False
             else:
                 miscInfoDisorders["pH"] = None
 
@@ -282,15 +278,15 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
         ## use a default value
         config["miscInfo"]["firstAidMaxRetries"] = configDefaults["miscInfo"]["firstAidMaxRetries"]
         miscInfoDisorders["firstAidMaxRetries"] = "No firstAidMaxRetries specified, using default of 10"
-        noDisorders = False
+        miscInfoOk = False
     else:
         if not isinstance(firstAidMaxRetries, int):
             miscInfoDisorders["firstAidMaxRetries"] = "firstAidMaxRetries must be an int greater than 0"
-            noDisorders = False
+            miscInfoOk = False
         else:
-            if firstAidMaxRetries < 1:
-                miscInfoDisorders["firstAidMaxRetries"] = "firstAidMaxRetries must be an int greater than 0"
-                noDisorders = False
+            if firstAidMaxRetries < 0:
+                miscInfoDisorders["firstAidMaxRetries"] = "firstAidMaxRetries must be an int greater than or equal to 0"
+                miscInfoOk = False
             else:
                 miscInfoDisorders["firstAidMaxRetries"] = None
 
@@ -303,7 +299,7 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
     else:
         if boxGeometry not in ["cubic", "ocatahedral"]:
             miscInfoDisorders["boxGeometry"] = "boxGeometry must be either 'cubic' or 'ocatahedral'"
-            noDisorders = False
+            miscInfoOk = False
         else:
             miscInfoDisorders["boxGeometry"] = None
 
@@ -316,7 +312,7 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
     else:
         if not isinstance(skipPdbTriage, bool):
             miscInfoDisorders["boxGeometry"] = "skipPdbTriage must be either True or False"
-            noDisorders = False
+            miscInfoOk = False
         else:
             miscInfoDisorders["skipPdbTriage"] = None
     
@@ -329,7 +325,7 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
     else:
         if not isinstance(writeMyMethodsSection, bool):
             miscInfoDisorders["writeMyMethodsSection"] = "writeMyMethodsSection must be either True or False"
-            noDisorders = False
+            miscInfoOk = False
         else:
             miscInfoDisorders["writeMyMethodsSection"] = None
 
@@ -342,29 +338,29 @@ def check_miscInfo(config, configDefaults, noDisorders) -> Tuple[dict,dict,bool]
     else:
         if not isinstance(trajectorySelections, list):
             miscInfoDisorders["trajectorySelections"] = "trajectorySelections must be a list of selection dictionaries (see README for syntax!)"
-            noDisorders = False
+            miscInfoOk = False
         elif len(trajectorySelections) == 0:
             miscInfoDisorders["trajectorySelections"] = "trajectorySelections must be a list of selection dictionaries (see README for syntax!)"
-            noDisorders = False
+            miscInfoOk = False
         else:
             for selection in trajectorySelections:
                 selectionDisorder = check_selection(selection)
                 if len(selectionDisorder) > 0:
                     miscInfoDisorders["trajectorySelections"] = selectionDisorder
-                    noDisorders = False
+                    miscInfoOk = False
                 else:
                     miscInfoDisorders["trajectorySelections"] = None
 
-    return config, miscInfoDisorders, noDisorders
+    return config, miscInfoDisorders, miscInfoOk
 
 #####################################################################################
-def check_simulationInfo(config: dict, noDisorders) -> Tuple[dict, bool]:
+def check_simulationInfo(config: dict) -> Tuple[dict, bool]:
     """
     Checks for simulationInfo in config
     Depending on the type of simulation, checks your parameters
     """
     ## log this check
-    noDisorders = True
+    simulationInfoOk = True
     simulationInfo = config.get("simulationInfo", None)
 
 
@@ -381,37 +377,44 @@ def check_simulationInfo(config: dict, noDisorders) -> Tuple[dict, bool]:
     for counter, simulation in enumerate(simulationInfo):
 
         disorders = {}
-        drLogger.log_info(f"Checking {simulation['stepName']}...")
-        disorders, stepName, simulationType, noDisorders, simulationWithDefaults  = check_shared_simulation_options(simulation, disorders, noDisorders)
+        disorders, stepName, simulationType, sharedOptionsOk, simulationWithDefaults  = check_shared_simulation_options(simulation, disorders)
+        simulationInfoOk *= sharedOptionsOk
 
         ## if we don't have stepName, further checks wont work.
         if stepName is None:
             disorders["stepName"] = "stepName must be specified"
             simulationInfoDisorders[f"Unnamed_step_{str(counter+1)}"] = "stepName must be specified"
-            noDisorders = False
+            simulationInfo = False
             continue
 
 
+        allStepsOk = True
         if simulationWithDefaults["simulationType"] in ["NVT", "NPT"]:
-            disorders, noDisorders, simulationWithDefaults  = check_nvt_npt_options(simulationWithDefaults, stepName, disorders, noDisorders)
+            disorders, mdOptionsOk, simulationWithDefaults  = check_nvt_npt_options(simulationWithDefaults, stepName, disorders)
+            allStepsOk *= mdOptionsOk
         elif simulationWithDefaults["simulationType"] == "META":
-            disorders, noDisorders = check_metadynamics_options(simulationWithDefaults, stepName, disorders, noDisorders)
+            disorders, metaOptionsOk = check_metadynamics_options(simulationWithDefaults, stepName, disorders)
+            allStepsOk *+ metaOptionsOk
         elif simulationWithDefaults["simulationType"] == "EM":
-            disorders, noDisorder, simulationWithDefaults = check_em_options(simulationWithDefaults, stepName, disorders, noDisorders)
+            disorders, emOptionsOk, simulationWithDefaults = check_em_options(simulationWithDefaults, disorders)
+            allStepsOk *= emOptionsOk
 
         restraintsInfo = simulation.get("restraintInfo", None)
         if restraintsInfo:
-            disorders, noDisorders = check_restraintInfo(restraintsInfo, disorders, noDisorders)
-
+            disorders, restraintInfoOk = check_restraintInfo(restraintsInfo, disorders)
+            allStepsOk *= restraintInfoOk
         simulationInfoDisorders[stepName] = disorders
+
+        simulationInfoOk *= allStepsOk
 
         ## update config dict to use defaults
         config["simulationInfo"][counter] = simulationWithDefaults
 
-    return simulationInfoDisorders, noDisorders, config
+    return config, simulationInfoDisorders, simulationInfoOk
 
 #################################################################################################
-def check_em_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict, bool]:
+def check_em_options(simulation: dict,disorders: dict) -> Tuple[dict, bool]:
+    emOptionsOk = True
     ## check duration
     maxIterations = simulation.get("maxIterations", None)
     if maxIterations is None:
@@ -420,15 +423,17 @@ def check_em_options(simulation: dict, stepName: str, disorders: dict, noDisorde
     else:
         if not isinstance(maxIterations, int):
             disorders["maxIterations"] = "maxIterations must be an integer"
-            noDisorders = False
+            emOptionsOk = False
         else:
             disorders["maxIterations"] = None
 
-    return disorders, noDisorders, simulation
+    return disorders, emOptionsOk, simulation
 
 
+#################################################################################################
+def check_restraintInfo(restraintInfo: dict, disorders: dict) -> Tuple[dict, bool]:
 
-def check_restraintInfo(restraintInfo: dict, disorders: dict, noDisorders: bool) -> Tuple[dict, bool]:
+    restraintInfofOk = True
     if not isinstance(restraintInfo, list):
         disorders["restraintInfo"] = "restraintInfo must be a dictionary"
         return disorders, False
@@ -441,92 +446,93 @@ def check_restraintInfo(restraintInfo: dict, disorders: dict, noDisorders: bool)
     for restraintIndex, info in enumerate(restraintInfo):
         if not isinstance(info, dict):
             disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo must be a dictionary (see README for syntax!)"
-            noDisorders = False
+            restraintInfofOk = False
         else:
             ## check restraintType
             restraintType = info.get("restraintType", None)
             if restraintType is None:
                 disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo must have a 'restraintType' key"
-                noDisorders = False
+                restraintInfofOk = False
             else:
                 if not isinstance(restraintType, str):
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be a string"
-                    noDisorders = False
+                    restraintInfofOk = False
                 if not restraintType in ["position", "distance", "angle", "torsion"]:
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be one of 'position', 'distance', 'angle', 'torsion'"
-                    noDisorders = False
+                    restraintInfofOk = False
             ## check selection for restraint to act upon
             restrantSelection = info.get("selection", None)
             if  restrantSelection is None:
                 disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo must have a 'selection' key"
-                noDisorders = False
+                restraintInfofOk = False
             else:
                 if not isinstance(restrantSelection, dict):
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['selection'] must be a dictionary (see README for syntax!)"
-                    noDisorders = False
+                    restraintInfofOk = False
                 else:
                     selectionDisorder = check_selection({"selection": restrantSelection})
                     if len(selectionDisorder) > 0:
                         disorders["restraintInfo"][f"restraint_{restraintIndex}"] = selectionDisorder
-                        noDisorders = False
+                        restraintInfofOk = False
             ## check parameters for restraint
             restraintParamers = info.get("parameters", None)
             if restraintParamers is None:
                 disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo must have a 'parameters' key"
-                noDisorders = False
+                restraintInfofOk = False
             else:
                 restraintParamProblems = check_restraint_parameters(restraintType, restraintParamers)
                 if len(restraintParamProblems) > 0:
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = restraintParamProblems
-                    noDisorders = False
+                    restraintInfofOk = False
                 else:
                     disorders["restraintInfo"] = {}
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = None
 
-    return disorders, noDisorders
+    return disorders, restraintInfofOk
 
     
 
 
 #####################################################################################
-def check_aftercareInfo(config: dict, noDisorders) -> Tuple[dict,bool]:
+def check_aftercareInfo(config: dict) -> Tuple[dict,bool]:
     """
     Checks for aftercareInfo in config
     """
+    aftercareInfoOk = True
     aftercareInfoDisorders = {}
     ## check for aftercareInfo in config
     aftercareInfo = config.get("aftercareInfo", None)
     if aftercareInfo is None:
-        return None, noDisorders
+        return None, aftercareInfoOk
     
     endPointInfo = aftercareInfo.get("endPointInfo", None)
     if endPointInfo is not None:
-        endPointInfoDisorders, noDisorders = check_endPointInfo(endPointInfo, noDisorders)
+        endPointInfoDisorders, endPointInfoOk = check_endPointInfo(endPointInfo)
+        aftercareInfoOk *= endPointInfoOk 
         aftercareInfoDisorders["endPointInfo"] = endPointInfoDisorders
 
     clusterInfo = aftercareInfo.get("clusterInfo", None)
     if clusterInfo is not None:
-        aftercareInfoDisorders["clusterInfo"], noDisorders = check_clusterInfo(clusterInfo, noDisorders)
+        aftercareInfoDisorders["clusterInfo"], clusterInfoOk = check_clusterInfo(clusterInfo)
+        aftercareInfoOk *= clusterInfoOk 
 
 
     collateVitalsReports = aftercareInfo.get("collateVitalsReports", None)
     if collateVitalsReports is not None:
         if not isinstance(collateVitalsReports, bool):
             aftercareInfoDisorders["collateVitalsReports"] = "collateVitalsReports must be a boolean"
-            noDisorders = False
+            afterCareInfoOk = False
 
-    return aftercareInfoDisorders, noDisorders
+    return aftercareInfoDisorders, aftercareInfoOk
 
 
 
 #####################################################################################
-def check_endPointInfo(endPointInfo: dict, noDisorders) -> Tuple[dict, bool]:
+def check_endPointInfo(endPointInfo: dict) -> Tuple[dict, bool]:
     """
     Checks for endPointInfo in config
     """
-    ## log this check
-    drLogger.log_info(f"Checking endPointInfo...")
-
+    endPointInfoOk = True
     endPointDisorders = {}
     ## check if endPointInfo is a dictionary
     if not isinstance(endPointInfo, dict):
@@ -535,19 +541,19 @@ def check_endPointInfo(endPointInfo: dict, noDisorders) -> Tuple[dict, bool]:
     stepNames = endPointInfo.get("stepNames", None)
     if stepNames is None:
         endPointDisorders["stepNames"] = "endPointInfo must have a 'stepNames' entry"
-        noDisorders = False
+        endPointInfoOk = False
     else:
         if not isinstance(stepNames, list):
             endPointDisorders["stepNames"] = "stepNames must be a list"
-            noDisorders = False
+            endPointInfoOk = False
         ## ensure that stepNames is a list of strings
         if not all(isinstance(stepName, str) for stepName in stepNames):
             endPointDisorders["stepNames"] = "stepNames must be a list of strings"
-            noDisorders = False
+            endPointInfoOk = False
         ## ensure that stepNames is not empty
         if  len(stepNames) == 0:
             endPointDisorders["stepNames"] = "stepNames must not be empty"
-            noDisorders = False
+            endPointInfoOk = False
         else:
             endPointDisorders["stepNames"] = None
     ## check removeAtoms
@@ -555,26 +561,25 @@ def check_endPointInfo(endPointInfo: dict, noDisorders) -> Tuple[dict, bool]:
     if removeAtoms is not None:
         if not isinstance(removeAtoms, list):
             endPointDisorders["removeAtoms"] = "removeAtoms must be a list"
-            noDisorders = False
+            endPointInfoOk = False
         if not all(isinstance(removeAtom, dict) for removeAtom in removeAtoms):
             endPointDisorders["removeAtoms"] = "removeAtoms must be a list of dictionaries"
-            noDisorders = False
+            endPointInfoOk = False
         for selection in removeAtoms:
             removeAtomSelectionDisorders = check_selection(selection)
             if len(removeAtomSelectionDisorders) > 0:
                 endPointDisorders["removeAtoms"] = removeAtomSelectionDisorders
-                noDisorders = False
+                endPointInfoOk = False
             else:
                 endPointDisorders["removeAtoms"] = None
         
-    return endPointDisorders, noDisorders
+    return endPointDisorders, endPointInfoOk
 #####################################################################################
-def check_clusterInfo(clusterInfo: dict, noDisorders: bool) -> Tuple[dict,bool]:
+def check_clusterInfo(clusterInfo: dict) -> Tuple[dict,bool]:
     """
     Checks for clusterInfo in config
     """
-    ## log this check
-    drLogger.log_info(f"Checking clusterInfo...")
+    clusterInfoOk = True
     clusterInfoDisorders = {}
     ## check if clusterInfo is a dictionary
     if not isinstance(clusterInfo, dict):
@@ -583,19 +588,19 @@ def check_clusterInfo(clusterInfo: dict, noDisorders: bool) -> Tuple[dict,bool]:
     stepNames = clusterInfo.get("stepNames", None)
     if stepNames is None:
         clusterInfoDisorders["stepNames"] = "clusterInfo must have a 'stepNames' entry"
-        noDisorders = False
+        clusterInfoOk = False
     else:
         if not isinstance(stepNames, list):
             clusterInfoDisorders["stepNames"] = "clusterInfo['stepNames'] must be a list"
-            noDisorders = False
+            clusterInfoOk = False
         ## ensure that stepNames is a list of strings
         elif not all(isinstance(stepName, str) for stepName in stepNames):
             clusterInfoDisorders["stepNames"] = "clusterInfo['stepNames'] must be a list of strings"
-            noDisorders = False
+            clusterInfoOk = False
         ## ensure that stepNames is not empty
         elif  len(stepNames) == 0:
             clusterInfoDisorders["stepNames"] = "clusterInfo['stepNames'] must not be empty"
-            noDisorders = False
+            clusterInfoOk = False
         else:
             clusterInfoDisorders["stepNames"] = None
 
@@ -603,14 +608,14 @@ def check_clusterInfo(clusterInfo: dict, noDisorders: bool) -> Tuple[dict,bool]:
     nClusters = clusterInfo.get("nClusters", None)
     if nClusters is None:
         clusterInfoDisorders["nClusters"] = "nClusters must be specified as a positive int"
-        noDisorders = False
+        clusterInfoOk = False
     else:
         if not isinstance(nClusters, int):
             clusterInfoDisorders["nClusters"] = "nClusters must be an int"
-            noDisorders = False
+            clusterInfoOk = False
         elif nClusters < 1:
             clusterInfoDisorders["nClusters"] = "nClusters must be specified as a positive int"
-            noDisorders = False
+            clusterInfoOk = False
         else:
             clusterInfoDisorders["nClusters"] = None
 
@@ -618,22 +623,22 @@ def check_clusterInfo(clusterInfo: dict, noDisorders: bool) -> Tuple[dict,bool]:
     clusterBy = clusterInfo.get("clusterBy", None)
     if clusterBy is None:
         clusterInfoDisorders["clusterBy"] = "clusterInfo must have a 'clusterBy' entry"
-        noDisorders = False
+        clusterInfoOk = False
     else:
         if not isinstance(clusterBy, list):
             clusterInfoDisorders["clusterBy"] = "clusterBy must be a list"
-            noDisorders = False
+            clusterInfoOk = False
         elif not all(isinstance(clusterSelection, dict) for clusterSelection in clusterBy):
             clusterInfoDisorders["clusterBy"] = "clusterBy must be a list of dictionaries"
-            noDisorders = False
+            clusterInfoOk = False
         elif len(clusterBy) == 0:
             clusterInfoDisorders["clusterBy"] = "clusterBy must not be empty"
-            noDisorders = False
+            clusterInfoOk = False
         for clusterSelection in clusterBy:
             clusterSelectionDisorders = check_selection(clusterSelection)
             if len(clusterSelectionDisorders) > 0:
                 clusterInfoDisorders["clusterBy"] = clusterSelectionDisorders
-                noDisorders = False
+                clusterInfoOk = False
             else:
                 clusterInfoDisorders["clusterBy"] = None
     ## check removeAtoms
@@ -641,23 +646,23 @@ def check_clusterInfo(clusterInfo: dict, noDisorders: bool) -> Tuple[dict,bool]:
     if removeAtoms is not None:
         if not isinstance(removeAtoms, list):
             clusterInfoDisorders["removeAtoms"] = "endPointInfo['removeAtoms'] must be a list"
-            noDisorders = False
+            clusterInfoOk = False
         elif not all(isinstance(removeAtom, dict) for removeAtom in removeAtoms):
             clusterInfoDisorders["removeAtoms"] = "endPointInfo['removeAtoms'] must be a list of dictionaries"
-            noDisorders = False
+            clusterInfoOk = False
         for selection in removeAtoms:
             removeAtomSelectionDisorders = check_selection(selection)
             if len(removeAtomSelectionDisorders) > 0:
                 clusterInfoDisorders["removeAtoms"] = removeAtomSelectionDisorders
-                noDisorders = False
+                clusterInfoOk = False
             else:
                 clusterInfoDisorders["removeAtoms"] = None
 
-    return clusterInfoDisorders, noDisorders
+    return clusterInfoDisorders, clusterInfoOk
 
 
 #########################################################################
-def check_ligandInfo(config: dict, noDisorders: bool) -> Tuple[dict, bool]:
+def check_ligandInfo(config: dict) -> Tuple[dict, bool]:
     """
     Checks optional ligandInfo entry in config
 
@@ -670,15 +675,15 @@ def check_ligandInfo(config: dict, noDisorders: bool) -> Tuple[dict, bool]:
         ValueError: If ligandInfo is an empty list
         ValueError: If ligandInfo does not have at least one entry
     """
-    ## log this check
-    drLogger.log_info(f"Checking ligandInfo...")
+    ligandInfoOk = True
     # Check if ligandInfo in config
     ligandInfo = config.get("ligandInfo", None)
     ## if there is no ligandInfo specified, not a problem, return None
     if ligandInfo is None:
-        return None, noDisorders
+        return None, ligandInfoOk
     elif len(ligandInfo) == 0:
-        return "ligandInfo must be a contain at least one ligand dictionary (see README for more info)", False
+        ligandInfoOk = False
+        return "ligandInfo must be a contain at least one ligand dictionary (see README for more info)", ligandInfoOk
     
     ligandInfoDisorders = {}
     # Check each entry in ligandInfo
@@ -686,20 +691,20 @@ def check_ligandInfo(config: dict, noDisorders: bool) -> Tuple[dict, bool]:
         # Check if ligand is a dictionary
         if not isinstance(ligand, dict):
             ligandInfoDisorders[f"ligand_{ligandIndex}"] = "ligand entry must be a dictionary"
-            noDisorders = False 
+            ligandInfoOk = False 
             continue
         ## check ligandName
         ligandName = ligand.get("ligandName", None)
         if ligandName is None:
             ligandInfoDisorders[f"ligand_{ligandIndex}"]["ligandName"] = "each ligand entry must have a ligandName entry as a unique string"
-            noDisorders = False
+            ligandInfoOk = False
             ## set a temporary ligand name for reporting disorders
             ligandName = f"ligand_{ligandIndex}"
         else:
             ligandInfoDisorders[ligandName] = {}
         if not isinstance(ligandName, str):
             ligandInfoDisorders[ligandName]["ligandName"] = "each ligand entry must have a ligandName entry as a unique string"
-            noDisorders = False
+            ligandInfoOk = False
         else:
             ligandInfoDisorders[ligandName]["ligandName"] = None
 
@@ -708,59 +713,27 @@ def check_ligandInfo(config: dict, noDisorders: bool) -> Tuple[dict, bool]:
             argValue = ligand.get(argName, None)
             if argValue is None:
                 ligandInfoDisorders[ligandName][argName] = f"each ligand entry must have a {argName} entry as a bool"
-                noDisorders = False
+                ligandInfoOk = False
             elif not isinstance(argValue, bool):
                 ligandInfoDisorders[ligandName][argName] = f"{argName} must be a bool"
-                noDisorders = False
+                ligandInfoOk = False
             else:
                 ligandInfoDisorders[ligandName][argName] = None
         ## check charge
         charge = ligand.get("charge", None)
         if charge is None:
             ligandInfoDisorders[ligandName]["charge"] = "each ligand entry must have a charge entry as an int"
-            noDisorders = False
+            ligandInfoOk = False
         elif not isinstance(charge, int):
             ligandInfoDisorders[ligandName]["charge"] = "charge must be an integer"
-            noDisorders = False
+            ligandInfoOk = False
         else:
             ligandInfoDisorders[ligandName]["charge"] = None
  
-    return ligandInfoDisorders, noDisorders
+    return ligandInfoDisorders, ligandInfoOk
 
 
 
-
-#########################################################################
-def check_cluster_trajectory_options(clusterTrajectory: dict, stepName: str) -> None:
-    """
-    Checks for options in clusterTrajectory.
-
-    Args:
-        clusterTrajectory (dict): A dictionary containing options for clustering a trajectory.
-        stepName (str): The name of the step.
-
-    Raises:
-        TypeError: If clusterTrajectory is not a dictionary.
-        ValueError: If clusterTrajectory is empty.
-        TypeError: If nClusters is not an integer.
-    """
-    # Check if clusterTrajectory is a dictionary
-    if not isinstance(clusterTrajectory, dict):
-        raise TypeError(f"clusterTrajectory in {stepName} must be a dict")
-    
-    # Check if clusterTrajectory has at least one entry
-    if len(clusterTrajectory) == 0:
-        raise ValueError(f"clusterTrajectory in {stepName} must contain some entries")
-    
-    # Check for required args for clustering a trajectory
-    nClusters, selection = check_info_for_args(clusterTrajectory, stepName, ["nClusters", "selection"], optional=False)
-    
-    # Check if nClusters is an integer
-    if not isinstance(nClusters, int):
-        raise TypeError(f"nClusters in {stepName} must be an int")
-    
-    # Check selection for clustering a trajectory
-    check_selection(selection, stepName)
 
 
 
@@ -876,8 +849,8 @@ def check_selection(selection: dict) -> list:
 
 
 #########################################################################
-def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict,bool]:
-    drLogger.log_info(f"Checking metaDynamicsInfo for {stepName}...")
+def check_metadynamics_options(simulation: dict, disorders: dict) -> Tuple[dict,bool]:
+    metaOptionsOk = True
     ## check metaDynamicsInfo
     metaDynamicsInfo = simulation.get("metaDynamicsInfo", None)
     if metaDynamicsInfo is None:
@@ -892,14 +865,14 @@ def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict,
     height = metaDynamicsInfo.get("height", None)
     if height is  None:
         disorders["metaDynamicsInfo"]["height"] = "No height specified in metaDynamicsInfo"
-        noDisorders = False
+        metaOptionsOk = False
     else:
         if not isinstance(height, (int, float)):
             disorders["metaDynamicsInfo"]["height"] = "height must be a number"
-            noDisorders = False
+            metaOptionsOk = False
         elif height <= 0:
             disorders["metaDynamicsInfo"]["height"] = "height must be positive"
-            noDisorders = False
+            metaOptionsOk = False
         else:
             disorders["metaDynamicsInfo"]["height"] = None
 
@@ -908,14 +881,14 @@ def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict,
     biasFactor = metaDynamicsInfo.get("biasFactor", None)
     if biasFactor is None:
         disorders["metaDynamicsInfo"]["biasFactor"] = "No biasFactor specified in metaDynamicsInfo"
-        noDisorders = False
+        metaOptionsOk = False
     else:
         if not isinstance(biasFactor, (int, float)):
             disorders["metaDynamicsInfo"]["biasFactor"] = "biasFactor must be a number"
-            noDisorders = False
+            metaOptionsOk = False
         elif biasFactor <= 0:
             disorders["metaDynamicsInfo"]["biasFactor"] = "biasFactor must be positive"
-            noDisorders = False
+            metaOptionsOk = False
         else:
             disorders["metaDynamicsInfo"]["biasFactor"] = None
     
@@ -924,16 +897,16 @@ def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict,
     ## make sure biases is present in metaDynamicsInfo
     if biases is None:
         disorders["metaDynamicsInfo"]["biases"] = "No biases specified in metaDynamicsInfo"
-        noDisorders = False
+        metaOptionsOk = False
     else:
         ## make sure biases is a list
         if not isinstance(biases, list):
             disorders["metaDynamicsInfo"]["biases"] = "biases must be a list of biases (check README for more details)"
-            noDisorders = False
+            metaOptionsOk = False
         ## make sure biases is not empty
         elif len(biases) == 0:
             disorders["metaDynamicsInfo"]["biases"] = "biases must contain at least one bias variable"
-            noDisorders = False
+            metaOptionsOk = False
         else:
             ## check through each bias
             disorders["metaDynamicsInfo"]["biases"] = {}
@@ -942,81 +915,81 @@ def check_metadynamics_options(simulation: dict, stepName: str, disorders: dict,
                 ## make sure bias is a dictionary
                 if not isinstance(bias, dict):
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("biases must be a list of biases (check README for more details)")
-                    noDisorders = False
+                    metaOptionsOk = False
                 ## check for biasVar entry in bias
                 biasVar = bias.get("biasVar", None)
                 if biasVar is None:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("No biasVar specified in bias")
-                    noDisorders = False
+                    metaOptionsOk = False
                 ## make sure biasVar is a string with an allowed value
                 else:
                     if not isinstance(biasVar, str):
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("biasVar must be 'rmsd', 'torsion', 'distance', or 'angle'")
-                        noDisorders = False
+                        metaOptionsOk = False
                     elif not biasVar.lower() in ["rmsd", "torsion", "distance", "angle"]:
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("biasVar must be 'rmsd', 'torsion', 'distance', or 'angle'")
-                        noDisorders = False
+                        metaOptionsOk = False
                 ## check for minValue in bias
                 minValue = bias.get("minValue", None)
                 if minValue is None:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("No minValue specified in bias")
-                    noDisorders = False
+                    metaOptionsOk = False
                 else:
                     if not isinstance(minValue, (int, float)):
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("minValue must be a number")
-                        noDisorders = False
+                        metaOptionsOk = False
                 ## check for maxValue in bias
                 maxValue = bias.get("maxValue", None)
                 if maxValue is None:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("No maxValue specified in bias")
-                    noDisorders = False
+                    metaOptionsOk = False
                 else:
                     if not isinstance(maxValue, (int, float)):
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("maxValue must be a number")
-                        noDisorders = False
+                        metaOptionsOk = False
                 ## check for bias in bias
                 biasWidth = bias.get("biasWidth", None)
                 if biasWidth is None:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("No biasWidth specified in bias")
-                    noDisorders = False
+                    metaOptionsOk = False
                 else:
                     if not isinstance(biasWidth, (int, float)):
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("biasWidth must be a number")
-                        noDisorders = False
+                        metaOptionsOk = False
                 ## check fir biasSelection in bias
                 biasSelection = bias.get("selection", None)
                 if biasSelection is None:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("No selection specified in bias")
-                    noDisorders = False
+                    metaOptionsOk = False
                 else:
                     ## make sure selection is a dictionary
                     if not isinstance(biasSelection, dict):
                         disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].append("selection must be a dictionary")
-                        noDisorders = False
+                        metaOptionsOk = False
                     else:
                         ## check selection is correctly formatted
                         selectionDisorders = check_selection({"selection": biasSelection})
                         if len(selectionDisorders) > 0:
                             disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"].extend(selectionDisorders)
-                            noDisorders = False
+                            metaOptionsOk = False
                 if len(disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"]) == 0:
                     disorders["metaDynamicsInfo"]["biases"][f"bias_{biasCount}"] = None
 
-    return disorders, noDisorders
+    return disorders, metaOptionsOk
 #########################################################################
-def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDisorders: bool) -> Tuple[dict,bool,dict]:
+def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict) -> Tuple[dict,bool,dict]:
     ## check for required args for a nvt or npt simulation
-
+    mdOptionsOk = True
     ## check duration
     duration = simulation.get("duration", None)
     if duration is None:
         disorders["duration"] = "Duration must be specified. example `duration = '1 ns'`"
-        noDisorders = False
+        mdOptionsOk = False
     else:
         timeCheckProblems = check_time_input(duration, "duration", stepName)
         if timeCheckProblems is not None:
             disorders["duration"] = timeCheckProblems
-            noDisorders = False
+            mdOptionsOk = False
         else:
             disorders["duration"] = None
 
@@ -1030,7 +1003,7 @@ def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDi
         timeCheckProblems = check_time_input(logInterval, "logInterval", stepName)
         if timeCheckProblems is not None:
             disorders["logInterval"] = timeCheckProblems
-            noDisorders = False
+            mdOptionsOk = False
         else:
             disorders["logInterval"] = None
 
@@ -1042,7 +1015,7 @@ def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDi
     else:
         if not isinstance(heavyProtons, bool):
             disorders["heavyProtons"] = "heavyProtons must be a boolean"
-            noDisorders = False
+            mdOptionsOk = False
         else:
             disorders["heavyProtons"] = None
 
@@ -1060,11 +1033,11 @@ def check_nvt_npt_options(simulation: dict, stepName: str, disorders: dict, noDi
         timeCheckProblems = check_time_input(timestep, "timestep", stepName)
         if timeCheckProblems is not None:
             disorders["timestep"] = timeCheckProblems
-            noDisorders = False
+            mdOptionsOk = False
         else:
             disorders["timestep"] = None
         
-    return disorders, noDisorders, simulation
+    return disorders, mdOptionsOk, simulation
 
         
 
@@ -1089,18 +1062,20 @@ def check_time_input(timeInputValue: str, timeInputName: str, stepName: str) -> 
     return None
 
 #########################################################################
-def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorders) -> Tuple[dict, str, str, bool, dict]:
+def check_shared_simulation_options(simulation: dict, disorders: dict) -> Tuple[dict, str, str, bool, dict]:
+
+    sharedOptionsOk = True
     ## check simulation step name
     stepName = simulation.get("stepName", None)
     if stepName is None: 
         disorders["stepName"] = "No stepName specified in simulation"
-        noDisorders = False
+        sharedOptionsOk = False
     elif not isinstance(stepName, str):
         disorders["stepName"] = "stepName must be a string"
-        noDisorders = False
+        sharedOptionsOk = False
     elif " " in stepName:
         disorders["stepName"] = "No whitespace allowed in stepName"
-        noDisorders = False
+        sharedOptionsOk = False
     else:
         disorders["stepName"] = None
 
@@ -1112,7 +1087,7 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
         disorders["simulationType"] = "No simulationType specified in simulation, using NPT as default"
     elif not simulationType.upper() in ["EM", "NVT", "NPT", "META"]:
         disorders["simulationType"] = "simulationType in simulation must be one of the following: 'EM', 'NVT', 'NPT', 'META'"
-        noDisorders = False
+        sharedOptionsOk = False
     else:
         disorders["simulationType"] = None
     ## check for either temperature or temparatureRange in simulation
@@ -1121,7 +1096,7 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
     ## check for both temperature and tempRange (this is not allowed!)
     if temperature and tempRange:
         disorders["temperature"] = "Cannot specify both temperature and temperatureRange in simulation"
-        noDisorders = False
+        sharedOptionsOk = False
     ## check for neither temperature or tempRange
     ## Use a default value of 300 K
     elif not temperature and not tempRange:
@@ -1131,29 +1106,29 @@ def check_shared_simulation_options(simulation: dict, disorders: dict, noDisorde
     elif temperature:
         if not isinstance(temperature, int):
             disorders["temperature"] = "Temperature in simulation must be an int"
-            noDisorders = False
+            sharedOptionsOk = False
         if temperature < 0:
             disorders["temperature"] = "Temperature in simulation must be a positive int"
-            noDisorders = False
+            sharedOptionsOk = False
         else:
             disorders["temperature"] = None
     ## check tempRange
     elif tempRange:
         if not isinstance(tempRange, list):
             disorders["tempRange"] = "TemperatureRange in simulation must be a list of ints"
-            noDisorders = False
+            sharedOptionsOk = False
         if len(tempRange) == 0:
             disorders["tempRange"] = "TemperatureRange in simulation must be a list of at least one int"
-            noDisorders = False
+            sharedOptionsOk = False
         for temp in tempRange:
             if not isinstance(temp, int):
                 disorders["tempRange"] = "TemperatureRange in simulation must be a list of ints"
-                noDisorders = False
+                sharedOptionsOk = False
             if temp < 0:
                 disorders["tempRange"] = "TemperatureRange in simulation must be a list of positive ints"
-                noDisorders = False
+                sharedOptionsOk = False
 
-    return disorders, stepName, simulationType, noDisorders, simulation
+    return disorders, stepName, simulationType, sharedOptionsOk, simulation
 
 #########################################################################
 def validate_path(argName: str, argPath: Union[FilePath, DirectoryPath]) -> str:
