@@ -744,10 +744,9 @@ def cite(key: str) -> str:
     Returns:
         (str) Formatted Citation
     """
-
     doiDict = {
         ## drMD citations
-        "drMD": ["PLACEHOLDER"],
+        "drMD": ["10.1016/j.jmb.2024.168918"],
         ## openmm citation
         "openmm": ["10.1371/journal.pcbi.1005659"],
         ## prep step citations

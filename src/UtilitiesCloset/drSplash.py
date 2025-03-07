@@ -5,6 +5,7 @@ from os import path as p
 ##  CLEAN CODE
 from typing import Optional, Union, List
 
+from UtilitiesCloset import drListInitiator
 ###########################################################################################
 
 def print_drMD_logo() -> None:
@@ -307,14 +308,90 @@ def print_config_error(configDisorders) -> None:
 
 
 ###########################################################################################
-def print_pdb_error() -> None:
+def print_pdb_error(pdbDisorders) -> None:
     """
     Prints an error message indicating that problems have been found in the pdb files
 
     Returns:
         None
     """
+    pdbFixerLink = "https://github.com/openmm/pdbfixer"
+    alphafold3Link = "https://alphafoldserver.com/"
+
+    ionResNames = list(drListInitiator.get_ion_residue_names())
+
+    ionResNameText = ""
+    for i in range(0, len(ionResNames), 10):
+        ionResNameText += '\t\t' + ', '.join(ionResNames[i:i+10]) + '\n'
+
+    pdbRules = {
+        "01_broken_protein_chains" : 
+    {
+    "number": "1",
+    "text": "Protein chains must be contiguous (i.e., must not have missing residues)",
+    "help": f"To fix this, drMD recommends you rebuild your PDB using OpenMM's pdbFixer: {pdbFixerLink}"
+    },
+    "02_residues_missing_atoms" :
+    {
+    "number": "2",
+    "text": "All amino acid residues must have the expected number of sidechain atoms",
+    "help": f"""If you have a crystal structure, this may be the result of low electron density
+\t\tfor some residue sidechains. To fix this, try getting a structural prediction of your protein from 
+\t\tAlphafold's webserver {alphafold3Link}"""
+    },
+    "03_residues_with_duplicate_atoms" :
+    {
+    "number": "3",
+    "text": "Residues must not have duplicate atoms",
+    "help": """If you have a crystal structure, you may have multiple conformers of some sidechains,
+\t\tTo fix this, use the following pymol commands:\n\t\tremove not alt \'\'+A\n\t\talter all, alt = \'\' """
+    },
+    "04_atoms_with_no_chain_id" :
+    {
+    "number": "4",
+    "text": "All atoms must have a chain identifier",
+    "help": "This can be done with ease in your text editor, or with pdbUtils"
+    },
+    "05_protein_chains_unique_chain_ids" :
+    {
+    "number": "5",
+    "text": "Covalently bound protein chains must each have a unique chain identifier",
+    "help": "Change the chain identifier for the protein chains"
+    },
+    "06_ligands_and_protein_sharing_chain_ids" :
+    {
+    "number": "6",
+    "text": "Protein chains cannot contain ligand residues",
+    "help": "Change the chain identifier for the ligand residues"
+    },
+    "07_organometallic_ligands" :
+    {
+    "number": "7",
+    "text": "No organometallic residues",
+    "help": """Currently, drMD does not support organometallic ligands,
+\t\tyou may be able to separate your ligand into the organic moiety and ion components"""
+    },
+    "08_non-canonical_amino_acids" :
+    {
+    "number": "8",
+    "text": "No non-canonical amino acid residues",
+    "help": """Currently, drMD does not support non-canonical amino acid residues. 
+\t\tWe are currently working on a solution to this"""
+    },
+    "09_ions_with_incorrect_names" :
+    {
+    "number": "9",
+    "text": "Ions must have the residue and atom names compatible with AMBER",
+    "help": f"""Set your ion residue and atom name to be one of these:\n {ionResNameText}"""
+    }
+    }
+
+
+    tealText = "\033[38;5;37m" 
     redText = "\033[31m"
+    yellowText = "\033[33m"
+    orangeText = "\033[38;5;208m"
+    greenText = "\033[32m"
     resetTextColor = "\033[0m"
 
 
@@ -330,10 +407,33 @@ def print_pdb_error() -> None:
             ▒▓▒░ ░  ░ ▒▒▓  ▒ ░▒▓███▀▒   ░░ ▒░ ░░ ▒▓ ░▒▓░░ ▒▓ ░▒▓░░ ▒░▒░▒░ ░ ▒▓ ░▒▓░
             ░▒ ░      ░ ▒  ▒ ▒░▒   ░     ░ ░  ░  ░▒ ░ ▒░  ░▒ ░ ▒░  ░ ▒ ▒░   ░▒ ░ ▒░
             ░░        ░ ░  ░  ░    ░       ░     ░░   ░   ░░   ░ ░ ░ ░ ▒    ░░   ░ 
-                        ░     ░            ░  ░   ░        ░         ░ ░     ░     
+                        ░     ░            ░  ░   ░        ░         ░ ░     ░  
+        drMD has found problems with your PDB files that will cause prep steps to fail
 ⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
           """
           +resetTextColor)
+
+
+    print(f"{tealText}\tdrMD requires PDB files to follow these rules:\n{resetTextColor}")
+
+    for disorderTag, problemPdbs in pdbDisorders.items():
+        disorder = pdbRules[disorderTag]
+        print(f"\t{tealText}{disorder['number']}{resetTextColor}.{' '*2}{disorder['text']}")
+        if len(problemPdbs) == 0:
+            print(f"\t\t{greenText}Check passed!{resetTextColor}")
+            continue
+        if len(problemPdbs) < 6:
+            print(f"{yellowText}\t\tThe following PDB files failed this check:{resetTextColor}")
+            print(f"{redText}\t\t{' '.join(problemPdbs)}")
+        else:
+            print(f"{redText}\t\t{len(problemPdbs)}{yellowText} failed this check")
+        print(f"\t\t{greenText}{disorder['help']}")
+
+    print(f"""{redText}
+⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+    {resetTextColor}""")
+    exit(1)
+
 ###########################################################################################
 
 

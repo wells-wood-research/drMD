@@ -96,7 +96,7 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
                                                                            sim["timestep"])
 
 
-    simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, platform)
+    simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, )
     
 
     return simulation , integrator
