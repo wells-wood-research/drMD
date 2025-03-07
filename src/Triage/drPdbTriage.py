@@ -15,6 +15,33 @@ from pdbUtils import pdbUtils
 ##  CLEAN CODE
 from typing import Dict, Callable, Optional, List, Tuple, Set
 from UtilitiesCloset.drCustomClasses import FilePath, DirectoryPath
+
+"""
+        PDB FILES MUST OBEY THE FOLLOWING RULES
+
+## NO MISSING ATOMS
+
+1. Protein chains must be unbroken
+2. Amino-acid residues must have all their required atoms
+
+## NO DUPLICATE ATOMS
+3. No residues can have duplicate atoms (i.e. same ATOM_NAME field)
+
+## OBEY RULES REGARDING CHAIN IDENTIFIERS
+4. All atoms must have CHAIN_ID field
+5. Each protein chain must have a unique CHAIN_ID
+6. Each ligand chain must have a unique CHAIN_ID
+
+## BE COMPATIBLE WITH AMBER PARAMETERS
+7. No organometallic ligands (antechamber and tleap don't like them)
+8. No non-canonical amino acids (working on this now!)
+9. Ions must use the correct ATOM_NAME and RES_NAME field to be compatible with AMBER  
+
+"""
+
+
+
+
 #################################################################################################
 def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     """
@@ -35,193 +62,65 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     ## set up logging
     drLogger.setup_logging(pdbTriageLog)
 
-    # Initialize a dictionary to store common PDB problems
-    commonPdbProblems : Dict[bool] = {
-        "isMultipleConformers": False,  # PDB contains multiple conformers
-        "isBrokenChains": False,  # PDB contains broken chains
-        "isMissingSidechains": False,  # PDB contains missing sidechains
-        "isNonCanonicalAminoAcids": False,  # PDB contains non-canonical amino acids
-        "isOrganimetallicLigands": False,  # PDB contains organimetallic ligand
-        "isSharedChains": False  # Chains shared between ligand and protein
-    }
 
-    # Iterate through all PDB files in the directory
-    for file in os.listdir(pdbDir):
-        if not file.endswith(f".pdb"):
-            continue
-        pdbFile: FilePath = p.join(pdbDir, file)
-        # Check for common problems in the PDB file
-        problemsDict = pdb_triage_protocol(pdbFile, pdbDir, config)
-        # Update the dictionary that looks at all PDB files
-        commonPdbProblems = update_problem_dict(commonPdbProblems, problemsDict)
-    # Print the results to the terminal
-    report_problems(commonPdbProblems, pdbTriageLog)
+    ## get list of pdb files
+    pdbNames = [p.splitext(file)[0] for file in os.listdir(pdbDir) if file.endswith(".pdb")]
+    inputPdbs = [p.join(pdbDir, file) for file in os.listdir(pdbDir) if file.endswith(".pdb")]
+    ## convert to dataframes
+    pdbDfs = [pdbUtils.pdb2df(pdbFile) for pdbFile in inputPdbs]
+
+    pdbDisorders = {}
+    ## check for pdb files with problems
+    pdbDisorders["01_broken_protein_chains"] = check_for_broken_chains(pdbDfs, pdbNames)
+    pdbDisorders["02_residues_missing_atoms"] = check_for_missing_sidechains(pdbDfs, pdbNames)
+    pdbDisorders["03_residues_with_duplicate_atoms"] = check_for_duplicate_atoms(pdbDfs, pdbNames)
+    pdbDisorders["04_atoms_with_no_chain_id"] = check_for_missing_chain_ids(pdbDfs, pdbNames)  
+    pdbDisorders["05_protein_chains_unique_chain_ids"] = check_for_termini_in_chain_middles(pdbDfs, pdbNames)
+    pdbDisorders["06_ligands_and_protein_sharing_chain_ids"] = check_for_shared_chains(pdbDfs, pdbNames)
+    pdbDisorders["07_organometallic_ligands"] = check_for_organometallic_ligand(pdbDfs, pdbNames)
+    pdbDisorders["08_non-canonical_amino_acids"] = check_for_non_canonical_amino_acids(pdbDfs, pdbNames)
+    pdbDisorders["09_ions_with_incorrect_names"] = check_for_ions_with_incorrect_names(pdbDfs, pdbNames)
+    
+    print(pdbDisorders)
+
+    if any([len(problemPdbs) > 0 for problemPdbs in pdbDisorders.values()]):
+        drSplash.print_pdb_error(pdbDisorders)
+
+
 
     ## deactivate logging
     drLogger.close_logging()
 #################################################################################################
-def update_problem_dict(commonPdbProblems: Dict[str,bool], thisProblemDict: Dict[str,bool]) -> Dict[str,bool]:
-    """
-    Updates the commonPdbProblems dictionary with the values from thisProblemDict. 
-    If a value in thisProblemDict is True, it means that the corresponding problem is present in the PDB file,
-    so it is set to True in the commonPdbProblems dictionary as well.
-    
-    Args:
-        commonPdbProblems (Dict[str, bool]): A dictionary containing the common problems found in all PDB files.
-        thisProblemDict (Dict[str, bool]): A dictionary containing the problems found in a specific PDB file.
-        
-    Returns:
-        Dict[str, bool]: The updated commonPdbProblems dictionary.
-    """
-    
-    # Iterate through all keys in thisProblemDict
-    for key, value  in thisProblemDict.items():
-        # If the value in thisProblemDict is True, it means that the corresponding problem is present in the PDB file,
-        # so set the value in commonPdbProblems to True as well
-        if value:
-            commonPdbProblems[key] = True
-    
-    # Return the updated commonPdbProblems dictionary
-    return commonPdbProblems
+def check_for_ions_with_incorrect_names(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
+    ionResidueNames = drListInitiator.get_ion_residue_names()
+    problemPdbs = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
+            for resId, resDf in chainDf.groupby("RES_ID"):
+                ## skip non-ion residues
+                if not len(resDf) == 1:
+                    continue
+                resName = resDf["RES_NAME"].values[0]
+                if not resName in ionResidueNames:
+                    problemPdbs.append(pdbName)
+                    break
+                break
+    return problemPdbs
 #################################################################################################
-def report_problems(commonPdbProblems: Dict[str, bool], pdbTriageLog: FilePath) -> None:
-    """
-    Prints out the common problems found in the PDB files based on the commonPdbProblems dictionary.
-    
-    Args:
-        commonPdbProblems (Dict[str, bool]): A dictionary containing the common problems found in the PDB files.
-    """
-    logging.info(f"\n\n")
-    if any(commonPdbProblems.values()):
-        logging.info(f"The following common problems were found in the PDB files:")
-        if commonPdbProblems["isMultipleConformers"]:
-            logging.info(f"\n  * Multiple conformers found for sidechains of residues *")
-            logging.info(f"\t> This often occurs in X-ray structures when electron density is found for multiple conformers")
-            logging.info(f"\t> You can fix this in Pymol with the following command:")
-            logging.info(f"\t> remove not (alt '' or alt A)")
+def  check_for_missing_chain_ids(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
+    problemPdbs = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        chainIds = pdbDf['CHAIN_ID'].to_list()
+        if "" in chainIds:
+            problemPdbs.append(pdbName)
+        elif None in chainIds:
+            problemPdbs.append(pdbName)
 
-        if commonPdbProblems["isBrokenChains"]:
-            logging.info(f"\n  * Problems with gaps in the protein's backbone *")
-            logging.info(f"\t> This often occurs with loops in X-ray structures")
-            logging.info(f"\t> If you know the sequence of the protein, you can fix this in RF-Diffusion")
+    return problemPdbs
 
-        if commonPdbProblems["isMissingSidechains"]:
-            logging.info(f"\n  * Some Residues are missing sidechain atoms *")
-            logging.info(f"\t> This often occurs in X-ray structures in areas of low electron density")
-            logging.info(f"\t> If you know the sequence of the protein, you can fix this in Scwrl4")
-
-        if commonPdbProblems["isNonCanonicalAminoAcids"]:
-            logging.info(f"\n  * non-canonical amino acids have been identified *")
-            logging.info(f"\t> This will cause parameterisation of your system to fail")
-            logging.info(f"\t> You can create your own parameters for non-canonical amino acids")
-            logging.info(f"\t> and supply them in the inputs directory")
-
-        if commonPdbProblems["isOrganimetallicLigands"]: 
-            logging.info(f"\n  * Organimetallic ligand have been identified *")
-            logging.info(f"\t> This will cause parameterisation of your system to fail")
-            logging.info(f"\t> You can create your own parameters for organometallic ligand")
-            logging.info(f"\t> and supply them in the inputs directory")
-        if commonPdbProblems["isSharedChains"]:
-            logging.info(f"\n  * Chains with both protein and ligand residues detected *")
-            logging.info(f"\t> This will cause parameterisation of your system to fail")
-    else:
-        logging.info(f"No common problems found in the PDB files.")
-
-    if any(commonPdbProblems.values()):
-        drSplash.print_pdb_error()
-        drLogger.log_info(f"\n\n")
-        drLogger.log_info(f"Problems with the PDB files will cause parameterisation to fail", True, True)
-        drLogger.log_info(f"Consult the following log file for more details:", True, True)
-        drLogger.log_info(f"\t{pdbTriageLog}", True, True)
-        exit(1)
 
 #################################################################################################
-
-def pdb_triage_protocol(pdbFile: FilePath, inputDir: DirectoryPath, config: dict) -> Dict[str,bool]:
-    """
-    Runs before drMD main protocol
-    Checks input pdb files for common problems that will cause drMD to crash
-    These include:
-    1. Broken chains (usually caused by unresolved loops in X-ray structure)
-        - these will cause TLEAP to fail 
-    2. Non-Canonical Amino Acids
-        - these will cause TLEAP to fail
-    3. Organimetallic Ligands
-        - this will cause parmchk to fail
-    4. Incorrect Chain IDs
-        - if multiple different chains have the same chain ID, TLEAP will fail
-    5. Residues with multiple conformers
-        - If duplicate atoms exist in a residue, TLEAP will fail
-    Args:   
-        pdbFile (str): Path to the input PDB file.
-    Returns:
-        Dict[str,bool]: A dictionary containing the common problems found in the PDB file.
-    """
-    pdbName: str = p.basename(pdbFile)
-    logging.info(f"\nChecking PDB file {pdbName} for common problems...")
-    
-    ## load pdb file as a dataframe
-    pdbDf: pd.DataFrame = pdbUtils.pdb2df(pdbFile)
-
-    ## check for non-canonical amino acids
-    isNonCanonicalAminoAcids, nonCanonicalAminoAcids = check_for_non_canonical_amino_acids(pdbDf, inputDir, config)
-
-    ## check for multiple conformers
-    isMultipleConformers, multipleConformers = check_for_multiple_conformers(pdbDf)
-
-    ## check for broken chains
-    isBrokenChains, brokenChains = check_for_broken_chains(pdbDf)
-
-    ## check for missing sidechains
-    isMissingSidechains, missingSideChains = check_for_missing_sidechains(pdbDf)
-
-    ## check for organimetallic ligand
-    isOrganimetallicLigands, organimetallicLigands = check_for_organometallic_ligand(pdbDf)
-
-    isSharedChains, sharedChains = check_for_shared_chains(pdbDf, config)
-
-    ## report any problems found in pdb file
-    if isMultipleConformers:
-        logging.info(f"  * Multiple conformers found in {pdbName} for the following residues: *")
-        for key, value in multipleConformers.items():
-            logging.info(f"\t\t{key}: {value}")
-    if isBrokenChains:
-        logging.info(f"  * Broken chains found in {pdbName} in the following chains, between these residues: *")
-        for key, value in brokenChains.items():
-            logging.info(f"\t\t{key}: {value}")
-    if isMissingSidechains:
-        logging.info(f"  * Missing sidechain atoms found in {pdbName} for the following residues: *")
-        for key, value in missingSideChains.items():
-            logging.info(f"\t\t{key}: {value}")
-    if isNonCanonicalAminoAcids:
-        logging.info(f"  * Non-canonical amino acids found in {pdbName} for the following residues: *")
-        for key, value in nonCanonicalAminoAcids.items():
-            logging.info(f"\t\t{key}: {value}")
-    if isOrganimetallicLigands:
-        logging.info(f"  * Organimetallic ligand found in {pdbName} for the following residues: *")
-        for key, value in organimetallicLigands.items():
-            logging.info(f"\t\t{key}: {value}")
-    if isSharedChains:
-        logging.info(f"  * Shared chains found in {pdbName} for the following chains: *")
-        for key, value in sharedChains.items():
-            logging.info(f"\t\t{key}: {value}")
-
-
-    problemsDict: Dict[str,bool] = {
-        "isMultipleConformers": isMultipleConformers,
-        "isBrokenChains": isBrokenChains,
-        "isMissingSidechains": isMissingSidechains,
-        "isNonCanonicalAminoAcids": isNonCanonicalAminoAcids,
-        "isOrganimetallicLigands": isOrganimetallicLigands,
-        "isSharedChains": isSharedChains
-    }
-
-    if not any(problemsDict.values()):
-        logging.info(f"  * No common problems found in the PDB file *")
-
-    return problemsDict
-
-def check_for_shared_chains(pdbDf: pd.DataFrame, config: dict) -> Tuple[bool, Optional[Dict[str, int]]]:
+def check_for_shared_chains(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
     Check to see if ligand and proteins are in the same chain
 
@@ -232,23 +131,21 @@ def check_for_shared_chains(pdbDf: pd.DataFrame, config: dict) -> Tuple[bool, Op
         isSharedChains  (bool): A boolean indicating if ligand and proteins are in the same chain
         sharedChains (Optional[Dict[str, int]]): A dictionary with the residue IDs of the shared chains and the number of non-organic atoms in each
     """
-    isSharedChains = False
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
-    sharedChains: Dict = {}
-    for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
-        chainResidues = chainDf["RES_ID"].tolist()
-        chainProteinResidues = chainDf[chainDf["RES_NAME"].isin(aminoAcidResNames)].RES_ID.tolist()
-        chainLigandResidues = chainDf[~chainDf["RES_NAME"].isin(aminoAcidResNames)].RES_ID.tolist()
-        if len(chainProteinResidues) > 0 and len(chainLigandResidues) > 0:
-            isSharedChains = True
-            sharedChains[chainId] = "Chain has both protein and ligand residues"
+    problemPdbs = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
+            chainProteinResidues = chainDf[chainDf["RES_NAME"].isin(aminoAcidResNames)].RES_ID.tolist()
+            chainLigandResidues = chainDf[~chainDf["RES_NAME"].isin(aminoAcidResNames)].RES_ID.tolist()
+            if len(chainProteinResidues) > 0 and len(chainLigandResidues) > 0:
+                problemPdbs.append(pdbName)
    
-    return isSharedChains, sharedChains or None
+    return problemPdbs
 
 
 
 #################################################################################################
-def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict] = None) -> Tuple[bool, Optional[Dict[str, int]]]:
+def check_for_organometallic_ligand(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
     Check for organometallic ligand in a pdb dataframe.
 
@@ -261,50 +158,41 @@ def check_for_organometallic_ligand(pdbDf: pd.DataFrame, uaaInfo: Optional[Dict]
     """
     # Initialize lists
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
-    ionResNames = drListInitiator.get_ion_residue_names()
     
     organicElements = {"C", "N", "H", "O", "S", "P", "F", "CL",
                         "BR", "I", "SE", "B", "SI"}
 
-
     # Dictionary to store residue IDs and number of non-organic atoms
-    organoMetallicResidues: Dict = {}
-
-    # Loop through chains and residues in the pdb dataframe
-    for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
-        for resId, resDf in chainDf.groupby(f"RES_ID"):
-            ## skip if ion
-            atomNames = resDf["ATOM_NAME"]
-            if len(atomNames) == 1:
-                atomName = atomNames.iloc[0]
-                if atomName in ionResNames:
+    problemPdbs = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        # Loop through chains and residues in the pdb dataframe
+        for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
+            for resId, resDf in chainDf.groupby(f"RES_ID"):
+                ## skip single-atom ions
+                if len(resDf) == 1:
                     continue
 
-            # Skip if amino acid residue
-            resName: str = resDf["RES_NAME"].iloc[0]
-            if resName in aminoAcidResNames:
-                continue
-            try: 
-                resElements: Set[str] = set(resDf["ELEMENT"])
-            except:
-                logging.info(f"No elements column found in pdb dataframe")
-                return False,  None
-    
-            # If there are non-organic atoms, add the residue ID and atom count to the dictionary
-            inorganicElements = [ele for ele in resElements if ele.upper() not in organicElements]
+                # Skip if amino acid residue
+                resName: str = resDf["RES_NAME"].iloc[0]
+                if resName in aminoAcidResNames:
+                    continue
+                try: 
+                    resElements: Set[str] = set(resDf["ELEMENT"])
+                except:
+                    continue
 
+                # If there are non-organic atoms, add the residue ID and atom count to the dictionary
+                inorganicElements = [ele for ele in resElements if ele.upper() not in organicElements]
+                
+                if len(inorganicElements) > 0:
+                    problemPdbs.append(pdbName)
 
-            
-            if len(inorganicElements) > 0:
-                organoMetallicResidues[f"{chainId}:{resName}:{str(resId)}"] = inorganicElements
-
-    # Return boolean indicating if organometallic ligand were found and the dictionary
-    return bool(organoMetallicResidues), organoMetallicResidues or None
+    return problemPdbs
 
 
     
 #################################################################################################
-def check_for_non_canonical_amino_acids(pdbDf: pd.DataFrame, inputDir: DirectoryPath, config: dict) -> Tuple[bool, Optional[Dict[str, int]]]:
+def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
     Check for non-canonical amino acids in the pdb dataframe.
 
@@ -320,41 +208,31 @@ def check_for_non_canonical_amino_acids(pdbDf: pd.DataFrame, inputDir: Directory
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
 
     backboneAtoms: set  = {"N", "CA", "C", "O"}
-
+    problemPdbs: List = []
     # Dictionary to store residue IDs and messages
-    nonCanonicalAminoAcids: Dict = {}
-    # Loop through chains and residues in the pdb dataframe
-    for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
-        for resId, resDf in chainDf.groupby(f"RES_ID"):
-            resName: str = resDf["RES_NAME"].iloc[0]
-            # Skip if cannonical amio acid residue, water,
-            if resName in aminoAcidResNames or resName == "HOH":
-                continue
-            # Skip residues with no backbone residues (i.e. ligand)
-            if  not  backboneAtoms.issubset(resDf["ATOM_NAME"].unique()):
-                continue
-            # Look for missing frcmod and/or lib files
-            resKey: str = f"{chainId}:{resName}:{str(resId)}"
-            frcmodFile: FilePath = p.join(inputDir, f"{resName}.frcmod")
-            libFile: FilePath = p.join(inputDir, f"{resName}.lib")
-
-            if not p.isfile(frcmodFile) and not p.isfile(libFile):
-                nonCanonicalAminoAcids[resKey] = "non-canonical amino acid missing frcmod and lib files"
-            elif not p.isfile(frcmodFile):
-                nonCanonicalAminoAcids[resKey] = "non-canonical amino acid missing frcmod file"
-            elif not p.isfile(libFile):
-                nonCanonicalAminoAcids[resKey] = "non-canonical amino acid missing lib file"
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        # Loop through chains and residues in the pdb dataframe
+        for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
+            for resId, resDf in chainDf.groupby(f"RES_ID"):
+                resName: str = resDf["RES_NAME"].iloc[0]
+                # Skip if cannonical amio acid residue, water,
+                if resName in aminoAcidResNames or resName == "HOH":
+                    continue
+                # Skip residues with no backbone residues (i.e. ligand)
+                if  not  backboneAtoms.issubset(resDf["ATOM_NAME"].unique()):
+                    continue
+                problemPdbs.append(pdbName)
 
     # Return boolean indicating if non-canonical amino acids were found and the dictionary
-    return bool(nonCanonicalAminoAcids), nonCanonicalAminoAcids or None
+    return problemPdbs
                 
 #################################################################################################
-def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_missing_sidechains(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
     Checks if a pdb dataframe contains missing sidechains.
     
     Args:
-        pdbDf (pd.DataFrame): The pdb dataframe.
+        pdbDfs (pd.DataFrame): The pdb dataframe.
         
     Returns:
         Tuple[bool, Optional[Dict[str, List[str]]]]: A tuple containing a boolean indicating if sidechains were found,
@@ -365,74 +243,76 @@ def check_for_missing_sidechains(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Di
     ## get amino acid names and dictionary containing heavy atom counts for each residue
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
     heavySideChainAtomCounts = drListInitiator.get_residue_heavy_atom_counts()
-    ## get only the protein part of the pdb dataframe
-    protDf = pdbDf[pdbDf["RES_NAME"].isin(aminoAcidResNames)]
-    ## initialise an empty dict to store missing sidechains
-    missingSidechains: Dict = {}
-    ## loop through chains and residues
-    for chainId, chainDf in protDf.groupby(f"CHAIN_ID"):
-        for resId, resDf in chainDf.groupby(f"RES_ID"):
-            ## get residue name of this residue
-            resName: str = resDf["RES_NAME"].iloc[0]
-            correctHeavyAtomCount = heavySideChainAtomCounts.get(resName, None)
-            if correctHeavyAtomCount is None:
-                continue
-            ## get atom names of this residue
-            resAtomNames: List[str] = resDf["ATOM_NAME"].tolist()
-            ## exclude hydrogen atoms
-            heavyAtomNames: List[str] = [atom for atom in resAtomNames if not atom.startswith(f"H")]
-            ## ecxlude backbone atoms
-            sideChainAtoms: List[str] = list(set([atom for atom in heavyAtomNames if atom not in backboneAtoms ]))
-            ## check if number of heavy sidechain atoms matches expected value
-            if  len(sideChainAtoms) != correctHeavyAtomCount:
-                missingSidechains[f"{chainId}:{resName}:{str(resId)}"] = sideChainAtoms
-    ## return boolean indicating if sidechains with missing atoms were found and the dictionary
-    return bool(missingSidechains), missingSidechains or None
+
+    problemPdbs: List = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        ## get only the protein part of the pdb dataframe
+        protDf = pdbDf[pdbDf["RES_NAME"].isin(aminoAcidResNames)]
+        ## initialise an empty dict to store missing sidechains
+        ## loop through chains and residues
+        for chainId, chainDf in protDf.groupby(f"CHAIN_ID"):
+            for resId, resDf in chainDf.groupby(f"RES_ID"):
+                ## get residue name of this residue
+                resName: str = resDf["RES_NAME"].iloc[0]
+                correctHeavyAtomCount = heavySideChainAtomCounts.get(resName, None)
+                if correctHeavyAtomCount is None:
+                    continue
+                ## get atom names of this residue
+                resAtomNames: List[str] = resDf["ATOM_NAME"].tolist()
+                ## exclude hydrogen atoms
+                heavyAtomNames: List[str] = [atom for atom in resAtomNames if not atom.startswith(f"H")]
+                ## exclude backbone atoms
+                sideChainAtoms: List[str] = list(set([atom for atom in heavyAtomNames if atom not in backboneAtoms ]))
+                ## check if number of heavy sidechain atoms matches expected value
+                if  len(sideChainAtoms) != correctHeavyAtomCount:
+                    problemPdbs.append(pdbName)
+    return problemPdbs
+
 
 #################################################################################################
-def check_for_broken_chains(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_broken_chains(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
     Check for broken chains in the protein dataframe.
     
     Args:
-        pdbDf (pd.DataFrame): The protein dataframe.
+        pdbDfs List[pd.DataFrame]: The protein dataframe.
 
     Returns:
         Tuple[bool, Optional[Dict[str, List[str]]]: A tuple containing a boolean indicating if broken chains were found,
         and a dictionary with chain IDs as keys and a list of broken residues or a specific message as values.
     """
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
-
-    # Filter only the protein part of the dataframe
-    protDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(aminoAcidResNames)]
-    ## initialise an empty dict to store broken chains
-    brokenChains: Dict = {}
-    ## loop through chains
-    for chainId, chainDf in protDf.groupby(f"CHAIN_ID"):
-        ## get residue IDs
-        resIds = chainDf["RES_ID"].unique().tolist()
-        
-        # Look for non-consecutive residue numbering
-        isConsecutive, nonConsecutiveResidues = are_consecutive(resIds)
-        ## update dict if needed
-        if not isConsecutive:
-            brokenChains[chainId] = nonConsecutiveResidues
-        
+    problemPdbs: List = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        # Filter only the protein part of the dataframe
+        protDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(aminoAcidResNames)]
+        ## loop through chains
+        for chainId, chainDf in protDf.groupby(f"CHAIN_ID"):
+            ## get residue IDs
+            resIds = chainDf["RES_ID"].unique().tolist()
+            # Look for non-consecutive residue numbering
+            isConsecutive, nonConsecutiveResidues = are_consecutive(resIds)
+            ## update dict if needed
+            if not isConsecutive:
+                problemPdbs.append(pdbName)
+    return problemPdbs
+#################################################################################################
+def check_for_termini_in_chain_middles(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
+    aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
+    problemPdbs: List = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        # Filter only the protein part of the dataframe
+        protDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(aminoAcidResNames)]
+        ## loop through chains
+        for chainId, chainDf in protDf.groupby(f"CHAIN_ID"):
         # Look for termini in the middle of chains
+            lastResIdInChain = chainDf["RES_ID"].to_list()[-1]
+            residuesWithTerminalOxygenDf = chainDf[chainDf["ATOM_NAME"] == "OXT"]
+            middleWithTerminalOxygenDf = residuesWithTerminalOxygenDf[residuesWithTerminalOxygenDf["RES_ID"] != lastResIdInChain]
+            if len(middleWithTerminalOxygenDf) > 0:
+                problemPdbs.append(pdbName)
 
-        resIdsWithOxt = chainDf[chainDf["ATOM_NAME"] == "OXT"]["RES_ID"].tolist()
-        lastResidueId = resIds[-1]
-        try:
-            resIdsWithOxt.remove(lastResidueId)
-        except:
-            pass
-        if len(resIdsWithOxt) == 0:
-            continue
-        
-        brokenChains[chainId] = "OXT atom name found in residues " + ", ".join(map(str, resIdsWithOxt))
-
-    return bool(brokenChains), brokenChains or None
-
+    return problemPdbs
 #################################################################################################
 
 def are_consecutive(intList: List[int]) -> bool:
@@ -458,7 +338,7 @@ def are_consecutive(intList: List[int]) -> bool:
     
     return True, None
 #################################################################################################
-def check_for_multiple_conformers(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[Dict[str, List[str]]]]:
+def check_for_duplicate_atoms(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) ->List[str]:
     """
     Checks for multiple conformers in a pdb dataframe.
 
@@ -472,38 +352,31 @@ def check_for_multiple_conformers(pdbDf: pd.DataFrame) -> Tuple[bool, Optional[D
     # Initialize lists
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
     
-    # Dictionary to store residue IDs and duplicated atoms
-    multipleConformers: Dict = {}
-    
-    # Loop through chains and residues in the pdb dataframe
-    for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
-        for resId, resDf in chainDf.groupby(f"RES_ID"):
-            # Get residue name of this residue
-            resName: str = resDf["RES_NAME"].tolist()[0]
-            
-            # Skip if amino acid residue
-            if not resName in aminoAcidResNames:
-                continue
-            
-            # Get atom names of this residue
-            resAtomNames: list = resDf["ATOM_NAME"].tolist()
-            
-            # Count the number of occurrences of each atom name
-            counter: Counter = Counter(resAtomNames)
-            
-            # Find duplicated atoms
-            duplicatedAtoms: List[str] = [atomName for atomName in resAtomNames if counter[atomName] > 1]
-            
-            # If there are duplicated atoms, add the residue ID and duplicated atoms to the dictionary
-            if len(duplicatedAtoms) > 0:
-                multipleConformers[f"{chainId}:{resName}:{str(resId)}"] = list(set(duplicatedAtoms))
-
-    # Return boolean indicating if multiple conformers were found and the dictionary
-    return bool(multipleConformers), multipleConformers or None
-
-
-
-
+    problemPdbs: List = []
+    for pdbDf, pdbName in zip(pdbDfs, pdbNames):
+        # Loop through chains and residues in the pdb dataframe
+        for chainId, chainDf in pdbDf.groupby(f"CHAIN_ID"):
+            for resId, resDf in chainDf.groupby(f"RES_ID"):
+                # Get residue name of this residue
+                resName: str = resDf["RES_NAME"].tolist()[0]
+                
+                # Skip if amino acid residue
+                if not resName in aminoAcidResNames:
+                    continue
+                
+                # Get atom names of this residue
+                resAtomNames: list = resDf["ATOM_NAME"].tolist()
+                
+                # Count the number of occurrences of each atom name
+                counter: Counter = Counter(resAtomNames)
+                
+                # Find duplicated atoms
+                duplicatedAtoms: List[str] = [atomName for atomName in resAtomNames if counter[atomName] > 1]
+                
+                # If there are duplicated atoms, add the residue ID and duplicated atoms to the dictionary
+                if len(duplicatedAtoms) > 0:
+                    problemPdbs.append(pdbName)
+    return problemPdbs
 
 #################################################################################
 if __name__ == "__main__":
