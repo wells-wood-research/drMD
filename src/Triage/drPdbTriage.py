@@ -81,8 +81,6 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     pdbDisorders["08_non-canonical_amino_acids"] = check_for_non_canonical_amino_acids(pdbDfs, pdbNames)
     pdbDisorders["09_ions_with_incorrect_names"] = check_for_ions_with_incorrect_names(pdbDfs, pdbNames)
     
-    print(pdbDisorders)
-
     if any([len(problemPdbs) > 0 for problemPdbs in pdbDisorders.values()]):
         drSplash.print_pdb_error(pdbDisorders)
 
