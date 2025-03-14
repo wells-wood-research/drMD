@@ -56,8 +56,7 @@ miscInfo:
       keyword: protein
   - selection:
       keyword: ligand
-  - selection:
-      keyword: water
+
 
 ########################################################################
 equilibriationRestraints: &equilibriationRestraints
@@ -116,13 +115,13 @@ simulationInfo:
     logInterval: 500 ps
 
 ########################################################################
-  - stepName: 06_Production_MD
-    simulationType: NpT
-    duration: 50 ns
-    timestep: 4 fs
-    heavyProtons: True
-    temperature: 300
-    logInterval: 50 ps
+  # - stepName: 06_Production_MD
+  #   simulationType: NpT
+  #   duration: 50 ns
+  #   timestep: 4 fs
+  #   heavyProtons: True
+  #   temperature: 300
+  #   logInterval: 50 ps
 ################################################
 
 

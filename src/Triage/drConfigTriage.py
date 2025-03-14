@@ -297,8 +297,8 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
         config["miscInfo"]["boxGeometry"] = configDefaults["miscInfo"]["boxGeometry"]
         miscInfoDisorders["boxGeometry"] = "No boxGeometry specified, using default of 'cubic'"
     else:
-        if boxGeometry not in ["cubic", "ocatahedral"]:
-            miscInfoDisorders["boxGeometry"] = "boxGeometry must be either 'cubic' or 'ocatahedral'"
+        if boxGeometry not in ["cubic", "octahedral"]:
+            miscInfoDisorders["boxGeometry"] = "boxGeometry must be either 'cubic' or 'octahedral'"
             miscInfoOk = False
         else:
             miscInfoDisorders["boxGeometry"] = None
