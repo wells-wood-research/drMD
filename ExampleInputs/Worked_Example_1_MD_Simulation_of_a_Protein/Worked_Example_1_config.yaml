@@ -13,14 +13,14 @@
 #        An NPT simulation is performed at 300 K, this is used to further equilibrate the system's water molecules
 #        This allows the box size of the system to reach equilibrium
 #        Position restraints are applied to the protein and ligand, as we are just equilibrating water
-#     4. SLOW INTERGRATOR STEP
+#     4. SLOW INTEGRATION STEP
 #        This step is run without any restraints, sometimes the removal of restraints can cause numerical errors
 #        To prevent this, we run this step using a small timestep of 0.5 fs
 #     5. EQUILIBRIATION
 #        An unrestrained NPT simulation is performed for 5 nanoseconds
 #        No measurements are taken during this simulation, we are just equilibrating the system
 #        Before you run any analysis on the following PRODUCTION MD step, check the vitals report for this step
-#        If this step has not reached equilibriation, it is best practace to extend the duration of this step 
+#        If this step has not reached equilibriation, it is best practice to extend the duration of this step 
 #        before running your PRODUCTION MD step
 #     6. PRODUCTION MD
 #        A long(ish) production MD simulation is performed for 50 nanoseconds
