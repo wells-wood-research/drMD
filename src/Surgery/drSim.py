@@ -286,7 +286,6 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
         config (Dict): Dictionary containing information for all simluations in this run
     """
 
-    ##TODO: REMOVE
     stepName = sim["stepName"]
     drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
