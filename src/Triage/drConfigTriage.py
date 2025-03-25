@@ -393,7 +393,7 @@ def check_simulationInfo(config: dict) -> Tuple[dict, bool]:
             disorders, mdOptionsOk, simulationWithDefaults  = check_nvt_npt_options(simulationWithDefaults, stepName, disorders)
             allStepsOk *= mdOptionsOk
         elif simulationWithDefaults["simulationType"] == "META":
-            disorders, metaOptionsOk = check_metadynamics_options(simulationWithDefaults, stepName, disorders)
+            disorders, metaOptionsOk = check_metadynamics_options(simulationWithDefaults, disorders)
             allStepsOk *+ metaOptionsOk
         elif simulationWithDefaults["simulationType"] == "EM":
             disorders, emOptionsOk, simulationWithDefaults = check_em_options(simulationWithDefaults, disorders)
