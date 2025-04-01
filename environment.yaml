@@ -6,6 +6,7 @@ dependencies:
   - ambertools=23
   - openmm
   - openbabel
+  - pango
   - pip
   - pip:
     - -r requirements.txt

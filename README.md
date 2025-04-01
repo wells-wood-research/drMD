@@ -69,7 +69,12 @@ conda install -c conda-forge openmm
 ```bash
 conda install -c conda-forge openbabel
 ```
-6. Install other python libraries with pip
+6. Install Pango with conda (optional, but can solve compatibility issues associated with *weasyprint*)
+```bash
+conda install -c conda-forge pango
+```
+
+7. Install other python libraries with pip
 ```bash
 pip install -r requirements.txt
 ```
