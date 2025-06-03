@@ -5,10 +5,10 @@
 [] look through and see what needs to be done!
 
 ## configs
-[] frcmod --> frcmod
+[x] frcmod --> frcmod
 
 ## error handling
-[] report what function died "__name__" dunder method
+[x] report what function died "__name__" dunder method
 
 ## real time updates after crash
 [x] kill job upon crash
@@ -19,11 +19,21 @@
 [x] overlap between progress decorator when firstAid is running
 
 ## drSelector
-[] "all" --> "*" as a wildcard
+[x] "all" --> "*" as a wildcard
 
 ## drConfigTriage
 [] better errors upon YAML format error
 [] defaults for each simulation step?
+[] better disorder handling for restraints
 
-## drSim
+
+## ncAA support
+in pdb triage, when we flag a ncAA, check for RES_NAME.mol2 / frcmod / lib.
+
+If not all found --> Throw error, point to drFrankenstein
+
+If all fine, point tleap towards ncAA params
+
+Might have problems with Protein Protonation steps
+
 

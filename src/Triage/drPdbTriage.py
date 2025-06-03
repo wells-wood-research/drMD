@@ -78,7 +78,7 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     pdbDisorders["05_protein_chains_unique_chain_ids"] = check_for_termini_in_chain_middles(pdbDfs, pdbNames)
     pdbDisorders["06_ligands_and_protein_sharing_chain_ids"] = check_for_shared_chains(pdbDfs, pdbNames)
     pdbDisorders["07_organometallic_ligands"] = check_for_organometallic_ligand(pdbDfs, pdbNames)
-    pdbDisorders["08_non-canonical_amino_acids"] = check_for_non_canonical_amino_acids(pdbDfs, pdbNames)
+    pdbDisorders["08_non-canonical_amino_acids"] = check_for_non_canonical_amino_acids(pdbDfs, pdbNames, pdbDir)
     pdbDisorders["09_ions_with_incorrect_names"] = check_for_ions_with_incorrect_names(pdbDfs, pdbNames)
     
     if any([len(problemPdbs) > 0 for problemPdbs in pdbDisorders.values()]):
@@ -190,7 +190,7 @@ def check_for_organometallic_ligand(pdbDfs: List[pd.DataFrame], pdbNames: List[s
 
     
 #################################################################################################
-def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
+def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: List[str], inputDir: DirectoryPath) -> List[str]:
     """
     Check for non-canonical amino acids in the pdb dataframe.
 
@@ -219,11 +219,33 @@ def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: Li
                 # Skip residues with no backbone residues (i.e. ligand)
                 if  not  backboneAtoms.issubset(resDf["ATOM_NAME"].unique()):
                     continue
+                if look_for_ncaa_params(resName, inputDir):
+                    continue
                 problemPdbs.append(pdbName)
 
     # Return boolean indicating if non-canonical amino acids were found and the dictionary
     return problemPdbs
-                
+
+#################################################################################################
+def look_for_ncaa_params(resName, inputDir):
+    """
+    Looks for AMBER parameters for a non-canonical amino acid [MOL2, FRCMOD, LIB]
+
+    Args:
+        resName (str): Residue name
+        inputDir (DirectoryPath): Path to the input directory
+
+    Returns:
+        bool: True if parameters are found
+    
+    """
+    frcmod = p.join(inputDir, f"{resName}.frcmod")
+    mol2 = p.join(inputDir, f"{resName}.mol2")
+    lib = p.join(inputDir, f"{resName}.lib")
+    if p.exists(frcmod) and p.exists(mol2) and p.exists(lib):
+        True
+    else:
+        False
 #################################################################################################
 def check_for_missing_sidechains(pdbDfs: List[pd.DataFrame], pdbNames: List[str]) -> List[str]:
     """
