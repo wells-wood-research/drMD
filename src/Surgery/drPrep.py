@@ -126,6 +126,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
 
     return solvatedPdb, inputCoords, amberParams
 
+
 #####################################################################################
 def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[str, str, str, str]:
         ## SPLIT INPUT PDB INTO PROT AND ONE FILE PER LIGAND
@@ -137,6 +138,8 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
         ligandPdbs, ligandFileDict = prepare_ligand_parameters(config = config)
         ## PREPARE PROTEIN STRUCTURE
         protPdb = prepare_protein_structure(config=config, outDir = prepDir)
+
+        nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
         ## RE-COMBINE PROTEIN AND LIGAND PDB FILES
         wholePrepDir: DirectoryPath = p.join(prepDir,"WHOLE")
         os.makedirs(wholePrepDir,exist_ok=True)
@@ -151,11 +154,47 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
         ## MAKE AMBER PARAMETER FILES WITH TLEAP
         inputCoords, amberParams, solvatedPdb  = make_amber_params(outDir = wholePrepDir,
                             ligandFileDict=ligandFileDict,
+                            nonCannonicalAminoAcidData= nonCannonicalAminoAcidData,
                             pdbFile= mergedPdb,
                             config= config,
                             outName= outName)
         niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, solvatedPdb)
         return niceChainsPdb, inputCoords, amberParams
+
+#####################################################################################
+def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[dict]:
+    """
+    Looks for non-canonical amino acids in the protein PDB file
+    Then gets params from the input directory
+    (we have already checked that these are here during the PDB triage step) 
+
+    Args:
+        protPdb (str): The path to the protein PDB file.
+        config (dict): The configuration dictionary containing the necessary information.
+
+    Returns:
+        nonCannonicalAminoAcidData (dict[dict]): parameters for non-canonical amino acids.
+    """
+    ## unpack config
+    inputDir = config["pathInfo"]["inputDir"]
+
+    pdbDf = pdbUtils.pdb2df(protPdb)
+
+    aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
+    nonCannonicalAminoAcidData = {}
+
+    for resName in pdbDf["RES_NAME"].unique():
+        if resName not in aminoAcidResNames:
+            if resName in nonCannonicalAminoAcidData.keys():
+                continue
+            mol2 = p.join(inputDir, f"{resName}.mol2")
+            frcmod = p.join(inputDir, f"{resName}.frcmod")
+            lib = p.join(inputDir, f"{resName}.lib")
+            if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
+                nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
+
+    return nonCannonicalAminoAcidData
+
 #####################################################################################   
 def choose_to_skip_prep(config: dict, prepDir: DirectoryPath, protName: str) -> Tuple[bool, Optional[Tuple[FilePath, FilePath, FilePath]]]:
     """
@@ -621,6 +660,8 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
         newHisPdb = sort_out_histidine_names(protPdb)
         return newHisPdb
 
+    
+
     ## use pdb2pqr to protonate the protein at a specific pH
     pH: int = str(float(config["miscInfo"]["pH"]))
     protPqr = p.join(protPrepDir, "PROT.pqr")
@@ -711,7 +752,8 @@ def make_amber_params(
     pdbFile: FilePath,
     outName: str,
     config : Dict,
-    ligandFileDict: Optional[Dict[str, Dict[str, str]]] = None
+    ligandFileDict: Optional[Dict[str, Dict[str, str]]] = None,
+    nonCannonicalAminoAcidData: Optional[Dict[Dict[str, str]]] = None
 ) -> Tuple[FilePath, FilePath, FilePath]:
     """
     Prepare the protein structure for simulations using Amber.
@@ -779,6 +821,16 @@ def make_amber_params(
                 if p.isfile(ligLib):
                     f.write(f"loadoff {ligLib}\n")
 
+        for ncaaData in nonCannonicalAminoAcidData:
+            ncaaMol2: FilePath = ncaaData["mol2"]
+            ncaaFrcmod: FilePath = ncaaData["frcmod"]
+            ncaaLib: FilePath = ncaaData["lib"]
+            if p.isfile(ncaaMol2):
+                f.write(f"ncaa = loadmol2 {ncaaMol2}\n")
+            if p.isfile(ncaaFrcmod):
+                f.write(f"loadamberparams {ncaaFrcmod}\n")
+            if p.isfile(ncaaLib):
+                f.write(f"loadoff {ncaaLib}\n")
   
         # Load the protein structure
         f.write(f"mol = loadpdb {pdbFile}\n")
