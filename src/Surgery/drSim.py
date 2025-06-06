@@ -319,10 +319,11 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     # save result as pdb - reset chain and residue Ids
     state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
     endPointPdb: str = p.join(simDir, f"{protName}.pdb")
-    with open(endPointPdb, 'w') as output:
-        app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output)
-    ## reset the chain and residue ids to original
-    drFixer.reset_chains_residues(refPdb, endPointPdb)
+    write_pdb(endPointPdb, simulation)
+    # with open(endPointPdb, 'w') as output:
+    #     app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output, keepIds=True)
+    # ## reset the chain and residue ids to original
+    # drFixer.reset_chains_residues(refPdb, endPointPdb)
 
     ## create a PDB file with the same atoms as the trajectory
     trajectoryPdb = p.join(simDir, "trajectory.pdb")
@@ -407,22 +408,33 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     # Set box vectors if provided
     if inpcrd.boxVectors is not None:
         simulation.context.setPeriodicBoxVectors(*inpcrd.boxVectors)
+    else:
+        raise ValueError("Box vectors are not provided in the input coordinates file.")
 
     # Run energy minimisation
     simulation.minimizeEnergy(maxIterations=sim['maxIterations'])
 
     # save result as pdb - reset chain and residue Ids
-    state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
+    # state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
     minimisedPdb: str = p.join(simDir, f"{protName}.pdb")
-    with open(minimisedPdb, 'w') as output:
-        app.pdbfile.PDBFile.writeFile(simulation.topology,
-                                     state.getPositions(),
-                                     output)
-    drFixer.reset_chains_residues(refPdb, minimisedPdb)
+    write_pdb(minimisedPdb, simulation)
 
+    drFixer.reset_chains_residues(refPdb, minimisedPdb)
 
     # Save simulation as XML
     saveXml: str = p.join(simDir, f"{stepName}.xml")
     simulation.saveState(saveXml)
+
     return saveXml
 
+#########################################################################################
+def write_pdb(endpointPdb: FilePath, simulation: app.Simulation) -> None:
+    state: openmm.State = simulation.context.getState(getPositions=True, enforcePeriodicBox=True)
+
+    positions = state.getPositions()
+
+    with open(endpointPdb, 'w') as output:
+        app.pdbfile.PDBFile.writeFile(simulation.topology, positions, output, keepIds=True)
+
+
+#########################################################################################

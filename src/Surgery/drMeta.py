@@ -135,10 +135,11 @@ def run_metadynamics(prmtop: app.Topology,
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
     # save result as pdb - reset chain and residue Ids
-    state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
     endPointPdb: str = p.join(simDir, f"{protName}.pdb")
-    with open(endPointPdb, 'w') as output:
-        app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output)
+
+    drSim.write_pdb(endPointPdb, simulation)
+    # with open(endPointPdb, 'w') as output:
+    #     app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output)
     ## reset the chain and residue ids to original
     drFixer.reset_chains_residues(refPdb, endPointPdb)
 
