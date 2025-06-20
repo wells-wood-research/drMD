@@ -278,7 +278,6 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
         ## use a default value
         config["miscInfo"]["firstAidMaxRetries"] = configDefaults["miscInfo"]["firstAidMaxRetries"]
         miscInfoDisorders["firstAidMaxRetries"] = "No firstAidMaxRetries specified, using default of 10"
-        miscInfoOk = False
     else:
         if not isinstance(firstAidMaxRetries, int):
             miscInfoDisorders["firstAidMaxRetries"] = "firstAidMaxRetries must be an int greater than 0"

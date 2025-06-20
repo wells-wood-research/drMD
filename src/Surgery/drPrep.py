@@ -737,6 +737,7 @@ def make_amber_params(
     ## find dusulphides
     disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(pdbFile)
 
+
     ## to cope with disulphides between different chains, we need to first renumber the residues
     ## then redetect the disulphides
     if len(disulphideAtomPairs) > 0:
@@ -746,7 +747,6 @@ def make_amber_params(
         change_cys_to_cyx(amberNumberedPdb, disulphideAtomPairs)
         remove_hydrogens_for_disulfides(amberNumberedPdb, disulphideAtomPairs)
         pdbFile = amberNumberedPdb
-
 
     boxGeometry: str = config["miscInfo"]["boxGeometry"]
     if boxGeometry == "cubic":
@@ -818,12 +818,19 @@ def make_amber_renumbered_pdb(inPdb, outPdb):
     inDf = pdbUtils.pdb2df(inPdb)
 
     outDf = inDf.copy()
+    uniqueResidues = []
+    seen_residues = set()
+    for index, row in inDf.iterrows():
+        res_tuple = (row["CHAIN_ID"], row["RES_ID"])
+        if res_tuple not in seen_residues:
+            uniqueResidues.append(res_tuple)
+            seen_residues.add(res_tuple)
 
-    newResId = 0
-    for chainId, chainDf in inDf.groupby("CHAIN_ID"):
-        for resId, resDf in chainDf.groupby("RES_ID"):
-            newResId += 1
-            outDf.loc[(outDf["CHAIN_ID"] == chainId) & (outDf["RES_ID"] == resId), "RES_ID"] = newResId
+    new_res_id_counter = 0
+    for chain_id, original_res_id in uniqueResidues:
+        new_res_id_counter += 1
+        outDf.loc[(inDf["CHAIN_ID"] == chain_id) & (inDf["RES_ID"] == original_res_id), "RES_ID"] = new_res_id_counter
+    
 
     pdbUtils.df2pdb(outDf, outPdb)
 
@@ -848,6 +855,7 @@ def change_cys_to_cyx(inPdb, disulphideAtomPairs):
     """
     Changes Cys residues that form disulphide bonds to CYX"""
     inDf = pdbUtils.pdb2df(inPdb)
+
 
     for disulphideAtomPair in disulphideAtomPairs:
         inDf.loc[(inDf["RES_ID"] == disulphideAtomPair[0]), "RES_NAME"] = "CYX"
