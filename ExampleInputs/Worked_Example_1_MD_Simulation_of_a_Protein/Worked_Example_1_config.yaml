@@ -53,9 +53,9 @@ miscInfo:
   skipPdbTriage: False
   trajectorySelections:
   - selection:
-      keyword: protein
-  - selection:
-      keyword: ligand
+      keyword: all
+  # - selection:
+  #     keyword: ligand
 
 
 ########################################################################
