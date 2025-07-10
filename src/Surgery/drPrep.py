@@ -101,6 +101,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
     ## PREPARE PROTEIN STRUCTURE
     protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir)  
 
+    nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
 
     protPrepDir = p.join(prepDir,"PROT")
     if p.isdir(p.join(prepDir, "IONS")):
@@ -119,8 +120,9 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
 
     inputCoords, amberParams, solvatedPdb = make_amber_params(outDir = protPrepDir,
                                                     pdbFile= protPdb,
-                                                outName= outName, 
-                                                config = config)
+                                                    outName= outName, 
+                                                    config = config,
+                                                    nonCannonicalAminoAcidData= nonCannonicalAminoAcidData)
     
     solvatedPdb = drFixer.reset_chains_residues(protPdb, solvatedPdb)
 
@@ -753,7 +755,7 @@ def make_amber_params(
     outName: str,
     config : Dict,
     ligandFileDict: Optional[Dict[str, Dict[str, str]]] = None,
-    nonCannonicalAminoAcidData: Optional[Dict[Dict[str, str]]] = None
+    nonCannonicalAminoAcidData: dict = []
 ) -> Tuple[FilePath, FilePath, FilePath]:
     """
     Prepare the protein structure for simulations using Amber.
@@ -821,7 +823,7 @@ def make_amber_params(
                 if p.isfile(ligLib):
                     f.write(f"loadoff {ligLib}\n")
 
-        for ncaaData in nonCannonicalAminoAcidData:
+        for ncAAName, ncaaData in nonCannonicalAminoAcidData.items():
             ncaaMol2: FilePath = ncaaData["mol2"]
             ncaaFrcmod: FilePath = ncaaData["frcmod"]
             ncaaLib: FilePath = ncaaData["lib"]

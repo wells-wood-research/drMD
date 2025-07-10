@@ -166,9 +166,11 @@ def make_ligandInfo(
     ## GET PROTEIN AND ION ATOMS IN INPUT GEOMETRY
     aminoAcidNames: set = drListInitiator.get_amino_acid_residue_names()
     ionNames: set = drListInitiator.get_ion_residue_names()
+    ncAANames: list = batchConfig["miscInfo"].get("nonCanonicalResidueNames", [])
 
     ligandDf: pd.DataFrame = pdbDf[~pdbDf["RES_NAME"].isin(aminoAcidNames) &
-                   ~pdbDf["ATOM_NAME"].isin(ionNames)]
+                                    ~pdbDf["ATOM_NAME"].isin(ionNames) &
+                                    ~pdbDf["RES_NAME"].isin(ncAANames)]
 
     ## GET NAMES OF LIGANDS
     ligNames: list = ligandDf["RES_NAME"].unique().tolist()
