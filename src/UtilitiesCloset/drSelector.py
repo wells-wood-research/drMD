@@ -90,7 +90,6 @@ def get_atom_indexes(selection: Dict, pdbFile: FilePath) -> List[int]:
             selectionDf = pdbDf[selectionConditionsCombined]
             ## add to atomIndexes list
             atomIndexes += selectionDf.index.tolist()
-
     return atomIndexes
 
 #######################################################################

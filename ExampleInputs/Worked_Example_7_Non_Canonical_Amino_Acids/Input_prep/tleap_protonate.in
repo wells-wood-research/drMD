@@ -1,0 +1,13 @@
+source leaprc.protein.ff19SB
+source leaprc.gaff2
+source leaprc.water.tip3p
+
+loadamberparams frcmod.ions1lm_126_tip3p
+loadamberparams frcmod.ions234lm_126_tip3p
+ncaa = loadmol2 /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids/AIB.mol2
+loadamberparams /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids/AIB.frcmod
+loadoff /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids/AIB.lib
+mol = loadpdb /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids/Input_prep/NonaPeptide_3AIB_renamed.pdb
+
+savepdb mol NonaPeptide_3AIB_protonated.pdb
+quit

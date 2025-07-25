@@ -66,7 +66,9 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
     set_up_logging(outDir, protName)
 
 
-    skipPrep, prepFiles = choose_to_skip_prep(config=config, prepDir=prepDir, protName=protName)
+    skipPrep, prepFiles = choose_to_skip_prep(config=config,
+                                               prepDir=prepDir,
+                                                 protName=protName)
     if skipPrep:
         drLogger.log_info(f"Prep steps already complete for {protName}: Skipping ...",True)
         return prepFiles
@@ -100,7 +102,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
                     outDir=prepDir)
     ## PREPARE PROTEIN STRUCTURE
     protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir)  
-
+    nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
 
     protPrepDir = p.join(prepDir,"PROT")
     if p.isdir(p.join(prepDir, "IONS")):
@@ -120,6 +122,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
     inputCoords, amberParams, solvatedPdb = make_amber_params(outDir = protPrepDir,
                                                     pdbFile= protPdb,
                                                 outName= outName, 
+                                                nonCannonicalAminoAcidData=nonCannonicalAminoAcidData,
                                                 config = config)
     
     solvatedPdb = drFixer.reset_chains_residues(protPdb, solvatedPdb)
@@ -177,21 +180,19 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
     """
     ## unpack config
     inputDir = config["pathInfo"]["inputDir"]
+    ncaaResNames = config["miscInfo"].get("nonCanonicalResidueNames", None)
+    if ncaaResNames is None:
+        drLogger.log_info("No non-canonical amino acids found in the protein.")
+        return {}
 
-    pdbDf = pdbUtils.pdb2df(protPdb)
-
-    aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
     nonCannonicalAminoAcidData = {}
 
-    for resName in pdbDf["RES_NAME"].unique():
-        if resName not in aminoAcidResNames:
-            if resName in nonCannonicalAminoAcidData.keys():
-                continue
-            mol2 = p.join(inputDir, f"{resName}.mol2")
-            frcmod = p.join(inputDir, f"{resName}.frcmod")
-            lib = p.join(inputDir, f"{resName}.lib")
-            if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
-                nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
+    for resName in ncaaResNames:
+        mol2 = p.join(inputDir, f"{resName}.mol2")
+        frcmod = p.join(inputDir, f"{resName}.frcmod")
+        lib = p.join(inputDir, f"{resName}.lib")
+        if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
+            nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
 
     return nonCannonicalAminoAcidData
 
@@ -225,7 +226,7 @@ def choose_to_skip_prep(config: dict, prepDir: DirectoryPath, protName: str) -> 
                 amberParams: FilePath = p.join(completePrepDir,file)
             elif p.splitext(file)[1] == ".inpcrd":
                 inputCoords: FilePath = p.join(completePrepDir,file)
-            if p.splitext(file)[1] == ".pdb" and not file == f"{protName}.pdb":
+            if p.splitext(file)[1] == ".pdb" and file.endswith("_solvated.pdb"):
                 pdbFile: FilePath = p.join(completePrepDir, file)
 
     ## return to drOperator if files already have been made
@@ -752,8 +753,8 @@ def make_amber_params(
     pdbFile: FilePath,
     outName: str,
     config : Dict,
-    ligandFileDict: Optional[Dict[str, Dict[str, str]]] = None,
-    nonCannonicalAminoAcidData: Optional[Dict[Dict[str, str]]] = None
+    ligandFileDict: Optional = None,
+    nonCannonicalAminoAcidData: Optional= None
 ) -> Tuple[FilePath, FilePath, FilePath]:
     """
     Prepare the protein structure for simulations using Amber.
@@ -821,7 +822,7 @@ def make_amber_params(
                 if p.isfile(ligLib):
                     f.write(f"loadoff {ligLib}\n")
 
-        for ncaaData in nonCannonicalAminoAcidData:
+        for ncaaName, ncaaData in nonCannonicalAminoAcidData.items():
             ncaaMol2: FilePath = ncaaData["mol2"]
             ncaaFrcmod: FilePath = ncaaData["frcmod"]
             ncaaLib: FilePath = ncaaData["lib"]

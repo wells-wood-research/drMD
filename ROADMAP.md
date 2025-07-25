@@ -28,12 +28,17 @@
 
 
 ## ncAA support
+
+config[miscInfo][nonCanonicalResidueNames] contains a list of ncAAs to look for. Use this to exclude from pdb triage and ligand prep steps
+
 in pdb triage, when we flag a ncAA, check for RES_NAME.mol2 / frcmod / lib.
 
 If not all found --> Throw error, point to drFrankenstein
 
 If all fine, point tleap towards ncAA params
 
-Might have problems with Protein Protonation steps
+Might have problems with Protein Protonation steps [PROTON_TRANSFUSION]
+Use Tleap + 
+
 
 
