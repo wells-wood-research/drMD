@@ -412,7 +412,10 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
         raise ValueError("Box vectors are not provided in the input coordinates file.")
 
     # Run energy minimisation
-    simulation.minimizeEnergy(maxIterations=sim['maxIterations'])
+    if sim["maxIterations"] == -1:
+        simulation.minimizeEnergy(maxIterations=0)
+    else:
+        simulation.minimizeEnergy(maxIterations=sim['maxIterations'])
 
     # save result as pdb - reset chain and residue Ids
     # state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
