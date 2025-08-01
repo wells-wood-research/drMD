@@ -126,7 +126,7 @@ simulationInfo:
 ################################################
 aftercareInfo:
   clusterInfo:
-    stepNames: ["05_Production_MD"] 
+    stepNames: ["06_Production_MD"] 
     nClusters: 25
     clusterBy:
     - selection:
