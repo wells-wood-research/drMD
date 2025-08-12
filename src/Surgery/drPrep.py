@@ -748,11 +748,16 @@ def make_amber_params(
         remove_hydrogens_for_disulfides(amberNumberedPdb, disulphideAtomPairs)
         pdbFile = amberNumberedPdb
 
+
+    ## box geometry
     boxGeometry: str = config["miscInfo"]["boxGeometry"]
     if boxGeometry == "cubic":
         solvateKeyword: str = "solvatebox"
     elif boxGeometry == "octahedral":
         solvateKeyword: str = "solvateoct"
+
+    ## box size
+    boxSize: int = config["miscInfo"]["boxSize"]
 
     # Write the TLEAP input file
     tleapInput: str = p.join(outDir, "TLEAP.in")
@@ -785,7 +790,7 @@ def make_amber_params(
 
         # Solvate the protein and add ions
 
-        f.write(f"{solvateKeyword} mol TIP3PBOX 10.0\n")
+        f.write(f"{solvateKeyword} mol TIP3PBOX {boxSize}\n")
         f.write("addions mol Na+ 0\n")
         f.write("addions mol Cl- 0\n")
 

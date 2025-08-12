@@ -87,6 +87,7 @@ def init_config_defaults(topDir: DirectoryPath) -> dict:
             "pH": 7,
             "firstAidMaxRetries": 10,
             "boxGeometry": "cubic",
+            "boxSize": 10,
             "writeMyMethodsSection": True,
             "skipPdbTriage": False,
             "trajectorySelections": [{"selection": {"keyword": 'all'}}]
@@ -301,6 +302,19 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
             miscInfoOk = False
         else:
             miscInfoDisorders["boxGeometry"] = None
+
+    ## validate boxSize
+    boxSize = miscInfo.get("boxSize", None)
+    if boxSize is None:
+        ## use a default value
+        config["miscInfo"]["boxSize"] = configDefaults["miscInfo"]["boxSize"]
+        miscInfoDisorders["boxSize"] = "No boxSize specified, using default of None"
+    else:
+        if not isinstance(boxSize, int):
+            miscInfoDisorders["boxSize"] = "boxSize must be an int"
+            miscInfoOk = False
+        else:
+            miscInfoDisorders["boxSize"] = None
 
     ## validate skipPdbTriage
     skipPdbTriage = miscInfo.get("skipPdbTriage", None)

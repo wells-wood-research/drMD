@@ -54,8 +54,8 @@ miscInfo:
   trajectorySelections:
   - selection:
       keyword: all
-  # - selection:
-  #     keyword: ligand
+  boxSize: 10
+
 
 
 ########################################################################

@@ -9,7 +9,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 3. **Config Syntax**
    - **Path Info**: [inputDir](#inputdir) | [outputDir](#outputdir)
    - **Hardware Info**: [platform](#platform) |[parallelCPU](#parallelcpu) | [subprocessCpus](#subprocesscpus)
-   - **Misc Info**: [pH](#pH) | [firstAidMaxRetries](#firstaidmaxretries) | [boxGeometry](#boxgeometry) | [writeMyMethodsSection](#writemymethodssection) | [skipPdbTriage](#skippdbtriage) | [trajectorySelections](#trajectoryselections)
+   - **Misc Info**: [pH](#pH) | [firstAidMaxRetries](#firstaidmaxretries) | [boxGeometry](#boxgeometry) | [boxSize](#boxsize) | [writeMyMethodsSection](#writemymethodssection) | [skipPdbTriage](#skippdbtriage) | [trajectorySelections](#trajectoryselections)
    - **Ligand Info**: [ligandName](#ligandname) | [protons](#protons) | [charge](#charge) | [frcmod](#frcmod) | [mol2](#mol2)
    - **Simulation Info**: [stepName](#stepname) | [simulationType](#simulationtype) | [temperature](#temperature) | [temperatureRange](#temperaturerange) | [maxIterations](#maxiterations) | [duration](#duration) | [timestep](#timestep) | [logInterval](#loginterval)
    - **Aftercare Info**: 
@@ -241,6 +241,12 @@ This section allows you to set some general options for your simulations:
 
 **Default Value**: `cubic`
 
+<a id="boxsize"></a>
+### :anatomical_heart:  boxSize
+*(int)* This determines the size of the solvation box that will be used in your simulations. A water box around your protein will be created such that the box is at least `boxSize` angstroms from your protein.
+
+**Default Value**: 10
+
 <a id="writemymethodsection"></a>
 ### :anatomical_heart:  writeMyMethodsSection
 *(bool)* If set to TRUE, **drMD** will automatically write a methods section for you to use in your publications or thesis
@@ -263,17 +269,22 @@ This section allows you to set some general options for your simulations:
 
 **Default Value**: `[{"selection": {"keyword": 'all'}}]}` (this will write all atoms to your trajectory files)
 
-
-
 Example miscInfo:
 ```yaml
 miscInfo:
   pH: 7.4
   firstAidMaxRetries: 10
-  boxGeometry: "cubic"
+  boxGeometry: cubic
+  boxSize: 10
   writeMyMethodsSection: True
+  skipPdbTriage: False
+  trajectorySelections:
+  - selection:
+      keyword: protein
+  - selection:
+      keyword: ligand
 ```
-Simulations will be run with a pH of 7.4 in a cubic solvation box. The maximum number of first-aid retries will be 10. A methods section will automatically be generated. 
+Simulations will be run with a pH of 7.4 in a cubic solvation box with a padding of 10 Angstroms. The maximum number of first-aid retries will be 10. A methods section will automatically be generated. The pdbTriage protocol will not be skipped. Only the protein and ligand will be written to your trajectory files (this will save a lot of disk space by excluding water and ions)
 
 <a id="ligandinfo"></a>
 ## :brain: ligandInfo
