@@ -1379,3 +1379,6 @@ We will use the distances between chignolin's hydrogen bond donor-acceptor pairs
 ```
 
 In this `05_Metadynamics` step, we have set the `height`, `biasFactor` and `frequency` parameters for the metadynamics simulation. We also have created two distance bias variables, one for each hydrogen bond.
+
+## Worked Example 6: Umbrella Sampling Simulations of Coiled-Coil Dimer
+test
