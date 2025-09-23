@@ -90,6 +90,28 @@ def get_atom_indexes(selection: Dict, pdbFile: FilePath) -> List[int]:
             selectionDf = pdbDf[selectionConditionsCombined]
             ## add to atomIndexes list
             atomIndexes += selectionDf.index.tolist()
+    elif selection["keyword"] == "custom_centroid":
+    # custom_centroid selection: support multiple atoms per dictionary
+        customSelection: List[Dict] = selection["customSelection"]
+        for sel in customSelection:
+            selectionConditions: list = []
+            for selKey in ["CHAIN_ID", "RES_NAME", "RES_ID", "ATOM_NAME"]:
+                # "_" means select all, so skip
+                if sel[selKey] == "_":
+                    continue
+                # list input -> .isin()
+                if isinstance(sel[selKey], list):
+                    selectionConditions.append(pdbDf[selKey].isin(sel[selKey]))
+                # single input -> equality
+                elif isinstance(sel[selKey], (str, int)):
+                    selectionConditions.append(pdbDf[selKey] == sel[selKey])
+            # combine all conditions
+            if selectionConditions:
+                selectionConditionsCombined = np.logical_and.reduce(selectionConditions)
+                selectionDf = pdbDf[selectionConditionsCombined]
+                # add atom indexes to list
+                atomIndexes += selectionDf.index.tolist()
+
 
     return atomIndexes
 

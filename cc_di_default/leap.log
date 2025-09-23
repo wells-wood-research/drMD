@@ -1,0 +1,300 @@
+log started: Tue Sep 23 12:45:28 2025
+
+Log file: ./leap.log
+>> #
+>> # ----- leaprc for loading the ff19SB force field
+>> # ----- NOTE: this is designed for PDB format 3!
+>> #
+>> #	load atom type hybridizations
+>> #
+>> addAtomTypes {
+>> 	{ "H"   "H" "sp3" }
+>> 	{ "HO"  "H" "sp3" }
+>> 	{ "HS"  "H" "sp3" }
+>> 	{ "H1"  "H" "sp3" }
+>> 	{ "H2"  "H" "sp3" }
+>> 	{ "H3"  "H" "sp3" }
+>> 	{ "H4"  "H" "sp3" }
+>> 	{ "H5"  "H" "sp3" }
+>> 	{ "HW"  "H" "sp3" }
+>> 	{ "HC"  "H" "sp3" }
+>> 	{ "HA"  "H" "sp3" }
+>> 	{ "HP"  "H" "sp3" }
+>> 	{ "HZ"  "H" "sp3" }
+>> 	{ "OH"  "O" "sp3" }
+>> 	{ "OS"  "O" "sp3" }
+>> 	{ "O"   "O" "sp2" }
+>> 	{ "O2"  "O" "sp2" }
+>> 	{ "OP"  "O" "sp2" }
+>> 	{ "OW"  "O" "sp3" }
+>> 	{ "CT"  "C" "sp3" }
+>> 	{ "CX"  "C" "sp3" }
+>> 	{ "XC"  "C" "sp3" }
+>> 	{ "C8"  "C" "sp3" }
+>> 	{ "2C"  "C" "sp3" }
+>> 	{ "3C"  "C" "sp3" }
+>> 	{ "CH"  "C" "sp3" }
+>> 	{ "CS"  "C" "sp2" }
+>> 	{ "C"   "C" "sp2" }
+>> 	{ "CO"   "C" "sp2" }
+>> 	{ "C*"  "C" "sp2" }
+>> 	{ "CA"  "C" "sp2" }
+>> 	{ "CB"  "C" "sp2" }
+>> 	{ "CC"  "C" "sp2" }
+>> 	{ "CN"  "C" "sp2" }
+>> 	{ "CM"  "C" "sp2" }
+>> 	{ "CK"  "C" "sp2" }
+>> 	{ "CQ"  "C" "sp2" }
+>> 	{ "CD"  "C" "sp2" }
+>> 	{ "C5"  "C" "sp2" }
+>> 	{ "C4"  "C" "sp2" }
+>> 	{ "CP"  "C" "sp2" }
+>> 	{ "CI"  "C" "sp3" }
+>> 	{ "CJ"  "C" "sp2" }
+>> 	{ "CW"  "C" "sp2" }
+>> 	{ "CV"  "C" "sp2" }
+>> 	{ "CR"  "C" "sp2" }
+>> 	{ "CA"  "C" "sp2" }
+>> 	{ "CY"  "C" "sp2" }
+>> 	{ "C0"  "Ca" "sp3" }
+>> 	{ "MG"  "Mg" "sp3" }
+>> 	{ "N"   "N" "sp2" }
+>> 	{ "NA"  "N" "sp2" }
+>> 	{ "N2"  "N" "sp2" }
+>> 	{ "N*"  "N" "sp2" }
+>> 	{ "NP"  "N" "sp2" }
+>> 	{ "NQ"  "N" "sp2" }
+>> 	{ "NB"  "N" "sp2" }
+>> 	{ "NC"  "N" "sp2" }
+>> 	{ "NT"  "N" "sp3" }
+>> 	{ "NY"  "N" "sp2" }
+>> 	{ "N3"  "N" "sp3" }
+>> 	{ "S"   "S" "sp3" }
+>> 	{ "SH"  "S" "sp3" }
+>> 	{ "P"   "P" "sp3" }
+>> 	{ "LP"  ""  "sp3" }
+>> 	{ "EP"  ""  "sp3" }
+>> 	{ "F"   "F" "sp3" }
+>> 	{ "Cl"  "Cl" "sp3" }
+>> 	{ "Br"  "Br" "sp3" }
+>> 	{ "I"   "I"  "sp3" }
+>> }
+>> #
+>> #	Load the main parameter set.
+>> #
+>> set default cmap on
+>> parm19 = loadamberparams parm19.dat
+Loading parameters: /home/eva/anaconda3/envs/drMD/dat/leap/parm/parm19.dat
+Reading title:
+PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA + ff19SB
+(UNKNOWN ATOM TYPE: Zn)
+(UNKNOWN ATOM TYPE: EP)
+>> frcmod19SB = loadamberparams frcmod.ff19SB
+Loading parameters: /home/eva/anaconda3/envs/drMD/dat/leap/parm/frcmod.ff19SB
+Reading force field modification type file (frcmod)
+Reading title:
+ff19SB AA-specific backbone CMAPs for protein 07/25/2019
+>> #
+>> #	Load main chain and terminating amino acid libraries
+>> #
+>> loadOff amino19.lib
+Loading library: /home/eva/anaconda3/envs/drMD/dat/leap/lib/amino19.lib
+Loading: ALA
+Loading: ARG
+Loading: ASH
+Loading: ASN
+Loading: ASP
+Loading: CYM
+Loading: CYS
+Loading: CYX
+Loading: GLH
+Loading: GLN
+Loading: GLU
+Loading: GLY
+Loading: HID
+Loading: HIE
+Loading: HIP
+Loading: HYP
+Loading: ILE
+Loading: LEU
+Loading: LYN
+Loading: LYS
+Loading: MET
+Loading: PHE
+Loading: PRO
+Loading: SER
+Loading: THR
+Loading: TRP
+Loading: TYR
+Loading: VAL
+>> loadOff aminoct12.lib
+Loading library: /home/eva/anaconda3/envs/drMD/dat/leap/lib/aminoct12.lib
+Loading: CALA
+Loading: CARG
+Loading: CASN
+Loading: CASP
+Loading: CCYS
+Loading: CCYX
+Loading: CGLN
+Loading: CGLU
+Loading: CGLY
+Loading: CHID
+Loading: CHIE
+Loading: CHIP
+Loading: CHYP
+Loading: CILE
+Loading: CLEU
+Loading: CLYS
+Loading: CMET
+Loading: CPHE
+Loading: CPRO
+Loading: CSER
+Loading: CTHR
+Loading: CTRP
+Loading: CTYR
+Loading: CVAL
+Loading: NHE
+Loading: NME
+>> loadOff aminont12.lib
+Loading library: /home/eva/anaconda3/envs/drMD/dat/leap/lib/aminont12.lib
+Loading: ACE
+Loading: NALA
+Loading: NARG
+Loading: NASN
+Loading: NASP
+Loading: NCYS
+Loading: NCYX
+Loading: NGLN
+Loading: NGLU
+Loading: NGLY
+Loading: NHID
+Loading: NHIE
+Loading: NHIP
+Loading: NILE
+Loading: NLEU
+Loading: NLYS
+Loading: NMET
+Loading: NPHE
+Loading: NPRO
+Loading: NSER
+Loading: NTHR
+Loading: NTRP
+Loading: NTYR
+Loading: NVAL
+>> 
+>> #
+>> #	Define the PDB name map for the amino acids
+>> #
+>> addPdbResMap {
+>>   { 0 "HYP" "NHYP" } { 1 "HYP" "CHYP" }
+>>   { 0 "ALA" "NALA" } { 1 "ALA" "CALA" }
+>>   { 0 "ARG" "NARG" } { 1 "ARG" "CARG" }
+>>   { 0 "ASN" "NASN" } { 1 "ASN" "CASN" }
+>>   { 0 "ASP" "NASP" } { 1 "ASP" "CASP" }
+>>   { 0 "CYS" "NCYS" } { 1 "CYS" "CCYS" }
+>>   { 0 "CYX" "NCYX" } { 1 "CYX" "CCYX" }
+>>   { 0 "GLN" "NGLN" } { 1 "GLN" "CGLN" }
+>>   { 0 "GLU" "NGLU" } { 1 "GLU" "CGLU" }
+>>   { 0 "GLY" "NGLY" } { 1 "GLY" "CGLY" }
+>>   { 0 "HID" "NHID" } { 1 "HID" "CHID" }
+>>   { 0 "HIE" "NHIE" } { 1 "HIE" "CHIE" }
+>>   { 0 "HIP" "NHIP" } { 1 "HIP" "CHIP" }
+>>   { 0 "ILE" "NILE" } { 1 "ILE" "CILE" }
+>>   { 0 "LEU" "NLEU" } { 1 "LEU" "CLEU" }
+>>   { 0 "LYS" "NLYS" } { 1 "LYS" "CLYS" }
+>>   { 0 "MET" "NMET" } { 1 "MET" "CMET" }
+>>   { 0 "PHE" "NPHE" } { 1 "PHE" "CPHE" }
+>>   { 0 "PRO" "NPRO" } { 1 "PRO" "CPRO" }
+>>   { 0 "SER" "NSER" } { 1 "SER" "CSER" }
+>>   { 0 "THR" "NTHR" } { 1 "THR" "CTHR" }
+>>   { 0 "TRP" "NTRP" } { 1 "TRP" "CTRP" }
+>>   { 0 "TYR" "NTYR" } { 1 "TYR" "CTYR" }
+>>   { 0 "VAL" "NVAL" } { 1 "VAL" "CVAL" }
+>>   { 0 "HIS" "NHIS" } { 1 "HIS" "CHIS" }
+>> }
+>> 
+>> #
+>> # assume that most often proteins use HIE
+>> #
+>> NHIS = NHIE
+>> HIS = HIE
+>> CHIS = CHIE
+> 
+> mol = loadpdb CC-Di_nohyd_renamed.pdb
+Loading PDB file: ./CC-Di_nohyd_renamed.pdb
+Matching PDB residue names to LEaP variables.
+  total atoms in file: 506
+  Leap added 534 missing atoms according to residue templates:
+       534 H / lone pairs
+> check mol
+Checking 'mol'....
+
+Warning: The unperturbed charge of the unit (2.000000) is not zero.
+
+Warning: Close contact of 0.721 angstroms between nonbonded atoms OD1 and OD1
+-------  .R<ASN 18>.A<OD1 9> and .R<ASN 52>.A<OD1 9>
+
+Warning: Close contact of 1.480 angstroms between nonbonded atoms OD1 and CG
+-------  .R<ASN 18>.A<OD1 9> and .R<ASN 52>.A<CG 8>
+
+Warning: Close contact of 1.480 angstroms between nonbonded atoms CG and OD1
+-------  .R<ASN 18>.A<CG 8> and .R<ASN 52>.A<OD1 9>
+
+Warning: Close contact of 1.336 angstroms between nonbonded atoms O and HD2
+-------  .R<LEU 28>.A<O 19> and .R<TYR 32>.A<HD2 19>
+
+Warning: Close contact of 1.393 angstroms between nonbonded atoms HD23 and HE2
+-------  .R<LEU 28>.A<HD23 17> and .R<TYR 32>.A<HE2 17>
+
+Warning: Close contact of 0.916 angstroms between nonbonded atoms HD21 and HE2
+-------  .R<LEU 28>.A<HD21 15> and .R<TYR 32>.A<HE2 17>
+
+Warning: Close contact of 1.367 angstroms between nonbonded atoms CD2 and HE2
+-------  .R<LEU 28>.A<CD2 14> and .R<TYR 32>.A<HE2 17>
+
+Warning: Close contact of 1.147 angstroms between nonbonded atoms O and HD2
+-------  .R<LYS 29>.A<O 22> and .R<TYR 33>.A<HD2 19>
+
+Warning: Close contact of 0.906 angstroms between nonbonded atoms HD3 and OH
+-------  .R<LYS 29>.A<HD3 13> and .R<TYR 33>.A<OH 14>
+
+Warning: Close contact of 1.077 angstroms between nonbonded atoms HB3 and HE2
+-------  .R<LYS 29>.A<HB3 7> and .R<TYR 33>.A<HE2 17>
+
+Warning: Close contact of 1.206 angstroms between nonbonded atoms CB and HE2
+-------  .R<LYS 29>.A<CB 5> and .R<TYR 33>.A<HE2 17>
+
+Warning: Close contact of 1.336 angstroms between nonbonded atoms O and HD2
+-------  .R<LEU 62>.A<O 19> and .R<TYR 66>.A<HD2 19>
+
+Warning: Close contact of 1.393 angstroms between nonbonded atoms HD23 and HE2
+-------  .R<LEU 62>.A<HD23 17> and .R<TYR 66>.A<HE2 17>
+
+Warning: Close contact of 0.916 angstroms between nonbonded atoms HD21 and HE2
+-------  .R<LEU 62>.A<HD21 15> and .R<TYR 66>.A<HE2 17>
+
+Warning: Close contact of 1.368 angstroms between nonbonded atoms CD2 and HE2
+-------  .R<LEU 62>.A<CD2 14> and .R<TYR 66>.A<HE2 17>
+
+Warning: Close contact of 1.147 angstroms between nonbonded atoms O and HD2
+-------  .R<LYS 63>.A<O 22> and .R<TYR 67>.A<HD2 19>
+
+Warning: Close contact of 0.906 angstroms between nonbonded atoms HD3 and OH
+-------  .R<LYS 63>.A<HD3 13> and .R<TYR 67>.A<OH 14>
+
+Warning: Close contact of 1.078 angstroms between nonbonded atoms HB3 and HE2
+-------  .R<LYS 63>.A<HB3 7> and .R<TYR 67>.A<HE2 17>
+
+Warning: Close contact of 1.207 angstroms between nonbonded atoms CB and HE2
+-------  .R<LYS 63>.A<CB 5> and .R<TYR 67>.A<HE2 17>
+Checking parameters for unit 'mol'.
+Checking for bond parameters.
+Checking for angle parameters.
+check:  Warnings: 20
+Unit is OK.
+> savepdb mol CC-Di_fromtleap.pdb
+Writing pdb file: CC-Di_fromtleap.pdb
+> quit
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 20; Notes = 0.

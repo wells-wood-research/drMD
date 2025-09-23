@@ -470,8 +470,8 @@ def check_restraintInfo(restraintInfo: dict, disorders: dict) -> Tuple[dict, boo
                 if not isinstance(restraintType, str):
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be a string"
                     restraintInfofOk = False
-                if not restraintType in ["position", "distance", "angle", "torsion"]:
-                    disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be one of 'position', 'distance', 'angle', 'torsion'"
+                if not restraintType in ["position", "distance", "angle", "torsion", "pulling", "centroid_bond"]:
+                    disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be one of 'position', 'distance', 'angle', 'torsion', 'pulling', 'centroid_bond'"
                     restraintInfofOk = False
             ## check selection for restraint to act upon
             restrantSelection = info.get("selection", None)
@@ -813,7 +813,7 @@ def check_selection(selection: dict) -> list:
     if not isinstance(keyword, str):
         return [f"keyword must be a string, not {type(keyword)}"]
     
-    if not keyword in ["all", "protein", "ligand", "water", "ions", "custom", "backbone"]:
+    if not keyword in ["all", "protein", "ligand", "water", "ions", "custom", "backbone", "custom_centroid"]:
         return [f"selection keywords incorrect see README.md for more details"]
     
     ## check custom selection syntax
@@ -857,6 +857,8 @@ def check_selection(selection: dict) -> list:
                 selectionDisorders.append("ATOM_NAME must be a string")
             elif len(atomName) > 4:
                 selectionDisorders.append("ATOM_NAME must be a string less than 4 characters")
+
+        ## todo: check custom_centroid selection syntax
 
     return selectionDisorders
 

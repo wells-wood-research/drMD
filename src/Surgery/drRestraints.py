@@ -68,6 +68,10 @@ def restraints_handler(
             ## add a torsion restraint
             elif restraint["restraintType"] == "torsion":
                 system: openmm.System = create_torsion_restraint(system, selection, parameters, kNumber, pdbFile)
+            elif restraint["restraintType"] == "pulling":
+                system: openmm.System = create_centroid_pull_force(system, selection, parameters, kNumber, pdbFile)
+            elif restraint["restraintType"] == "centroid_bond":
+                system: openmm.System = create_centroid_bond_restraint(system, selection, parameters, kNumber, pdbFile)
             ## increment kNumber
             kNumber += 1
 
@@ -105,7 +109,26 @@ def inspect_restraints(system):
         elif isinstance(force, openmm.CustomTorsionForce):
             for j in range(force.getNumTorsions()):
                 particleA, particleB, particleC, particleD, torsionParameters = force.getTorsionParameters(j)   
-                drLogger.log_info(f"Torsion {j}: particles ({particleA}, {particleB}, {particleC}, {particleD}), angle {round(torsionParameters[1] * 180 /math.pi, 2)} degrees, force constant {torsionParameters[0]}")      
+                drLogger.log_info(f"Torsion {j}: particles ({particleA}, {particleB}, {particleC}, {particleD}), angle {round(torsionParameters[1] * 180 /math.pi, 2)} degrees, force constant {torsionParameters[0]}")   
+
+        elif isinstance(force, openmm.CustomCentroidBondForce):
+            for j in range(force.getNumBonds()):
+                groupIndices, bondParameters = force.getBondParameters(j)
+
+                # Retrieve stored atom indices 
+                if hasattr(force, "_group_atoms"):
+                    group_str = ", ".join(
+                        [str(force._group_atoms[i]) for i in groupIndices]
+                    )
+                else:
+                    group_str = ", ".join([str(i) for i in groupIndices])  # fallback
+
+                drLogger.log_info(
+                    f"Centroid Bond {j}: groups ({group_str}), "
+                    f"reference distance {bondParameters[1]*10:.2f} Å, "
+                    f"force constant {bondParameters[0]}"
+                )
+
 ###########################################################################################
 def create_position_restraint(
     system: openmm.System,
@@ -147,7 +170,17 @@ def create_position_restraint(
     return system
 
 ###########################################################################################
-def create_distance_restraint(system: openmm.System, selection: list, parameters: Dict, kNumber: int, pdbFile: FilePath) -> openmm.System:
+def get_atom_groups(selections: List[Dict], pdbFile: str) -> List[List[int]]:
+
+    groups = []
+    
+    for sel in selections:
+        groups.append(drSelector.get_atom_indexes({"keyword": "custom", "customSelection": [sel]}, pdbFile))
+
+    return groups
+
+###########################################################################################
+def create_distance_restraint(system: openmm.System, selection: list, parameters: Dict, kNumber: float, pdbFile: FilePath) -> openmm.System:
     """
     Creates a distance restraint between two atoms for a given system.
 
@@ -155,7 +188,7 @@ def create_distance_restraint(system: openmm.System, selection: list, parameters
         system (openmm.System): The system to add the position restraint to.
         inpcrd (Inpcrd): The Inpcrd object containing the positions of the atoms.
         selection (list): The selection string specifying the atoms to be restrained.
-        kNumber (int): The number used to identify the force constant parameter.
+        kNumber (float): The number used to identify the force constant parameter.
         pdbFile (str): The path to the PDB file.
 
     Returns:
@@ -173,19 +206,19 @@ def create_distance_restraint(system: openmm.System, selection: list, parameters
     if len(restraintAtomIndexes) != 2:
         raise ValueError("Expected exactly two atom indices for a distance restraint.")
 
-    # Get target distance from the parameters dictionary, and convert from angstroms to nanometers
-    kForceConstant: float = parameters["k"]
-    targetDistance_nm: float = parameters["r0"] * unit.angstroms 
+    # Get target distance from the parameters dictionary
+    kForceConstant: float = parameters["k"] * unit.kilojoules_per_mole / unit.angstroms**2
+    targetDistance: float = parameters["r0"] * unit.angstroms 
 
     # Add the atom pair and the calculated target distance in nanometers to the bond restraint
-    distanceRestraint.addBond(restraintAtomIndexes[0], restraintAtomIndexes[1], [kForceConstant, targetDistance_nm])
+    distanceRestraint.addBond(restraintAtomIndexes[0], restraintAtomIndexes[1], [kForceConstant, targetDistance])
 
     ## add force to system
     system.addForce(distanceRestraint)
 
     return system
 ###########################################################################################
-def create_angle_restraint(system: openmm.System, selection: list, parameters: Dict, kNumber: int, pdbFile: FilePath) -> openmm.System:
+def create_angle_restraint(system: openmm.System, selection: list, parameters: Dict, kNumber: float, pdbFile: FilePath) -> openmm.System:
     """
     Creates an angle restraint between three atoms for a given system.
 
@@ -193,7 +226,7 @@ def create_angle_restraint(system: openmm.System, selection: list, parameters: D
         system (openmm.System): The system to add the angle restraint to.
         selection (str): The selection string specifying the atoms to be restrained.
         parameters (dict): The parameters dictionary containing the force constant and target angle.
-        kNumber (int): The number used to identify the force constant parameter.
+        kNumber (float): The number used to identify the force constant parameter.
         pdbFile (str): The path to the PDB file.
 
     Returns:
@@ -228,7 +261,7 @@ def create_angle_restraint(system: openmm.System, selection: list, parameters: D
 
     return system
 ###########################################################################################
-def create_torsion_restraint(system: openmm.System, selection: list, parameters: dict, kNumber: int, pdbFile: FilePath) -> openmm.System:
+def create_torsion_restraint(system: openmm.System, selection: list, parameters: dict, kNumber: float, pdbFile: FilePath) -> openmm.System:
     """
     Creates a torsion restraint between four atoms for a given system.
 
@@ -236,14 +269,14 @@ def create_torsion_restraint(system: openmm.System, selection: list, parameters:
         system (openmm.System): The system to add the torsion restraint to.
         selection (str): The selection string specifying the atoms to be restrained.
         parameters (dict): The parameters dictionary containing the force constant and target torsion angle.
-        kNumber (int): The number used to identify the force constant parameter.
+        kNumber (float): The number used to identify the force constant parameter.
         pdbFile (str): The path to the PDB file.
 
     Returns:
         openmm.System: The system with the torsion restraint added.
     """
     ## create the torsion restraint object  
-    torsionRestraint: openmm.CustomTorsionForce = openmm.CustomTorsionForce(f"0.5*k{str(kNumber)}*(1-cos(theta-theta0))")
+    torsionRestraint: openmm.CustomTorsionForce = openmm.CustomTorsionForce(f"0.5*k{str(kNumber)}*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
     
     ## Add parameters: k for force constant, phi0 for desired torsion angle
     torsionRestraint.addPerTorsionParameter(f"k{str(kNumber)}")
@@ -268,6 +301,98 @@ def create_torsion_restraint(system: openmm.System, selection: list, parameters:
     
     return system
 
+###########################################################################################
+
+def create_centroid_pull_force(system: openmm.System,
+                               selection: Dict,
+                               parameters: Dict,
+                               kNumber: float,
+                               pdbFile: str) -> openmm.System:
+    """
+    Creates a pulling force between the centroids of two atom groups.
+
+    Parameters:
+        system (openmm.System): The system to add the pulling force to.
+        selection (Dict): Dictionary specifying the atoms subjected to the pulling force.
+        parameters (Dict): Dictionary containing the pulling force parameters.
+            Must include "k" (force constant) and "r0" (reference distance).
+        kNumber (float): The number used to identify the force constant parameter.
+        pdbFile (str): The path to the PDB file.
+
+    Returns:
+        openmm.System: The system with the centroid pulling force added.
+    """
+
+    # Create a CustomCentroidBondForce
+    # Potential is linear in distance offset: k * (r - r0)
+    pullForce = openmm.CustomCentroidBondForce(2, f"0.5* k{str(kNumber)} * (distance(g1,g2) - r0)")
+    pullForce.addPerBondParameter(f"k{str(kNumber)}")  
+    pullForce.addPerBondParameter("r0")                
+
+    groups = get_atom_groups(selection["customSelection"], pdbFile)
+    pullForce.addGroup(groups[0])
+    pullForce.addGroup(groups[1])
+
+    # Attach the groups as a hidden attribute for logging
+    pullForce._group_atoms = groups
+
+    # Parameters
+    kForceConstant: float = parameters["k"] * unit.kilojoules_per_mole / unit.angstroms**2
+    targetDistance: float = parameters["r0"] * unit.angstroms 
+
+    # Add bond between the two centroids
+    pullForce.addBond([0, 1], [kForceConstant, targetDistance])
+
+    # Add the force to the system
+    system.addForce(pullForce)
+
+    return system
+
+###########################################################################################
+
+def create_centroid_bond_restraint(system: openmm.System,
+                               selection: Dict,
+                               parameters: Dict,
+                               kNumber: float,
+                               pdbFile: str) -> openmm.System:
+    """
+    Creates a custom bonded restraint between the centroids of two atom groups.
+
+    Parameters:
+        system (openmm.System): The system to add the restraint to.
+        selection (Dict): Dictionary specifying the atoms subjected to the restraint.
+        parameters (Dict): Dictionary containing the restraint parameters.
+            Must include "k" (force constant) and "r0" (reference distance).
+        kNumber (float): The number used to identify the force constant parameter.
+        pdbFile (str): The path to the PDB file.
+
+    Returns:
+        openmm.System: The system with the centroid bond restraint added.
+    """
+
+    # Create a CustomCentroidBondForce
+    centroidForce = openmm.CustomCentroidBondForce(2, f"0.5 * k{str(kNumber)} * (distance(g1,g2) - r0)^2")
+    centroidForce.addPerBondParameter(f"k{str(kNumber)}")  
+    centroidForce.addPerBondParameter("r0")                
+
+    groups = get_atom_groups(selection["customSelection"], pdbFile)
+    centroidForce.addGroup(groups[0])
+    centroidForce.addGroup(groups[1])
+
+    # Attach the groups as a hidden attribute for logging
+    centroidForce._group_atoms = groups
+
+    # Parameters
+    kForceConstant: float = parameters["k"] * unit.kilojoules_per_mole / unit.angstroms**2
+    targetDistance: float = parameters["r0"] * unit.angstroms 
+
+    # Add bond between the two centroids
+    centroidForce.addBond([0, 1], [kForceConstant, targetDistance])
+
+    # Add the force to the system
+    system.addForce(centroidForce)
+
+    return system
 
 ###########################################################################################
 def clear_all_restraints(saveXml: FilePath) -> None:
