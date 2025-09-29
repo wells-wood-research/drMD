@@ -68,10 +68,15 @@ def restraints_handler(
             ## add a torsion restraint
             elif restraint["restraintType"] == "torsion":
                 system: openmm.System = create_torsion_restraint(system, selection, parameters, kNumber, pdbFile)
+            ## add a pulling force
             elif restraint["restraintType"] == "pulling":
                 system: openmm.System = create_centroid_pull_force(system, selection, parameters, kNumber, pdbFile)
+            ## add a centroid bond distance restraint
             elif restraint["restraintType"] == "centroid_bond":
                 system: openmm.System = create_centroid_bond_restraint(system, selection, parameters, kNumber, pdbFile)
+            ## add a torsion flat bottom restraint
+            elif restraint["restraintType"] == "torsion_flat_bottom":
+                system: openmm.System = create_flat_bottom_torsion_restraint(system, selection, parameters, kNumber, pdbFile)
             ## increment kNumber
             kNumber += 1
 
@@ -276,11 +281,11 @@ def create_torsion_restraint(system: openmm.System, selection: list, parameters:
         openmm.System: The system with the torsion restraint added.
     """
     ## create the torsion restraint object  
-    torsionRestraint: openmm.CustomTorsionForce = openmm.CustomTorsionForce(f"0.5*k{str(kNumber)}*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
+    torsionRestraint: openmm.CustomTorsionForce = openmm.CustomTorsionForce(f"0.5*k{str(kNumber)}*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-phi0); pi = 3.1415926535")
     
     ## Add parameters: k for force constant, phi0 for desired torsion angle
     torsionRestraint.addPerTorsionParameter(f"k{str(kNumber)}")
-    torsionRestraint.addPerTorsionParameter("theta0")
+    torsionRestraint.addPerTorsionParameter("phi0")
     
     ## Add force to system
     system.addForce(torsionRestraint)
@@ -392,6 +397,50 @@ def create_centroid_bond_restraint(system: openmm.System,
     # Add the force to the system
     system.addForce(centroidForce)
 
+    return system
+
+###########################################################################################
+def create_flat_bottom_torsion_restraint(system: openmm.System, selection: list, parameters: dict, kNumber: float, pdbFile: FilePath) -> openmm.System:
+    """
+    Creates a flat bottom torsion restraint between four atoms for a given system.
+
+    Parameters:
+        system (openmm.System): The system to add the torsion restraint to.
+        selection (str): The selection string specifying the atoms to be restrained.
+        parameters (dict): The parameters dictionary containing the force constant, target torsion angle.
+        kNumber (float): The number used to identify the force constant parameter.
+        pdbFile (str): The path to the PDB file.
+
+    Returns:
+        openmm.System: The system with the torsion restraint added.
+    """
+
+    ## create the flat bottom torsion restraint object  
+    torsionRestraint: openmm.CustomTorsionForce = openmm.CustomTorsionForce('select({},{},{})'.format(f'step(-0.5 * k{str(kNumber)} * cos(theta-phi0)-(-0.5 * k{str(kNumber)} * cos(phi_cutoff)))', f'-0.5 * k{str(kNumber)} * cos(theta-phi0)', f'-0.5 * k{str(kNumber)} * cos(phi_cutoff)'))
+    
+    ## Add parameters: k for force constant, phi0 for desired torsion angle, phi_cutoff for flat bottom
+    torsionRestraint.addPerTorsionParameter(f"k{str(kNumber)}")
+    torsionRestraint.addPerTorsionParameter("phi0")
+    torsionRestraint.addPerTorsionParameter("phi_cutoff")
+    
+    ## Add force to system
+    system.addForce(torsionRestraint)
+    
+    ## Get indices of the four atoms to be restrained
+    restraintTorsionAtoms: list = drSelector.get_atom_indexes(selection, pdbFile)
+    if len(restraintTorsionAtoms) != 4:
+        raise ValueError("Expected exactly four atom indices for a torsion restraint.")
+    
+    ## Get target torsion angle from parameters (in radians)
+    kForceConstant: float = parameters.get("k", 1000) * unit.kilojoules_per_mole  # Default k value if not specified
+    targetTorsion_degrees: float = parameters["phi0"] * unit.degrees
+    targetTorsion_cutoff: float = parameters["phi_cutoff"] * unit.degrees
+    
+    ## Add the atom quartet and settings to the torsion restraint
+    torsionRestraint.addTorsion(restraintTorsionAtoms[0], restraintTorsionAtoms[1],
+                                restraintTorsionAtoms[2], restraintTorsionAtoms[3],
+                                [kForceConstant, targetTorsion_degrees, targetTorsion_cutoff])
+    
     return system
 
 ###########################################################################################

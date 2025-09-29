@@ -470,8 +470,8 @@ def check_restraintInfo(restraintInfo: dict, disorders: dict) -> Tuple[dict, boo
                 if not isinstance(restraintType, str):
                     disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be a string"
                     restraintInfofOk = False
-                if not restraintType in ["position", "distance", "angle", "torsion", "pulling", "centroid_bond"]:
-                    disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be one of 'position', 'distance', 'angle', 'torsion', 'pulling', 'centroid_bond'"
+                if not restraintType in ["position", "distance", "angle", "torsion", "pulling", "centroid_bond", "torsion_flat_bottom"]:
+                    disorders["restraintInfo"][f"restraint_{restraintIndex}"] = "each entry in restraintInfo['restraintType'] must be one of 'position', 'distance', 'angle', 'torsion', 'pulling', 'centroid_bond', 'torsion_flat_bottom'"
                     restraintInfofOk = False
             ## check selection for restraint to act upon
             restrantSelection = info.get("selection", None)

@@ -85,6 +85,32 @@ productionRestraints: &productionRestraints
       customSelection:
         - {CHAIN_ID: A, RES_NAME: ASN, RES_ID: 18, ATOM_NAME: [CA, CB]}
         - {CHAIN_ID: A, RES_NAME: ASN, RES_ID: 52, ATOM_NAME: [CA, CB]}
+
+  - restraintType: torsion_flat_bottom
+    parameters:
+      k: 100
+      phi0: -80
+      phi_cutoff: 50
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: GLY, RES_ID: 2, ATOM_NAME: C}
+        - {CHAIN_ID: A, RES_NAME: GLU, RES_ID: 3, ATOM_NAME: N}
+        - {CHAIN_ID: A, RES_NAME: GLU, RES_ID: 3, ATOM_NAME: CA}
+        - {CHAIN_ID: A, RES_NAME: GLU, RES_ID: 3, ATOM_NAME: C}
+
+  - restraintType: torsion_flat_bottom
+    parameters:
+      k: 100
+      phi0: -19
+      phi_cutoff: 49
+    selection:
+      keyword: custom
+      customSelection:
+        - {CHAIN_ID: A, RES_NAME: GLY, RES_ID: 2, ATOM_NAME: N}
+        - {CHAIN_ID: A, RES_NAME: GLY, RES_ID: 2, ATOM_NAME: C}
+        - {CHAIN_ID: A, RES_NAME: GLY, RES_ID: 2, ATOM_NAME: CA}
+        - {CHAIN_ID: A, RES_NAME: GLU, RES_ID: 3, ATOM_NAME: N}
       
 
 ########################################################################
