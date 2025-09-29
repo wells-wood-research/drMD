@@ -158,7 +158,7 @@ def create_position_restraint(
     ## create a position restraint object, add parameters
     positionRestraint = openmm.CustomExternalForce(f"k{str(kNumber)}*periodicdistance(x, y, z, x0, y0, z0)^2")
 
-    kForceConstant: int =  parameters["k"]
+    kForceConstant: float =  parameters["k"] * unit.kilojoules_per_mole / unit.angstroms**2
     positionRestraint.addGlobalParameter(f"k{str(kNumber)}", kForceConstant* unit.kilojoules_per_mole / unit.nanometer**2)
     positionRestraint.addPerParticleParameter("x0")
     positionRestraint.addPerParticleParameter("y0")

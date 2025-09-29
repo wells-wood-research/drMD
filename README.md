@@ -580,7 +580,7 @@ Within the parameters dictionary, all restraint types require the following para
 
 <a id="k"></a>
 ###### :anatomical_heart:  k 
-*(int)*  This is the force constant of the restraint (int), given in kJ/mol A^-2
+*(int)*  This is the force constant of the restraint (int), given in kJ/mol A^-2 (for distance restraints) or kJ/mol rad^-2 (for angle and torsion restraints)
 
 
 Additional entries in the parameters dictionary depend on the type of restraints:
@@ -630,8 +630,8 @@ Example restraints syntax:
 ```
 
 This example will add the following restraints:
-- Position restraints to the protein atoms with a force constant of 1000 kJ/mol 
-- A 3 Angstrom distance restraint between the CA atoms of residues 1 and 2 of the protein, with a force constant of 1000 kJ/mol
+- Position restraints to the protein atoms with a force constant of 1000 kJ/mol A^-2
+- A 3 Angstrom distance restraint between the CA atoms of residues 1 and 2 of the protein, with a force constant of 1000 kJ/mol A^-2
 
 For a detailed explanation of how to select chains, residues, and atoms for restraints, see the [**drMD** Selection syntax](#drmd-selection-syntax) section.
 
