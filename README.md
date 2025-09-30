@@ -214,7 +214,9 @@ hardwareInfo:
   subprocessCpus: 2
 ```
 This will use CUDA to achieve GPU acceleration and run 16 simulations in parallel using 2 cores each for a total usage of 32 cores.
+
 ---
+
 <a id="miscinfo"></a>
 ## :brain: miscInfo
 This section allows you to set some general options for your simulations:
