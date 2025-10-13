@@ -323,7 +323,7 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     # with open(endPointPdb, 'w') as output:
     #     app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output, keepIds=True)
     # ## reset the chain and residue ids to original
-    # drFixer.reset_chains_residues(refPdb, endPointPdb)
+    drFixer.reset_chains_residues(refPdb, endPointPdb)
 
     ## create a PDB file with the same atoms as the trajectory
     trajectoryPdb = p.join(simDir, "trajectory.pdb")
