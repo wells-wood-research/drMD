@@ -390,12 +390,18 @@ def ligand_mol2(
     ligLib = False
     # Look for mol2 from config, then in ligParamDir, if not found, create new mol2
     if ligand.get("mol2"):  # Look in config
+        drLogger.log_info(f"Using Charges from User Supplied Mol2 for {ligandName}...",True)
+
         ligMol2: FilePath = p.join(inputDir, f"{ligandName}.mol2")
         ligLib: FilePath = p.join(inputDir, f"{ligandName}.lib")
 
     elif p.isfile(p.join(ligandParamDir, f"{ligandName}.mol2")):  # Look in ligParamDir
+        drLogger.log_info(f"Reusing Mol2 for {ligandName} to get charges...",True)
         ligMol2: FilePath = p.join(ligandParamDir, f"{ligandName}.mol2")
+        
     else:  # Convert to mol2 with antechamber
+        drLogger.log_info(f"Calculating partial charges for ligand {ligandName}...",True)
+
         charge: int = int(ligand["charge"])
         ligMol2: FilePath = p.join(ligandPrepDir, f"{ligandName}.mol2")
         # Create antechamber command
@@ -505,7 +511,6 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
 
 
         # Create mol2 file
-        drLogger.log_info(f"Calculating partial charges for ligand {ligandName}...",True)
         ligMol2, ligFileDict = ligand_mol2(ligand,inputDir,ligandName,ligParamDir,
                                           ligPrepDir,ligPdb,ligFileDict)
         
