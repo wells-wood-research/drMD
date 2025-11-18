@@ -1,0 +1,143 @@
+ATOM      1  N   TRP A   1       1.460  -8.322   2.085  1.00  0.00           N  
+ATOM      2  CA  TRP A   1       1.321  -6.971   2.662  1.00  0.00           C  
+ATOM      3  C   TRP A   1       2.023  -5.961   1.773  1.00  0.00           C  
+ATOM      4  O   TRP A   1       1.657  -4.792   1.726  1.00  0.00           O  
+ATOM      5  CB  TRP A   1       1.891  -6.937   4.079  1.00  0.00           C  
+ATOM      6  CG  TRP A   1       3.209  -7.657   4.154  1.00  0.00           C  
+ATOM      7  CD1 TRP A   1       4.418  -7.196   3.766  1.00  0.00           C  
+ATOM      8  CD2 TRP A   1       3.420  -8.984   4.685  1.00  0.00           C  
+ATOM      9  CE2 TRP A   1       4.795  -9.252   4.551  1.00  0.00           C  
+ATOM     10  CE3 TRP A   1       2.570  -9.939   5.233  1.00  0.00           C  
+ATOM     11  NE1 TRP A   1       5.373  -8.143   3.989  1.00  0.00           N  
+ATOM     12  CZ2 TRP A   1       5.353 -10.472   4.966  1.00  0.00           C  
+ATOM     13  CZ3 TRP A   1       3.112 -11.144   5.652  1.00  0.00           C  
+ATOM     14  CH2 TRP A   1       4.487 -11.412   5.521  1.00  0.00           C  
+ATOM     15  N   LEU A   2       3.008  -6.416   1.079  1.00  0.00           N  
+ATOM     16  CA  LEU A   2       3.721  -5.528   0.164  1.00  0.00           C  
+ATOM     17  C   LEU A   2       2.744  -4.905  -0.827  1.00  0.00           C  
+ATOM     18  O   LEU A   2       2.970  -3.809  -1.336  1.00  0.00           O  
+ATOM     19  CB  LEU A   2       4.786  -6.339  -0.565  1.00  0.00           C  
+ATOM     20  CG  LEU A   2       6.026  -6.547   0.292  1.00  0.00           C  
+ATOM     21  CD1 LEU A   2       6.786  -7.775  -0.195  1.00  0.00           C  
+ATOM     22  CD2 LEU A   2       6.928  -5.318   0.197  1.00  0.00           C  
+ATOM     23  N   ALA A   3       1.649  -5.605  -1.085  1.00  0.00           N  
+ATOM     24  CA  ALA A   3       0.631  -5.093  -1.994  1.00  0.00           C  
+ATOM     25  C   ALA A   3      -0.015  -3.836  -1.426  1.00  0.00           C  
+ATOM     26  O   ALA A   3      -0.599  -3.046  -2.161  1.00  0.00           O  
+ATOM     27  CB  ALA A   3      -0.423  -6.168  -2.221  1.00  0.00           C  
+ATOM     28  C01 ALA A   3       1.293  -4.726  -3.335  0.00  0.00           C  
+ATOM     29  N   ALA A   4       0.098  -3.664  -0.124  1.00  0.00           N  
+ATOM     30  CA  ALA A   4      -0.482  -2.498   0.529  1.00  0.00           C  
+ATOM     31  C   ALA A   4       0.284  -1.238   0.143  1.00  0.00           C  
+ATOM     32  O   ALA A   4      -0.249  -0.131   0.201  1.00  0.00           O  
+ATOM     33  CB  ALA A   4      -0.468  -2.691   2.034  1.00  0.00           C  
+ATOM     34  N   LEU A   5       1.526  -1.406  -0.261  1.00  0.00           N  
+ATOM     35  CA  LEU A   5       2.346  -0.261  -0.657  1.00  0.00           C  
+ATOM     36  C   LEU A   5       1.740   0.423  -1.872  1.00  0.00           C  
+ATOM     37  O   LEU A   5       1.915   1.620  -2.077  1.00  0.00           O  
+ATOM     38  CB  LEU A   5       3.755  -0.744  -0.975  1.00  0.00           C  
+ATOM     39  CG  LEU A   5       4.713   0.394  -1.261  1.00  0.00           C  
+ATOM     40  CD1 LEU A   5       4.849   1.300  -0.045  1.00  0.00           C  
+ATOM     41  CD2 LEU A   5       6.086  -0.162  -1.643  1.00  0.00           C  
+ATOM     42  N   ALA A   6       1.017  -0.341  -2.676  1.00  0.00           N  
+ATOM     43  CA  ALA A   6       0.371   0.208  -3.861  1.00  0.00           C  
+ATOM     44  C   ALA A   6      -0.649   1.259  -3.469  1.00  0.00           C  
+ATOM     45  O   ALA A   6      -0.998   2.129  -4.268  1.00  0.00           O  
+ATOM     46  CB  ALA A   6      -0.297  -0.910  -4.645  1.00  0.00           C  
+ATOM     47  C01 ALA A   6       1.438   0.876  -4.748  0.00  0.00           C  
+ATOM     48  N   ALA A   7      -1.137   1.177  -2.247  1.00  0.00           N  
+ATOM     49  CA  ALA A   7      -2.135   2.128  -1.761  1.00  0.00           C  
+ATOM     50  C   ALA A   7      -1.474   3.463  -1.426  1.00  0.00           C  
+ATOM     51  O   ALA A   7      -2.148   4.481  -1.307  1.00  0.00           O  
+ATOM     52  CB  ALA A   7      -2.836   1.561  -0.538  1.00  0.00           C  
+ATOM     53  N   PHE A   8      -0.149   3.445  -1.276  1.00  0.00           N  
+ATOM     54  CA  PHE A   8       0.586   4.667  -0.954  1.00  0.00           C  
+ATOM     55  C   PHE A   8       0.902   5.455  -2.227  1.00  0.00           C  
+ATOM     56  O   PHE A   8       1.682   6.409  -2.209  1.00  0.00           O  
+ATOM     57  CB  PHE A   8       1.879   4.298  -0.218  1.00  0.00           C  
+ATOM     58  CG  PHE A   8       2.348   5.382   0.718  1.00  0.00           C  
+ATOM     59  CD1 PHE A   8       2.221   6.713   0.379  1.00  0.00           C  
+ATOM     60  CD2 PHE A   8       2.936   5.069   1.938  1.00  0.00           C  
+ATOM     61  CE1 PHE A   8       2.656   7.723   1.228  1.00  0.00           C  
+ATOM     62  CE2 PHE A   8       3.375   6.059   2.797  1.00  0.00           C  
+ATOM     63  CZ  PHE A   8       3.236   7.389   2.444  1.00  0.00           C  
+ATOM     64  N   ALA A   9       0.269   5.052  -3.320  1.00  0.00           N  
+ATOM     65  CA  ALA A   9       0.538   5.732  -4.585  1.00  0.00           C  
+ATOM     66  C   ALA A   9      -0.762   6.260  -5.169  1.00  0.00           C  
+ATOM     67  O   ALA A   9      -1.745   5.516  -5.169  1.00  0.00           O  
+ATOM     68  CB  ALA A   9       1.215   4.789  -5.547  1.00  0.00           C  
+ATOM     69  C01 ALA A   9       1.483   6.922  -4.334  0.00  0.00           C  
+ATOM     70  N   NME A  10      -0.834   7.454  -5.652  1.00  0.00           N  
+ATOM     71  CH3 NME A  10      -2.087   7.939  -6.205  1.00  0.00           C  
+CONECT    1    2
+CONECT    2    1    3    5
+CONECT    3    2    4   15
+CONECT    4    3
+CONECT    5    2    6
+CONECT    6    5    7    8
+CONECT    7    6   11
+CONECT    8    6    9   10
+CONECT    9    8   12   11
+CONECT   10    8   13
+CONECT   11    7    9
+CONECT   12    9   14
+CONECT   13   10   14
+CONECT   14   12   13
+CONECT   15    3   16
+CONECT   16   15   17   19
+CONECT   17   16   18   23
+CONECT   18   17
+CONECT   19   16   20
+CONECT   20   19   21   22
+CONECT   21   20
+CONECT   22   20
+CONECT   23   17   24
+CONECT   24   23   25   27   28
+CONECT   25   24   26   29
+CONECT   26   25
+CONECT   27   24
+CONECT   28   24
+CONECT   29   25   30
+CONECT   30   29   31   33
+CONECT   31   30   32   34
+CONECT   32   31
+CONECT   33   30
+CONECT   34   31   35
+CONECT   35   34   36   38
+CONECT   36   35   37   42
+CONECT   37   36
+CONECT   38   35   39
+CONECT   39   38   40   41
+CONECT   40   39
+CONECT   41   39
+CONECT   42   36   43
+CONECT   43   42   44   46   47
+CONECT   44   43   45   48
+CONECT   45   44
+CONECT   46   43
+CONECT   47   43
+CONECT   48   44   49
+CONECT   49   48   50   52
+CONECT   50   49   51   53
+CONECT   51   50
+CONECT   52   49
+CONECT   53   50   54
+CONECT   54   53   55   57
+CONECT   55   54   56   64
+CONECT   56   55
+CONECT   57   54   58
+CONECT   58   57   59   60
+CONECT   59   58   61
+CONECT   60   58   62
+CONECT   61   59   63
+CONECT   62   60   63
+CONECT   63   61   62
+CONECT   64   55   65
+CONECT   65   64   66   68   69
+CONECT   66   65   67   70
+CONECT   67   66
+CONECT   68   65
+CONECT   69   65
+CONECT   70   66   71
+CONECT   71   70
+END

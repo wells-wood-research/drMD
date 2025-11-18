@@ -1,0 +1,111 @@
+!!index array str
+ "AIB"
+!entry.AIB.unit.atoms table  str name  str type  int typex  int resx  int flags  int seq  int elmnt  dbl chg
+ "N" "ns" 0 1 131072 1 7 -0.569900
+ "CA" "c3" 0 1 131072 2 6 0.064400
+ "C" "c" 0 1 131072 3 6 0.637100
+ "O" "o" 0 1 131072 4 8 -0.622100
+ "CB1" "c3" 0 1 131072 5 6 -0.104600
+ "CB2" "c3" 0 1 131072 6 6 -0.104600
+ "HN" "hn" 0 1 131072 7 1 0.315500
+ "HB11" "hc" 0 1 131072 8 1 0.055867
+ "HB12" "hc" 0 1 131072 9 1 0.055867
+ "HB13" "hc" 0 1 131072 10 1 0.055867
+ "HB21" "hc" 0 1 131072 11 1 0.055867
+ "HB22" "hc" 0 1 131072 12 1 0.055867
+ "HB23" "hc" 0 1 131072 13 1 0.055867
+!entry.AIB.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg
+ "N" "ns" 0 -1 0.0
+ "CA" "c3" 0 -1 0.0
+ "C" "c" 0 -1 0.0
+ "O" "o" 0 -1 0.0
+ "CB1" "c3" 0 -1 0.0
+ "CB2" "c3" 0 -1 0.0
+ "HN" "hn" 0 -1 0.0
+ "HB11" "hc" 0 -1 0.0
+ "HB12" "hc" 0 -1 0.0
+ "HB13" "hc" 0 -1 0.0
+ "HB21" "hc" 0 -1 0.0
+ "HB22" "hc" 0 -1 0.0
+ "HB23" "hc" 0 -1 0.0
+!entry.AIB.unit.boundbox array dbl
+ -1.000000
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+!entry.AIB.unit.childsequence single int
+ 2
+!entry.AIB.unit.connect array int
+ 1
+ 3
+!entry.AIB.unit.connectivity table  int atom1x  int atom2x  int flags
+ 1 2 1
+ 1 7 1
+ 2 3 1
+ 2 5 1
+ 2 6 1
+ 3 4 2
+ 5 8 1
+ 5 9 1
+ 5 10 1
+ 6 11 1
+ 6 12 1
+ 6 13 1
+!entry.AIB.unit.hierarchy table  str abovetype  int abovex  str belowtype  int belowx
+ "U" 0 "R" 1
+ "R" 1 "A" 1
+ "R" 1 "A" 2
+ "R" 1 "A" 3
+ "R" 1 "A" 4
+ "R" 1 "A" 5
+ "R" 1 "A" 6
+ "R" 1 "A" 7
+ "R" 1 "A" 8
+ "R" 1 "A" 9
+ "R" 1 "A" 10
+ "R" 1 "A" 11
+ "R" 1 "A" 12
+ "R" 1 "A" 13
+!entry.AIB.unit.name single str
+ "AIB"
+!entry.AIB.unit.positions table  dbl x  dbl y  dbl z
+ -1.233000 0.864000 1.099000
+ -0.042000 0.136000 0.648000
+ 0.112000 0.216000 -0.896000
+ 1.098000 0.705000 -1.412000
+ 1.166000 0.818000 1.287000
+ -0.106000 -1.331000 1.084000
+ -1.032000 1.716000 1.597000
+ 1.090000 0.791000 2.372000
+ 2.074000 0.307000 0.982000
+ 1.240000 1.849000 0.949000
+ 0.749000 -1.868000 0.683000
+ -0.083000 -1.394000 2.170000
+ -1.017000 -1.805000 0.730000
+!entry.AIB.unit.residueconnect table  int c1x  int c2x  int c3x  int c4x  int c5x  int c6x
+ 0 0 0 0 0 0
+!entry.AIB.unit.residues table  str name  int seq  int childseq  int startatomx  str restype  int imagingx
+ "AIB" 1 26 1 "?" 0
+!entry.AIB.unit.residuesPdbSequenceNumber array int
+ 0
+!entry.AIB.unit.solventcap array dbl
+ -1.000000
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+!entry.AIB.unit.velocities table  dbl x  dbl y  dbl z
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0

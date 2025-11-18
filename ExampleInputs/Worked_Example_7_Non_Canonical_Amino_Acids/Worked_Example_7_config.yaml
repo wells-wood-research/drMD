@@ -13,14 +13,14 @@
 #        An NPT simulation is performed at 300 K, this is used to further equilibrate the system's water molecules
 #        This allows the box size of the system to reach equilibrium
 #        Position restraints are applied to the protein and ligand, as we are just equilibrating water
-#     4. SLOW INTERGRATOR STEP
+#     4. SLOW INTEGRATION STEP
 #        This step is run without any restraints, sometimes the removal of restraints can cause numerical errors
 #        To prevent this, we run this step using a small timestep of 0.5 fs
 #     5. EQUILIBRIATION
 #        An unrestrained NPT simulation is performed for 5 nanoseconds
 #        No measurements are taken during this simulation, we are just equilibrating the system
 #        Before you run any analysis on the following PRODUCTION MD step, check the vitals report for this step
-#        If this step has not reached equilibriation, it is best practace to extend the duration of this step 
+#        If this step has not reached equilibriation, it is best practice to extend the duration of this step 
 #        before running your PRODUCTION MD step
 #     6. PRODUCTION MD
 #        A long(ish) production MD simulation is performed for 50 nanoseconds
@@ -36,105 +36,106 @@
 #         pathToInput/6eqe_replicate3.pdb
 ########################################################################
 pathInfo:
-  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/test_standard
-  outputDir: "/home/esp/scriptDevelopment/drMD/03_standard_outputs"
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_7_Non_Canonical_Amino_Acids/outputs
   
 ########################################################################
 hardwareInfo:
   parallelCPU: 1
-  platform: "CUDA"
+  platform: CUDA
   subprocessCpus: 1
 ########################################################################
 miscInfo:
   pH: 7.4
-  firstAidMaxRetries: 10
-  boxGeometry: "cubic"
+  firstAidMaxRetries: 0
+  boxGeometry: cubic
   writeMyMethodsSection: True
-  skipPdbTriage: False
+  skipPdbTriage: True
   trajectorySelections:
   - selection:
-      keyword: "protein"
-  - selection:
-      keyword: "ligand"
-  - selection:
-      keyword: "water"
+      keyword: all
 
+  nonCanonicalResidueNames: [AIB]
 ########################################################################
 equilibriationRestraints: &equilibriationRestraints
-    - restraintType: "position"
+    - restraintType: position
       parameters:
         k: 1000
       selection:
-        keyword: "protein"
+        keyword: protein
 
-    - restraintType: "position"
+    - restraintType: position
       selection: 
-        keyword: "ligand"  
+        keyword: ligand  
       parameters:
         k: 1000
 
 ########################################################################
 simulationInfo:
-  - stepName: "01_energy_minimisation"
-    simulationType: "EM"
+  - stepName: 01_energy_minimisation
+    simulationType: EM
     temperature: 300
     maxIterations: -1
 ########################################################################
-  - stepName: "02_NVT_pre-equilibriation"
-    simulationType: "NVT"
-    duration: "100 ps"
-    timestep: "4 fs"
+  - stepName: 02_NVT_pre-equilibriation
+    simulationType: NVT
+    duration: 100 ps
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
     restraintInfo: *equilibriationRestraints
 
 #########################################################################
-  - stepName: "03_NPT_pre-equilibriation"
-    simulationType: "NPT"
-    duration: "100 ps"
-    timestep: "4 fs"
+  - stepName: 03_NPT_pre-equilibriation
+    simulationType: NPT
+    duration: 100 ps
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
     restraintInfo: *equilibriationRestraints
 
 ########################################################################
-  - stepName: "04_NpT_slowIntergrator"
-    simulationType: "NpT"
-    duration: "10 ps"
-    timestep: "0.5 fs"
+  - stepName: 04_NpT_slowTimeStep
+    simulationType: NpT
+    duration: 10 ps
+    timestep: 0.5 fs
     temperature: 300
-    logInterval: "1 ps"
+    logInterval: 1 ps
 ########################################################################
-  - stepName: "05_Equilibriation"
-    simulationType: "NpT"
-    duration: "5 ns"
-    timestep: "4 fs"
+  - stepName: 05_High_T_Production_MD
+    simulationType: NpT
+    duration: 50 ns
+    timestep: 4 fs
     heavyProtons: True
     temperature: 300
-    logInterval: "500 ps"
+    logInterval: 50 ps  
+########################################################################
+  # - stepName: 05_Mid_T_Production_MD
+  #   simulationType: NpT
+  #   duration: 50 ns
+  #   timestep: 4 fs
+  #   heavyProtons: True
+  #   temperature: 200
+  #   logInterval: 50 ps  
+# ########################################################################
+#   - stepName: 05_Equilibriation
+#     simulationType: NpT
+#     duration: 5 ns
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperature: 300
+#     logInterval: 500 ps
 
-########################################################################
-  - stepName: "06_Production_MD"
-    simulationType: "NpT"
-    duration: "50 ns"
-    timestep: "4 fs"
-    heavyProtons: True
-    temperature: 300
-    logInterval: "50 ps"
-################################################
-aftercareInfo:
-  clusterInfo:
-    stepNames: ["06_Production_MD"] 
-    nClusters: 25
-    clusterBy:
-    - selection:
-        keyword: "protein"
-    removeAtoms:
-      - selection:
-          keyword: "water"
-      - selection:
-          keyword: "ions"
-  collateVitalsReports: True
+# ########################################################################
+#   - stepName: 06_Production_MD
+#     simulationType: NpT
+#     duration: 50 ns
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperature: 300
+#     logInterval: 50 ps
+# ################################################
+
 

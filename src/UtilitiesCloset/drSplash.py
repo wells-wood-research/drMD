@@ -114,18 +114,19 @@ def print_botched(simulationReport: List[Union[None, dict]]) -> None:
     print(resetTextColor)
 ###########################################################################################
 
-def print_prep_failed(errorMessage: str, stepName) -> None:
+def print_prep_failed(errorMessage: str, stepName: str, debugFileToCheck: str) -> None:
+    greenText = "\033[32m"
     redText = "\033[31m"
+    orangeText = "\033[38;5;172m"
     yellowText = "\033[33m"
     resetTextColor = "\033[0m"
+    tealColor = "\033[38;5;37m" 
 
 
     wrappedErrorMessage = textwrap.fill(str(errorMessage), 80).replace("\n", "\n\t")
 
-    print(redText+
-          f"""
-⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
-
+    bar = "⚕"*107
+    asciiText =f"""
     ██████╗ ██████╗ ███████╗██████╗  █████╗ ██████╗  █████╗ ████████╗██╗ ██████╗ ███╗   ██╗    
     ██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║    
     ██████╔╝██████╔╝█████╗  ██████╔╝███████║██████╔╝███████║   ██║   ██║██║   ██║██╔██╗ ██║    
@@ -138,14 +139,28 @@ def print_prep_failed(errorMessage: str, stepName) -> None:
         ███████╗   ██║   █████╗  ██████╔╝    █████╗  ███████║██║██║     █████╗  ██║  ██║       
         ╚════██║   ██║   ██╔══╝  ██╔═══╝     ██╔══╝  ██╔══██║██║██║     ██╔══╝  ██║  ██║       
         ███████║   ██║   ███████╗██║         ██║     ██║  ██║██║███████╗███████╗██████╔╝       
-        ╚══════╝   ╚═╝   ╚══════╝╚═╝         ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═════╝  
-        At step {yellowText}{stepName}{redText}
-        With Error:
-        {yellowText}{wrappedErrorMessage}{redText}
+        ╚══════╝   ╚═╝   ╚══════╝╚═╝         ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═════╝         
+    """
+    stepError = f"\n{tealColor}Step {yellowText}{stepName}{tealColor} failed during system preparation\n"
+    if debugFileToCheck:
+        lastLines = open(debugFileToCheck, "r").readlines()[-5:]
+        debugFileError = "\n\t".join(lastLines)
+    else:
+        debugFileError = ""
 
-        Please check the preparation log file for further details
-⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕{resetTextColor}
-""")
+    print(f"{tealColor}{bar}")
+    print(f"{redText}{asciiText}")
+    print(f"{tealColor}{bar}{resetTextColor}")
+
+    print(f"\t{yellowText}{stepError}")
+    if len(debugFileError) > 0:
+        print(f"\t{tealColor}Error in Debug File:\n\t\t - - -")
+        print(f"\t{yellowText}{debugFileError}")
+        print(f"{tealColor}\t\t - - -")
+        print(f"\t{tealColor}For more information, read the debug file:\n\t{yellowText}{debugFileToCheck}")
+    else:
+        print(f"\t{yellowText}With error messege:\n\t{redText}{wrappedErrorMessage}")
+    print(f"{tealColor}{bar}{resetTextColor}")
 
     exit(1)
 

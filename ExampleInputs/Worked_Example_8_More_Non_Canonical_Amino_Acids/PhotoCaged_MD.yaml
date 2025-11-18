@@ -1,0 +1,87 @@
+
+########################################################################
+pathInfo:
+  inputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_8_More_Non_Canonical_Amino_Acids
+  outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_8_More_Non_Canonical_Amino_Acids/outputs
+  
+########################################################################
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+########################################################################
+miscInfo:
+  pH: 7.4
+  firstAidMaxRetries: 0
+  boxGeometry: cubic
+  writeMyMethodsSection: True
+  skipPdbTriage: True
+  trajectorySelections:
+  - selection:
+      keyword: all
+  nonCanonicalResidueNames: [CRO, PCY]
+########################################################################
+equilibriationRestraints: &equilibriationRestraints
+    - restraintType: position
+      parameters:
+        k: 1000
+      selection:
+        keyword: protein
+
+    - restraintType: position
+      selection: 
+        keyword: ligand  
+      parameters:
+        k: 1000
+
+########################################################################
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: 10000000
+# ########################################################################
+#   - stepName: 02_NVT_pre-equilibriation
+#     simulationType: NVT
+#     duration: 400 ps
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperatureRange: [0, 100, 200, 300]
+#     logInterval: 1 ps
+#     restraintInfo: *equilibriationRestraints
+
+# #########################################################################
+#   - stepName: 03_NPT_pre-equilibriation
+#     simulationType: NPT
+#     duration: 100 ps
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperature: 300
+#     logInterval: 1 ps
+#     restraintInfo: *equilibriationRestraints 
+
+# ########################################################################
+#   - stepName: 04_NpT_slowTimeStep
+#     simulationType: NpT
+#     duration: 10 ps
+#     timestep: 0.5 fs
+#     temperature: 300
+#     logInterval: 1 ps
+# ########################################################################
+#   - stepName: 05_Equilibriation
+#     simulationType: NpT
+#     duration: 5 ns
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperature: 300
+#     logInterval: 50 ps  
+
+# ########################################################################
+#   - stepName: 06_Production_MD
+#     simulationType: NpT
+#     duration: 50 ns
+#     timestep: 4 fs
+#     heavyProtons: True
+#     temperature: 300
+#     logInterval: 50 ps  
+

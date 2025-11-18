@@ -141,7 +141,7 @@ def run_metadynamics(prmtop: app.Topology,
     # with open(endPointPdb, 'w') as output:
     #     app.pdbfile.PDBFile.writeFile(simulation.topology, state.getPositions(), output)
     ## reset the chain and residue ids to original
-    drFixer.reset_chains_residues(refPdb, endPointPdb)
+    drFixer.reset_chains_residues(refPdb, endPointPdb, config)
 
     ## create a PDB file with the same atoms as the trajectory
     trajectoryPdb = p.join(simDir, "trajectory.pdb")
