@@ -105,7 +105,7 @@ def detect_protons(pdbDf: pd.DataFrame) -> bool:
         return False
 
 
-
+######################################################################################
 def make_proteinInfo(
     pdbDf: pd.DataFrame,
     protName: str,
@@ -138,6 +138,23 @@ def make_proteinInfo(
     
     
     return proteinInfo
+
+def extract_charge_from_mol2(mol2File: FilePath) -> int:
+    partialCharges = []
+    readingAtoms = False
+    with open(mol2File, "r") as f:
+        for line in f:
+            if line.startswith("@<TRIPOS>ATOM"):
+                readingAtoms = True
+            if readingAtoms and line.startswith("@<TRIPOS>BOND"):
+                break
+            if readingAtoms:
+                data = line.split()
+                if len(data) >= 7:
+                    partialCharge = float(data[8])
+                    partialCharges.append(partialCharge)
+    netCharge = int(round(sum(partialCharges),0))
+    return netCharge
 ######################################################################################
 def make_ligandInfo(
     pdbDf: pd.DataFrame,
@@ -158,10 +175,13 @@ def make_ligandInfo(
     """
     
 
-    ## USE ligandInfo IF SUPPLIED IN BATCH CONFIG
-    if "ligandInfo" in batchConfig:    
-        ligandInfo = batchConfig["ligandInfo"]
-        return ligandInfo
+    ## 
+    ## to allow for multiple ligand to be specified in the config,
+    ## but not all of them to appear in the PDB  we hash this bit out! 
+
+    # if "ligandInfo" in batchConfig:    
+    #     ligandInfo = batchConfig["ligandInfo"]
+    #     return ligandInfo
     ## GET LIGAND ATOMS IN INPUT GEOMETRY 
     ## GET PROTEIN AND ION ATOMS IN INPUT GEOMETRY
     aminoAcidNames: set = drListInitiator.get_amino_acid_residue_names()
@@ -187,17 +207,11 @@ def make_ligandInfo(
             thisLigandDf: pd.DataFrame = ligandDf[ligandDf["RES_NAME"] == ligName]
             # detect protons in ligand
             isLigandProtonated: bool = False
-
             isLigandProtonated = detect_protons(thisLigandDf)
             # check for mol2 file in input pdb directory
             ligMol2: FilePath = p.join(pdbDir, f"{ligName}.mol2")
             isLigandMol2: bool = False
             if p.isfile(ligMol2):
-                isLigandMol2 = True
-            ## checl for lib file in input pdb directory
-            ligLib: FilePath = p.join(pdbDir, f"{ligName}.lib")
-            isLigandMol2: bool = False
-            if p.isfile(ligLib):
                 isLigandMol2 = True
             # check for frcmod file in input pdb directory
             ligFrcmod: FilePath = p.join(pdbDir, f"{ligName}.frcmod")
@@ -205,7 +219,11 @@ def make_ligandInfo(
             if p.isfile(ligFrcmod):
                 isLigandFrcmod = True  
             # deal with charge
-            charge: int = drPrep.find_ligand_charge(thisLigandDf, ligName, yamlDir, pH=7.4)
+            if isLigandMol2:
+                charge: int = extract_charge_from_mol2(ligMol2)
+
+            else:
+                charge: int = drPrep.find_ligand_charge(thisLigandDf, ligName, yamlDir, pH=7.4)
             # write to temporary dict, then to ligandInfo for config
             tmpDict: dict = {"ligandName": ligName,
                        "protons": isLigandProtonated,

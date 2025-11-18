@@ -40,11 +40,16 @@ pathInfo:
   outputDir: /home/esp/scriptDevelopment/drMD/ExampleInputs/Worked_Example_2_Restrained_MD/outputs
 ########################################################################
 ligandInfo:
+  - ligandName: PEF
+    charge: 0
+    protons: True
+    frcmod: True
+    mol2: False
   - ligandName: PET
     charge: 0
     protons: False
-    frcmod: False
-    mol2: False
+    frcmod: True
+    mol2: True
 ########################################################################
 hardwareInfo:
   parallelCPU: 1
