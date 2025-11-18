@@ -277,11 +277,10 @@ def find_ligand_charge(ligDf: pd.DataFrame,
     
     # Run propka to predict charges on the ligand
     proPkaCommand: str = f"propka3 {tmpPdb}"
-
-    run_with_log(proPkaCommand, "ligand PKA prediction with propka", None)
+    proPkaFile: FilePath = f"{ligName}.pka"
+    run_with_log(proPkaCommand, "ligand PKA prediction with propka", proPkaFile, None)
     
     # Read the propka output to extract charge at the specified pH
-    proPkaFile: FilePath = f"{ligName}.pka"
     with open(proPkaFile, "r") as f:
         pkaPredictions: List[List[str]] = []
         extract = False
@@ -449,7 +448,8 @@ def ligand_mol2(
             f"antechamber -i {ligPdb} -fi pdb -o {ligMol2} -fo mol2 -c bcc -s 2 -nc {charge}"
         )
         # Run antechamber and log the command
-        run_with_log(antechamberCommand, "Ligand charge calculation with antechamber", ligMol2)
+        antechamberOut = p.join(inputDir, "sqm.out")
+        run_with_log(antechamberCommand, "Ligand charge calculation with antechamber", ligMol2, antechamberOut)
         # Copy to ligParamDir for future use
         copy(ligMol2, p.join(ligandParamDir, f"{ligandName}.mol2"))
     
@@ -497,7 +497,7 @@ def ligand_frcmod(ligand: dict,
         # Create a new frcmod file using parmchk2
         ligFrcmod: FilePath = p.join(ligPrepDir, f"{ligandName}.frcmod")
         parmchk2Command: str = f"parmchk2 -i {ligMol2} -f mol2 -o {ligFrcmod}"
-        run_with_log(parmchk2Command, "Ligand parameter generation with parmchk2", ligFrcmod)
+        run_with_log(parmchk2Command, "Ligand parameter generation with parmchk2", ligFrcmod, None)
         copy(ligFrcmod, p.join(ligParamDir, f"{ligandName}.frcmod"))
 
     # Add frcmod path to ligFileDict
@@ -679,7 +679,7 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
                            "--with-ph", str(float(pH)),
                              protPdb, protPqr]
     
-    run_with_log(pdb2pqrCommand, "Protein protonation with pdb2pqr and propka", protPqr)
+    run_with_log(pdb2pqrCommand, "Protein protonation with pdb2pqr and propka", protPqr, None)
     ## fix the betafactor and occupancy cols to zero
     protPqr = pdbUtils.pdb2df(protPqr)
     protPqr["OCCUPANCY"] = 0
@@ -885,7 +885,8 @@ def make_amber_params(
     tleapOutput: FilePath = p.join(outDir, "TLEAP.out")
     amberParams: FilePath = p.join(outDir, f"{outName}.prmtop")
     tleapCommand: str = f"tleap -f {tleapInput} > {tleapOutput}"
-    run_with_log(tleapCommand, "System Parameterisation with TLEAP", amberParams)
+    leapLog: FilePath = p.join(outDir, "leap.log")
+    run_with_log(tleapCommand, "System Parameterisation with TLEAP", amberParams, leapLog)
 
     # Reset chain and residue IDs in Amber PDB file
     solvatedPdb: FilePath = p.join(outDir, solvatedPdb)
@@ -946,7 +947,8 @@ def change_cys_to_cyx(inPdb, disulphideAtomPairs):
 def run_with_log(
     command: str,
     stepName: str,
-    expectedOutput: Optional[str] = None
+    expectedOutput: Optional[str] = None,
+    debugFileToCheck: Optional[str] = None
 ) -> None:
     """
     Execute a command and log its output.
@@ -975,7 +977,7 @@ def run_with_log(
             env = os.environ
         )
     except Exception as errorMessage:
-        drSplash.print_prep_failed(errorMessage, stepName)
+        drSplash.print_prep_failed(errorMessage, stepName, debugFileToCheck)
 
 
     # Log the command output
