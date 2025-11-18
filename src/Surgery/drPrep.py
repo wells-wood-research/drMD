@@ -141,7 +141,7 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
         ligandPdbs, ligandFileDict = prepare_ligand_parameters(config = config)
         ## PREPARE PROTEIN STRUCTURE
         protPdb = prepare_protein_structure(config=config, outDir = prepDir)
-
+        ## GET NON-CANONICAL AMINO ACID DATA (IF PRESENT)
         nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
         ## RE-COMBINE PROTEIN AND LIGAND PDB FILES
         wholePrepDir: DirectoryPath = p.join(prepDir,"WHOLE")
