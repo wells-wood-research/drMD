@@ -57,7 +57,7 @@ def reset_chains(refPdb: FilePath, inputPdb: FilePath, ligandNames = []) -> File
 ##################################################################################################
 
 
-def reset_chains_residues(templatePdb: FilePath, inputPdb: FilePath) -> FilePath:
+def reset_chains_residues(templatePdb: FilePath, inputPdb: FilePath, config: dict) -> FilePath:
     """
     New implementation of reset_chain_residues function
     resets the chain and resid columns of a PDB file using a template
@@ -74,17 +74,23 @@ def reset_chains_residues(templatePdb: FilePath, inputPdb: FilePath) -> FilePath
         inputPdb (FilePath): Path to the modified PDB file.
     """
 
-
+    ## unpack config to get ncaa and ligand names (if any)
+    ncaaNames = config["miscInfo"].get("nonCanonicalResidueNames", [])
+    ligandInfo = config.get("ligandInfo", None)
+    if not ligandInfo is None:
+        ligandNames = [ligand["ligandName"] for ligand in ligandInfo]
+    else:
+        ligandNames = []
 
     ## load pdb files into dataframes
     templateDf: pd.DataFrame = pdbUtils.pdb2df(templatePdb)
     inputDf: pd.DataFrame = pdbUtils.pdb2df(inputPdb)
 
     ## reset chains and residues for protein residues
-    protFixedDf: pd.DataFrame = reset_chain_residues_protein(templateDf, inputDf)
+    protFixedDf: pd.DataFrame = reset_chain_residues_protein(templateDf, inputDf, ncaaNames)
 
     # reset chains and residues for non-protein non-counter-ion residues
-    ligFixedDf: pd.DataFrame = reset_chain_residues_ligands(templateDf, protFixedDf)
+    ligFixedDf: pd.DataFrame = reset_chain_residues_ligands(templateDf, protFixedDf, ligandNames)
 
     waterIonsFixedDf: pd.DataFrame = reset_water_ions(ligFixedDf)
 
@@ -121,7 +127,7 @@ def reset_water_ions(inputDf: pd.DataFrame) -> pd.DataFrame:
 
     return outputDf
 ##################################################################################################
-def reset_chain_residues_ligands(templateDf: pd.DataFrame, inputDf: pd.DataFrame) -> pd.DataFrame:
+def reset_chain_residues_ligands(templateDf: pd.DataFrame, inputDf: pd.DataFrame, ligandNames: list) -> pd.DataFrame:
     """
     Finds ligands in both template and input dataframes using "NOT A PROT or COUNTER-ION" logic
     Resets chain and resid columns for ligands
@@ -141,11 +147,9 @@ def reset_chain_residues_ligands(templateDf: pd.DataFrame, inputDf: pd.DataFrame
 
 
     ## create dataframes for ligands
-    templateLigandsDf = templateDf[~templateDf["RES_NAME"].isin(aminoAcids) & 
-                                   ~templateDf["RES_NAME"].isin(counterIonsAndWater)]
+    templateLigandsDf = templateDf[templateDf["RES_NAME"].isin(ligandNames)]
     
-    inputLigandsDf = inputDf[~inputDf["RES_NAME"].isin(aminoAcids) &
-                             ~inputDf["RES_NAME"].isin(counterIonsAndWater)]
+    inputLigandsDf = inputDf[inputDf["RES_NAME"].isin(ligandNames)]
     
     outputDf = inputDf.copy()
     ## loop over chains and residues for both target and template ligands
@@ -156,8 +160,21 @@ def reset_chain_residues_ligands(templateDf: pd.DataFrame, inputDf: pd.DataFrame
             outputDf.loc[inputDf["RES_ID"] == inputRes, "RES_ID"] = templateRes
 
     return outputDf
+
+def _account_for_no_CA_ncaas(pdbDf: pd.DataFrame, ncaaNames: list[str]) -> pd.DataFrame:
+
+    ncaaRefDfs = []
+    ## account for non-canonical amino acids with no CA
+    for chainId, chainDf in pdbDf.groupby("CHAIN_ID"):
+        for resId, resDf in chainDf.groupby("RES_ID"):
+            if resDf["RES_NAME"].iloc[0] in ncaaNames:
+                resAtomNames = resDf["ATOM_NAME"].tolist()
+                if "CA" not in resAtomNames:
+                    referenceAtom = resAtomNames[0]
+                    ncaaRefDfs.append(resDf[resDf["ATOM_NAME"] == referenceAtom])
+    return pd.concat(ncaaRefDfs)
 ##################################################################################################
-def reset_chain_residues_protein(templateDf: pd.DataFrame, inputDf: pd.DataFrame) -> pd.DataFrame:
+def reset_chain_residues_protein(templateDf: pd.DataFrame, inputDf: pd.DataFrame, ncaaNames: list[str]) -> pd.DataFrame:
     """
     Resets chain and resid columns for protein residues
 
@@ -170,11 +187,20 @@ def reset_chain_residues_protein(templateDf: pd.DataFrame, inputDf: pd.DataFrame
     
     """
     aminoAcids = drListInitiator.get_amino_acid_residue_names()
+    ## include non-canonical amino acids
+    aminoAcids = list(aminoAcids) + ncaaNames
+
     ## create dataframes for CA atoms in both template and input dfs
     templateCaDf = templateDf[(templateDf["ATOM_NAME"] == "CA") &
                             (templateDf["RES_NAME"].isin(aminoAcids))]
     inputCaDf = inputDf[(inputDf["ATOM_NAME"] == "CA") &
                         (inputDf["RES_NAME"].isin(aminoAcids))]
+    
+    if len(ncaaNames) > 0:
+        ncaaTemplateRefDf = _account_for_no_CA_ncaas(templateDf, ncaaNames)
+        ncaaInputRefDf = _account_for_no_CA_ncaas(inputDf, ncaaNames)
+        templateCaDf = pd.concat([templateCaDf, ncaaTemplateRefDf])
+        inputCaDf = pd.concat([inputCaDf, ncaaInputRefDf])
 
     outputDf = inputDf.copy()
     ## loop over CA atoms for both template and input dfs

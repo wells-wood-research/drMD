@@ -418,7 +418,7 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     minimisedPdb: str = p.join(simDir, f"{protName}.pdb")
     write_pdb(minimisedPdb, simulation)
 
-    drFixer.reset_chains_residues(refPdb, minimisedPdb)
+    drFixer.reset_chains_residues(refPdb, minimisedPdb, config)
 
     # Save simulation as XML
     saveXml: str = p.join(simDir, f"{stepName}.xml")

@@ -125,7 +125,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
                                                 nonCannonicalAminoAcidData=nonCannonicalAminoAcidData,
                                                 config = config)
     
-    solvatedPdb = drFixer.reset_chains_residues(protPdb, solvatedPdb)
+    solvatedPdb = drFixer.reset_chains_residues(protPdb, solvatedPdb, config)
 
     return solvatedPdb, inputCoords, amberParams
 
@@ -161,7 +161,7 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
                             pdbFile= mergedPdb,
                             config= config,
                             outName= outName)
-        niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, solvatedPdb)
+        niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, solvatedPdb, config)
         return niceChainsPdb, inputCoords, amberParams
 
 #####################################################################################
@@ -663,6 +663,7 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     proteinInfo: Dict = config.get("proteinInfo")
     isProteinProtonated: bool = proteinInfo.get("protons")
     if isProteinProtonated:
+        protPdb = replace_c_terminal_oxygen_names(protPdb)
         newHisPdb = sort_out_histidine_names(protPdb)
         return newHisPdb
 
@@ -686,12 +687,28 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     ## add the element column using the first letter of the ATOM_NAME 
     # (breaks for two-letter element symbols like "Cl", should be ok for proteins)
     protPqr["ELEMENT"] = protPqr["ATOM_NAME"].str[0]
+    ## replace OT1 and OT2 with O and OXT
+
     ## write to pdb file
     protonatedPdb: FilePath = p.join(protPrepDir, "PROT_protonated.pdb")
 
     pdbUtils.df2pdb(protPqr, protonatedPdb)
+    protonatedPdb = replace_c_terminal_oxygen_names(protonatedPdb)
 
     return protonatedPdb
+
+def replace_c_terminal_oxygen_names(pdbFile: str) -> str:
+    pdbDf = pdbUtils.pdb2df(pdbFile)
+    dfsToConcat = []
+    for chainId, chainDf in pdbDf.groupby("CHAIN_ID"):
+        lastResIdInChain = max(chainDf["RES_ID"])
+        chainDf.loc[(chainDf["RES_ID"] == lastResIdInChain) & (chainDf["ATOM_NAME"] == "OT1"), "ATOM_NAME"] = "O"
+        chainDf.loc[(chainDf["RES_ID"] == lastResIdInChain) & (chainDf["ATOM_NAME"] == "OT2"), "ATOM_NAME"] = "OXT"
+        dfsToConcat.append(chainDf)
+
+    newDf = pd.concat(dfsToConcat, axis=0)
+    pdbUtils.df2pdb(newDf, pdbFile)
+    return pdbFile
 
 #################################################################################
 def sort_out_histidine_names(protPdb: str) -> str:
