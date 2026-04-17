@@ -1,0 +1,63 @@
+#### README updates
+[] advanced YAML-fu with variables
+[] miscInfo
+[] types for all parameters
+
+## configTriage
+[] loggingInfo
+[] trajectoryAtoms -- do we allow for multiple trajectories per simulation (or too complex??)
+[] miscInfo
+
+
+## drFirstAid
+[] if no checkpoint exists at all, run an EM from previous?
+
+## Extra features
+[] more metaDynamics parameters
+
+## drCheckup
+[] if this fails, continue with everything
+[] redo PDF image sizes and locations
+
+## drPdbTriage
+[x] HIS, HIP ect being identified as a UAA 
+
+## drRestraints
+[??] improper restraints
+
+## Redo module organisation
+
+--> drMD
+    --X drMD
+
+    --> Triage
+        --X drPdbTriage
+        --X drConfigTriage
+        --X drConfigWriter
+
+    --> Surgery
+        --X drOperator
+        --X drRestraints
+        --X drSim (rename drSimulator)
+        --X drMeta (remame drMetadynamics)
+        --X drPrep
+        --X drFirstAid
+
+    --> ExaminationRoom
+        --X drLogger
+        --X drCleanup
+        --X drClusterizer
+        --X drCheckup
+
+    --> UtilitiesCloset
+        --X drSplash
+        --X drFixer
+        --X drMethodsWriter
+
+## make drMD pip installable
+[] work out how to do that
+[] add an API method (not argpass) for passing config file to drMD
+
+
+## Clean code
+[] drSim str -> DirPath
