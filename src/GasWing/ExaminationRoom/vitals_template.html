@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: grid;
+            grid-template-columns: repeat(70, 1fr); /* 70 columns of equal width */
+            grid-template-rows: repeat(50, 1fr); /* 50 rows of equal height */
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto; /* Center the A4 layout horizontally */
+            padding: 0;
+            background: #1a1a1a; /* Gradient from white to blue */
+            gap: 1px; /* Small gap to fit within the page */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+   
+        .system-info-loc {
+            grid-column: 5 / 69; 
+            grid-row: 2 / 10; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .traces-loc {
+            grid-column: 5 / 53; 
+            grid-row: 11 / 49; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .time-data-loc {
+            grid-column: 54 / 69; 
+            grid-row: 11 / 49; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .image-container {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Scale the image to fit within the container without being cut off */
+        }
+        img {
+    max-width: 100%;
+    max-height: 100%;
+    border: 1px solid #FFFF00;
+    border-radius: 5px; 
+}
+    </style>
+</head>
+<body>
+    <div class="system-info-loc">
+        <div class="image-container">
+            <img src="systemInfo.png" alt="System Information">
+        </div>
+    </div>
+    <div class="traces-loc">
+        <div class="image-container">
+            <img src="convergance_check_tests.png" alt="Traces for key system properties">
+        </div>
+    </div>
+    <div class="time-data-loc">
+        <div class="image-container">
+            <img src="time_info.png" alt="Time data">
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+pathInfo:
+  inputDir: pwd
+  outputDir: pwd
+
+hardwareInfo:
+  parallelCPU: 1
+  platform: CPU
+  subprocessCpus: 1
+
+miscInfo:
+  forcefield: 
+    protein: a19SB
+    water: Tip3p
+  pH: 7
+  firstAidMaxRetries: 10
+  writeMyMethodsSection: True
+  skipPdbTriage: False
+  trajectorySelections:
+  - selection:
+      keyword: all
+  
