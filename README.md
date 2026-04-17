@@ -5,12 +5,13 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 1. **Installation**
    - [GitHub Installation](#github-installation)
    - [Pip Installation](#pip-installation)
-2. **Running drMD**: [Running **drMD** from the command line](#run-from-cmd-line) | [Running **drMD** as a Python Module](#run-from-python)
+2. **Running drMD**: [Running **drMD** from the command line](#run-from-cmd-line) | [Running **drMD** as a Python Module](#run-from-python) | [Running **drReferral** from the command line](#run-from-drReferral)
 3. **Config Syntax**
    - **Path Info**: [inputDir](#inputdir) | [outputDir](#outputdir)
    - **Hardware Info**: [platform](#platform) |[parallelCPU](#parallelcpu) | [subprocessCpus](#subprocesscpus)
-   - **Misc Info**: [pH](#pH) | [firstAidMaxRetries](#firstaidmaxretries) | [boxGeometry](#boxgeometry) | [boxSize](#boxsize) | [writeMyMethodsSection](#writemymethodssection) | [skipPdbTriage](#skippdbtriage) | [trajectorySelections](#trajectoryselections)
+   - **Misc Info**: [forcefield](#forcefield) | [protein](#protein) | [water](#water) | [pH](#pH) | [firstAidMaxRetries](#firstaidmaxretries) | [boxGeometry](#boxgeometry) | [boxSize](#boxsize) | [writeMyMethodsSection](#writemymethodssection) | [skipPdbTriage](#skippdbtriage) | [trajectorySelections](#trajectoryselections)
    - **Ligand Info**: [ligandName](#ligandname) | [protons](#protons) | [charge](#charge) | [frcmod](#frcmod) | [mol2](#mol2)
+   - **Operation Info**: [Operation](#Operation) | [OperationName](#OperationName) | [Cutoff](#Cutoff) | [maxInterations(ESI)](#maxIterationsESI) | [Type](#Type) |
    - **Simulation Info**: [stepName](#stepname) | [simulationType](#simulationtype) | [temperature](#temperature) | [temperatureRange](#temperaturerange) | [maxIterations](#maxiterations) | [duration](#duration) | [timestep](#timestep) | [logInterval](#loginterval)
    - **Aftercare Info**: 
      - **End Point Info**: [stepNames](#stepnamesendpoint) | [removeAtoms](#removeatomsendpoint)
@@ -114,6 +115,7 @@ Now that you have successfully set up the dependencies for **drMD**, you are nea
 <a id="run-from-cmd-line"></a>
 ## :brain: Running **drMD** from the command line
 
+We have added seperate directories of drMD for gas and solution phase simulation ("GasWing" and "SolutionWing")
 If you have used the GitHub installation method, you can run **drMD** using the following command:
 
 ```bash
@@ -134,6 +136,19 @@ drMD.main(myBatchConfig)
 This config file contains all of the user inputs **drMD** needs to run a series of bimolecular simulations.
 The following section will detail the correct formatting of this config.yaml file
 
+<a id="run-from-drReferral"></a>
+## :brain: Running **drMD** from drReferral
+
+New to the drMD MS Suite we have added a wrapper for drMD called drReferral.
+drReferral allows users to set up various simulations in soultion and gas phase that will run one after the other.
+Additionally we have added the ability for users to run shrinking droplet simulations to model ESI desolvation.
+For drReferral we have altered the structure of the config files to allow for multiple simulations, while still being backwards compable with the old config files.
+
+If you have used the GitHub installation method, you can run **drReferral** using the following command:
+
+```bash
+python /path/to/drReferral.py --config config.yaml
+```
 <a id="configSyntax"></a>
 # :medical_symbol: Config syntax :medical_symbol:
 The config.yaml file is in the [YAML format](https://yaml.org/spec/1.2.2/)
@@ -221,6 +236,23 @@ This will use CUDA to achieve GPU acceleration and run 16 simulations in paralle
 ## :brain: miscInfo
 This section allows you to set some general options for your simulations:
 
+<a id="forcefield"></a>
+### :anatomical_heart:  forcefield
+ *(list or dict)* This allows users to specify which force fields drMD will use
+
+  <a id="protein"></a>
+    *(str)* This allows users to specify which protein force fields drMD will use. 
+    so far only a19SB, a99SB-disp and a99SB-ILDN are implemented but users can add more in drForcefield
+
+  **Default Value**: `a19SB`
+
+  <a id="water"></a>
+    *(str)* This allows users to specify which water and complementry ion force fields drMD will use. 
+    so far only Tip3p, Tip4p and OPC are implemented but users can add more in drForcefield
+    
+  **Default Value**: `Tip3p`
+
+
 <a id="ph"></a>
 ### :anatomical_heart:  pH
  *(int or float)* This is the pH of your simulation, this will affect the protonation states of your protein and any ligands present in your simulation
@@ -274,6 +306,9 @@ This section allows you to set some general options for your simulations:
 Example miscInfo:
 ```yaml
 miscInfo:
+  forcefield: 
+    protein: a99SB-ILDN 
+    water: Tip4p
   pH: 7.4
   firstAidMaxRetries: 10
   boxGeometry: cubic
@@ -346,6 +381,76 @@ ligandInfo:
 This `ligandInfo` tells **drMD** to expect two ligands: FMN and TPA. FMN has a formal charge of -1 and TPA has a formal charge of -2. Both ligands already have protons, so **drMD** will not add any. For both ligands the frcmod and mol2 parameters are set to False, **drMD** will automatically generate these files for you
 
 ---
+<a id="Operations"></a>
+## :brain: Operations
+This is new to the MS suite as a way for users to run sequential simulations. This is optional as users can still run normal config files through either drMD or drReferral.
+
+<a id="OperationName"></a>
+## :heart: OperationName
+*(str)* This specifies the name of the current simulation being run. Additonaly, due to the growing complexity of a multi-Operation config file, drReferral can use the Operation name to run "Standard Operations" if it maches a standard operation yaml file.
+
+<a id="Cutoff"></a>
+## :heart: Cutoff
+*int* This is for ESI simulations only. This specifies the cutoff distance to remove water molecules for ESI simulations
+
+**Default Value**: `10`
+
+<a id="maxIterationsESI"></a>
+## :heart: Cutoff
+*int* This is for ESI simulations only. This specifies the maximum number of ESI simulations to run (optional).
+
+
+<a id="Type"></a>
+## :heart: Type
+*(str)* This is the type of system to be run in drMD. Depending on Type a diffrent drMD "Wing" will be used
+The current Types are "Solution", "Vacuum"  and "ESI"
+
+Condensed config example:
+```yaml
+Operations:
+  - OperationName: Solvent_Equilibriation
+  - OperationName: Solvent_Metadynamics
+  - OperationName: ESI
+  - OperationName: Vacuum_Equilibriation
+  - OperationName: Vacuum_Metadynamics
+```
+
+Expanded config example:
+```yaml
+Operations:
+  - OperationName: Solvent_Equilibriation
+    Type: Solution
+    simulationInfo:
+    - stepName: "01_energy_minimisation"
+        type: "EM"
+        temp: 300
+      maxIterations: -1
+```
+Extra Expanded config example:
+```yaml
+Operations:
+  - OperationName: Solvent_Equilibriation
+    Type: Solution
+    miscInfo:
+      forcefield: 
+        protein: a19SB
+        water: Tip4p
+      pH: 7.4
+      firstAidMaxRetries: 10
+      writeMyMethodsSection: True
+      skipPdbTriage: False
+      trajectorySelections:
+      - selection:
+          keyword: all
+    simulationInfo:
+    - stepName: "01_energy_minimisation"
+        type: "EM"
+        temp: 300
+      maxIterations: -1
+```
+
+<a id="stepnamesiminfo"></a>
+### :anatomical_heart:  stepName
 
 <a id="simulationinfo"></a>
 ## :brain: simulationInfo
