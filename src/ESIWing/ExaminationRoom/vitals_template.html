@@ -3,72 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            display: grid;
-            grid-template-columns: repeat(70, 1fr); /* 70 columns of equal width */
-            grid-template-rows: repeat(50, 1fr); /* 50 rows of equal height */
-            width: 297mm;
-            height: 210mm;
-            margin: 0 auto; /* Center the A4 layout horizontally */
-            padding: 0;
-            background: #1a1a1a; /* Gradient from white to blue */
-            gap: 1px; /* Small gap to fit within the page */
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
-        }
-   
-        .system-info-loc {
-            grid-column: 5 / 69; 
-            grid-row: 2 / 10; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-        .traces-loc {
-            grid-column: 5 / 53; 
-            grid-row: 11 / 49; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-        .time-data-loc {
-            grid-column: 54 / 69; 
-            grid-row: 11 / 49; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-        .image-container {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Scale the image to fit within the container without being cut off */
-        }
-        img {
-    max-width: 100%;
-    max-height: 100%;
-    border: 1px solid #FFFF00;
-    border-radius: 5px; 
-}
-    </style>
+    <title>Vitals Report</title>
+    <link rel="stylesheet" href="report_theme.css">
 </head>
 <body>
-    <div class="system-info-loc">
-        <div class="image-container">
-            <img src="systemInfo.png" alt="System Information">
+    <div class="page">
+        {% if vitals_data %}
+        <div class="meta">
+            <div class="meta-card">
+                <span class="label">System</span>
+                <div class="value">{{ vitals_data.systemName | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Step</span>
+                <div class="value">{{ vitals_data.stepName | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Frames</span>
+                <div class="value">{{ vitals_data.nFrames | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Raw CSV</span>
+                <div class="value">
+                    {% if vitals_data.reportCsvLink %}
+                    <div class="csv-actions">
+                        <a class="csv-download-btn" href="{{ vitals_data.reportCsvLink }}" target="_blank" rel="noopener" download>
+                            Open CSV
+                        </a>
+                    </div>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="traces-loc">
-        <div class="image-container">
-            <img src="convergance_check_tests.png" alt="Traces for key system properties">
+
+        <div class="vitals-layout">
+            <div class="vitals-main">
+                <section class="section">
+                    <div class="section-head">
+                        <h2>Vitals Traces</h2>
+                    </div>
+
+                    <div class="vitals-tabs" role="tablist" aria-label="Vitals metric tabs">
+                        {% for metric in vitals_data.metricPlots %}
+                        <button
+                            type="button"
+                            class="vitals-tab-btn{% if loop.first %} active{% endif %}"
+                            role="tab"
+                            aria-selected="{% if loop.first %}true{% else %}false{% endif %}"
+                            data-tab-target="vitals-tab-{{ loop.index0 }}"
+                        >
+                            {{ metric.label }}
+                        </button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="vitals-tab-panels">
+                        {% for metric in vitals_data.metricPlots %}
+                        <section
+                            class="vitals-tab-panel{% if loop.first %} active{% endif %}"
+                            id="vitals-tab-{{ loop.index0 }}"
+                            role="tabpanel"
+                        >
+                            <div class="plot-frame plot-preview">
+                                <iframe
+                                    class="embedded-plot-frame"
+                                    src="{{ metric.plotPath }}"
+                                    title="{{ metric.label }} plot preview"
+                                    loading="lazy"
+                                ></iframe>
+                            </div>
+                        </section>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <div class="vitals-side">
+                <section class="section simulation-info">
+                    <div class="section-head">
+                        <h2>Simulation Info</h2>
+                    </div>
+                    <div class="simulation-info-stack">
+                        <div class="info-panel">
+                            <div class="info-panel-head">Metrics and Values</div>
+                            <div class="info-grid">
+                                {% for metric in vitals_data.metricPlots %}
+                                <div class="info-row">
+                                    <h3>{{ metric.label }}:</h3>
+                                    <p>{{ metric.diagnosis | default('N/A') }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="info-panel">
+                            <div class="info-panel-head">Run Time Summary</div>
+                            <div class="info-grid summary-grid">
+                                {% for row in vitals_data.timeSummaryRows %}
+                                <div class="info-row">
+                                    <h3>{{ row.label }}:</h3>
+                                    <p>{{ row.value | default('N/A') }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
+        {% else %}
+        <div class="empty-state">No vitals data available for this report.</div>
+        {% endif %}
     </div>
-    <div class="time-data-loc">
-        <div class="image-container">
-            <img src="time_info.png" alt="Time data">
-        </div>
-    </div>
+
+    <script>
+        (function () {
+            document.querySelectorAll('.vitals-tabs').forEach(function (tabGroup) {
+                var tabButtons = tabGroup.querySelectorAll('[data-tab-target]');
+                var panelContainer = tabGroup.parentElement.querySelector('.vitals-tab-panels');
+                if (!panelContainer) {
+                    return;
+                }
+
+                tabButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var targetId = button.getAttribute('data-tab-target');
+
+                        tabButtons.forEach(function (tabButton) {
+                            var isActive = tabButton === button;
+                            tabButton.classList.toggle('active', isActive);
+                            tabButton.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                        });
+
+                        panelContainer.querySelectorAll('.vitals-tab-panel').forEach(function (panel) {
+                            panel.classList.toggle('active', panel.id === targetId);
+                        });
+                    });
+                });
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            document.querySelectorAll('.csv-download-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var sourceId = button.getAttribute('data-csv-source-id');
+                    var fileName = button.getAttribute('data-csv-filename') || 'report.csv';
+                    var source = sourceId ? document.getElementById(sourceId) : null;
+                    if (!source) {
+                        return;
+                    }
+
+                    var blob = new Blob([source.textContent || ''], { type: 'text/csv;charset=utf-8' });
+                    var downloadUrl = URL.createObjectURL(blob);
+                    var anchor = document.createElement('a');
+                    anchor.href = downloadUrl;
+                    anchor.download = fileName;
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    document.body.removeChild(anchor);
+                    URL.revokeObjectURL(downloadUrl);
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

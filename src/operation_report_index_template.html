@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Report Index</title>
+    <link rel="stylesheet" href="operation_report_index.css">
+</head>
+<body>
+    <div class="page">
+        {% if proteinEntries %}
+        {% set initialPreview = proteinEntries|first %}
+        {% else %}
+        {% set initialPreview = None %}
+        {% endif %}
+
+        <section class="report-menu-card" aria-labelledby="report-menu-title">
+            <div class="report-table-head">
+                <h2 id="report-menu-title">drMD Reports</h2>
+                {% if proteinEntries %}
+                <span>{{ proteinEntries|length }} report{% if proteinEntries|length != 1 %}s{% endif %}</span>
+                {% endif %}
+            </div>
+            {% if proteinEntries %}
+            <div class="report-menu-body">
+                <div class="menu-field">
+                    <label class="menu-label" for="operation-select">Operation</label>
+                    <select class="report-select" id="operation-select" aria-label="Select an operation">
+                        {% for operation in operationEntries %}
+                        <option value="{{ operation.operationName }}" {% if initialPreview and operation.operationName == initialPreview.operationName %}selected{% endif %}>
+                            {{ operation.operationName }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="menu-field">
+                    <label class="menu-label" for="protein-select">Protein</label>
+                    <select class="report-select" id="protein-select" aria-label="Select a protein">
+                        {% for entry in proteinEntries if initialPreview and entry.operationName == initialPreview.operationName %}
+                        <option value="{{ entry.reportRelPath }}" data-operation="{{ entry.operationName }}" data-protein="{{ entry.proteinName }}" {% if entry.reportRelPath == initialPreview.reportRelPath %}selected{% endif %}>
+                            {{ entry.proteinName }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% else %}
+            <div class="preview-meta">No protein reports were found.</div>
+            {% endif %}
+        </section>
+
+        {% if initialPreview %}
+        <section class="preview-card" aria-labelledby="selected-report-title">
+            <div class="preview-head">
+                <div>
+                    <h2 id="selected-report-title">Selected Report</h2>
+                </div>
+                <p id="selected-report-meta">{{ initialPreview.operationName }} / {{ initialPreview.proteinName }}</p>
+            </div>
+            <iframe
+                class="preview-frame"
+                id="selected-report-frame"
+                src="{{ initialPreview.reportRelPath }}"
+                title="{{ initialPreview.operationName }} / {{ initialPreview.proteinName }}"
+                scrolling="no"
+            ></iframe>
+        </section>
+        {% else %}
+        <section class="preview-card" aria-labelledby="selected-report-title">
+            <div class="preview-head">
+                <div>
+                    <h2 id="selected-report-title">Selected Report</h2>
+                </div>
+                <p id="selected-report-meta">No reports available</p>
+            </div>
+            <div class="preview-meta">No report is available to preview.</div>
+        </section>
+        {% endif %}
+    </div>
+
+    <script>
+        (function () {
+            var previewFrame = document.getElementById('selected-report-frame');
+            var previewMeta = document.getElementById('selected-report-meta');
+            var operationSelect = document.getElementById('operation-select');
+            var proteinSelect = document.getElementById('protein-select');
+            var openSelected = document.getElementById('open-selected-report');
+            var proteinEntries = {{ proteinEntries | tojson }};
+
+            function suppressFrameScrollbars(frame, doc) {
+                if (!frame) {
+                    return;
+                }
+                frame.setAttribute('scrolling', 'no');
+                frame.style.overflow = 'hidden';
+                if (!doc) {
+                    return;
+                }
+                if (doc.documentElement) {
+                    doc.documentElement.style.overflow = 'hidden';
+                }
+                if (doc.body) {
+                    doc.body.style.overflow = 'hidden';
+                }
+            }
+
+            function groupByOperation(entries) {
+                return entries.reduce(function (accumulator, entry) {
+                    var operationName = entry.operationName;
+                    if (!accumulator[operationName]) {
+                        accumulator[operationName] = [];
+                    }
+                    accumulator[operationName].push(entry);
+                    return accumulator;
+                }, {});
+            }
+
+            var entriesByOperation = groupByOperation(proteinEntries || []);
+
+            function sizePreviewFrame(frame) {
+                if (!frame || !frame.contentWindow || !frame.contentWindow.document) {
+                    return;
+                }
+                try {
+                    var doc = frame.contentWindow.document;
+                    suppressFrameScrollbars(frame, doc);
+                    var reportBounds = doc.querySelector('.report-bounds');
+                    var boundsHeight = 0;
+                    if (reportBounds) {
+                        var rect = reportBounds.getBoundingClientRect();
+                        var style = doc.defaultView && doc.defaultView.getComputedStyle
+                            ? doc.defaultView.getComputedStyle(reportBounds)
+                            : null;
+                        var marginTop = style ? parseFloat(style.marginTop) || 0 : 0;
+                        var marginBottom = style ? parseFloat(style.marginBottom) || 0 : 0;
+                        boundsHeight = rect.height + marginTop + marginBottom;
+                    }
+                    var docRoot = doc.documentElement || doc.body;
+                    var body = doc.body || {};
+                    var height = Math.max(
+                        boundsHeight,
+                        docRoot ? (docRoot.scrollHeight || 0) : 0,
+                        body.scrollHeight || 0,
+                        docRoot ? (docRoot.offsetHeight || 0) : 0,
+                        body.offsetHeight || 0,
+                        docRoot ? (docRoot.clientHeight || 0) : 0,
+                        body.clientHeight || 0,
+                        220
+                    );
+                    frame.style.height = (height + 10) + 'px';
+                } catch (error) {
+                    suppressFrameScrollbars(frame, null);
+                    frame.style.height = '240px';
+                }
+            }
+
+            function refreshPreviewFrame() {
+                if (!previewFrame) {
+                    return;
+                }
+                sizePreviewFrame(previewFrame);
+                window.setTimeout(function () {
+                    sizePreviewFrame(previewFrame);
+                }, 150);
+                window.setTimeout(function () {
+                    sizePreviewFrame(previewFrame);
+                }, 450);
+                window.setTimeout(function () {
+                    sizePreviewFrame(previewFrame);
+                }, 900);
+            }
+
+            function setPreview(src, title) {
+                if (!previewFrame || !src) {
+                    return;
+                }
+
+                previewFrame.src = src;
+                previewFrame.title = title;
+                previewFrame.setAttribute('scrolling', 'no');
+                previewFrame.style.overflow = 'hidden';
+                previewFrame.onload = function () {
+                    refreshPreviewFrame();
+                };
+                if (!window.__reportPreviewResizeBound) {
+                    window.__reportPreviewResizeBound = true;
+                    window.addEventListener('resize', refreshPreviewFrame);
+                }
+                if (previewMeta) {
+                    previewMeta.textContent = title;
+                }
+                if (openSelected) {
+                    openSelected.href = src;
+                }
+            }
+
+            function rebuildProteinOptions(operationName, preferredProtein) {
+                if (!proteinSelect) {
+                    return null;
+                }
+
+                proteinSelect.innerHTML = '';
+                var operationProteinEntries = entriesByOperation[operationName] || [];
+                var selectedEntry = null;
+
+                operationProteinEntries.forEach(function (entry, index) {
+                    var option = document.createElement('option');
+                    option.value = entry.reportRelPath;
+                    option.textContent = entry.proteinName;
+                    option.setAttribute('data-operation', entry.operationName);
+                    option.setAttribute('data-protein', entry.proteinName);
+
+                    var shouldSelect = false;
+                    if (preferredProtein && entry.proteinName === preferredProtein) {
+                        shouldSelect = true;
+                    } else if (!preferredProtein && index === 0) {
+                        shouldSelect = true;
+                    }
+
+                    if (shouldSelect) {
+                        option.selected = true;
+                        selectedEntry = entry;
+                    }
+
+                    proteinSelect.appendChild(option);
+                });
+
+                if (!selectedEntry && operationProteinEntries.length > 0) {
+                    selectedEntry = operationProteinEntries[0];
+                    proteinSelect.selectedIndex = 0;
+                }
+
+                return selectedEntry;
+            }
+
+            function updateFromProteinSelection() {
+                if (!operationSelect || !proteinSelect) {
+                    return;
+                }
+
+                var selectedOption = proteinSelect.options[proteinSelect.selectedIndex];
+                if (!selectedOption) {
+                    return;
+                }
+
+                var src = selectedOption.value;
+                var proteinName = selectedOption.getAttribute('data-protein') || '';
+                var title = operationSelect.value + ' / ' + proteinName;
+                setPreview(src, title);
+            }
+
+            if (operationSelect && proteinSelect) {
+                operationSelect.addEventListener('change', function () {
+                    var selectedEntry = rebuildProteinOptions(operationSelect.value, null);
+                    if (!selectedEntry && previewMeta) {
+                        previewMeta.textContent = operationSelect.value + ' / No protein reports found';
+                    }
+                    if (selectedEntry) {
+                        setPreview(
+                            selectedEntry.reportRelPath,
+                            selectedEntry.operationName + ' / ' + selectedEntry.proteinName
+                        );
+                    }
+                });
+
+                proteinSelect.addEventListener('change', function () {
+                    updateFromProteinSelection();
+                });
+
+                var initialOperation = operationSelect.value;
+                var initialProtein = proteinSelect.options[proteinSelect.selectedIndex]
+                    ? proteinSelect.options[proteinSelect.selectedIndex].getAttribute('data-protein')
+                    : null;
+                var initialEntry = rebuildProteinOptions(initialOperation, initialProtein);
+                if (initialEntry) {
+                    setPreview(
+                        initialEntry.reportRelPath,
+                        initialEntry.operationName + ' / ' + initialEntry.proteinName
+                    );
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

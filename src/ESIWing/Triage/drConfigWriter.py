@@ -6,7 +6,7 @@ import yaml
 
 ## drMD LIBRARIES
 from Surgery import drPrep
-from UtilitiesCloset import drListInitiator
+from UtilitiesCloset import drFixer, drListInitiator
 from ExaminationRoom import drLogger
 
 ## PDB // DATAFRAME UTILS
@@ -56,7 +56,8 @@ def make_per_protein_config(
         os.rename(configYaml, backupConfig)
 
 
-    ## load pdb file into DataFrame
+    ## repair malformed fixed-width lines before pandas parses the PDB
+    drFixer.repair_pdb_file(pdbFile)
     pdbDf: pd.DataFrame = pdbUtils.pdb2df(pdbFile)
     ## generate infomation on the protein portion of the pdb file
     proteinInfo: dict = make_proteinInfo(pdbDf, protName)
@@ -188,10 +189,13 @@ def make_ligandInfo(
     ionNames: set = drListInitiator.get_ion_residue_names()
     ## GET NAMES OF NON-CANONICAL RESIDUES (or empty if not supplied)
     ncaaNames: list = batchConfig["miscInfo"].get("nonCanonicalResidueNames", [])
+    WaterNames: list = drListInitiator.get_solvent_residue_names()
 
     ligandDf: pd.DataFrame = pdbDf[~pdbDf["RES_NAME"].isin(aminoAcidNames) &
                                     ~pdbDf["ATOM_NAME"].isin(ionNames) &
-                                    ~pdbDf["RES_NAME"].isin(ncaaNames)]
+                                    ~pdbDf["RES_NAME"].isin(ncaaNames)&
+                                    ~pdbDf["RES_NAME"].isin(WaterNames)
+                                    ]
 
     ## GET NAMES OF LIGANDS
     ligNames: list = ligandDf["RES_NAME"].unique().tolist()

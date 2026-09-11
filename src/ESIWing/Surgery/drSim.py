@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=TypeCastPerformanceWarning)
 ## drMD LIBRARIES
 from Surgery import drRestraints, drFirstAid
 from ExaminationRoom import drLogger, drCheckup
-from UtilitiesCloset import drFixer, drSelector
+from UtilitiesCloset import drFixer, drSelector, drMethodsWriter
 
 ## CLEAN CODE
 from typing import Optional, Dict, List, Tuple, Union, Any
@@ -48,13 +48,14 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
     """
 
     # Define the nonbonded method and cutoff.
-    nonbondedMethod: openmm.NonbondedForce = app.CutoffNonPeriodic
-    nonbondedCutoff: unit.Quantity = 99 * unit.nanometer
+    nonbondedMethod: openmm.NonbondedForce = app.NoCutoff
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "nonbondedMethod", "NoCutoff")
 
     ## deal with heavy protons
     heavyProtons = sim.get("heavyProtons", False)
     if heavyProtons:
         protonMass = 1.00784 * 4 * unit.amu
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "heavyProtons", True)
         ## check to see if a large timestep has been used
         timestep = sim["timestep"].value_in_unit(unit.femtoseconds)
         if timestep <= 2:
@@ -63,12 +64,12 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
 
     else:
         protonMass = 1.00784 * unit.amu
- 
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "heavyProtons", False)
 
     # Create the system.
 
     system: openmm.System = prmtop.createSystem(nonbondedMethod=nonbondedMethod,
-                                                    nonbondedCutoff=nonbondedCutoff,
+                                                    #nonbondedCutoff=nonbondedCutoff,
                                                     constraints=app.HBonds,
                                                     hydrogenMass=protonMass)
         
@@ -76,8 +77,10 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
     ## use static temperature if specified, or use first value in temperatureRange to start with
     if "temperature" in sim:
         initailSimulationTemp = sim["temperature"]
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperature", initailSimulationTemp)
     elif "temperatureRange" in sim:
         initailSimulationTemp = sim["temperatureRange"][0]
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperatureRange", initailSimulationTemp)
 
     ## deal with any restraints
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
@@ -88,10 +91,16 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
         integrator: openmm.Integrator = openmm.LangevinMiddleIntegrator(initailSimulationTemp,
                                                                   1/unit.picosecond,
                                                                   4*unit.femtosecond)
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "integrator", "LangevinMiddleIntegrator")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", "4 fs")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "friction", "1 ps^-1")
     else:
         integrator: openmm.Integrator = openmm.LangevinMiddleIntegrator(initailSimulationTemp,
                                                                          1/unit.picosecond,
                                                                            sim["timestep"])
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "integrator", "LangevinMiddleIntegrator")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", sim["timestep"])
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "friction", "1 ps^-1")
 
 
     simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, )
@@ -291,8 +300,9 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     ## create simulation directory
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)
-    print("Hi")
-
+    drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "simulationType", sim["simulationType"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "duration", str(sim["duration"]))
     ## initialise a new system from parameters
     hardwareInfo = config["hardwareInfo"]
     simulation, integrator = initialise_simulation(prmtop, inpcrd, sim, saveFile, refPdb, platform, hardwareInfo)
@@ -313,12 +323,16 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     # run NVT / NPT simulation
     simulation: app.Simulation = step_simulation(simulation, integrator, sim)
 
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "totalSteps", totalSteps)
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "reportInterval", reportInterval)
+
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
     # save result as pdb - reset chain and residue Ids
     state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
     endPointPdb: str = p.join(simDir, f"{protName}.pdb")
     write_pdb(endPointPdb, simulation)
+    drFixer.reset_chains_residues(refPdb, endPointPdb, config)
 
     ## create a PDB file with the same atoms as the trajectory
     trajectoryPdb = p.join(simDir, "trajectory.pdb")
@@ -383,8 +397,12 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     """
     stepName: str = sim["stepName"]
     protName: str = config["proteinInfo"]["proteinName"]
+    drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", sim["maxIterations"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "type", "EM")
 
     drLogger.log_info(f"Running {stepName} Step for: {protName} {' '*10}", True)
+
     ## create simluation directory
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)

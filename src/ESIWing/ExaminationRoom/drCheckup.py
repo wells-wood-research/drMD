@@ -8,14 +8,18 @@ import textwrap
 from textwrap import fill
 import sys
 from shutil import move
+import shutil
 import warnings
 from scipy.stats import linregress
+import re
 
 ## PLOTTING LIBRARIES
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib.ticker import MaxNLocator
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 ## PDF LIBS
 from jinja2 import Environment, FileSystemLoader
@@ -27,16 +31,9 @@ import MDAnalysis as mda
 from MDAnalysis.analysis import rms
 
 ## drMD LIBRARIES
-try:
-    from ExaminationRoom import drLogger
-    from UtilitiesCloset import drSplicer, drSelector
-
-## needed for running with __main__
-except ModuleNotFoundError:
-    srcDir = p.dirname(p.dirname(p.abspath(__file__)))
-    sys.path.append(srcDir)
-    from ExaminationRoom import drLogger
-    from UtilitiesCloset import drSplicer, drSelector
+from ExaminationRoom import drLogger
+from UtilitiesCloset import drSplicer, drSelector, drMethodsWriter
+from ExaminationRoom.drRMSD import main as drRMSD
 
 
 ## CLEAN CODE
@@ -50,6 +47,37 @@ from pdbUtils import pdbUtils
 import logging
 logging.getLogger('weasyprint').setLevel(logging.ERROR)
 warnings.filterwarnings('ignore')
+
+REPORT_PLOT_HEIGHT = 440
+REPORT_PLOT_WIDTH = "100%"
+
+
+def _wrap_plotly_html_fragment(plot_html: str) -> str:
+    """Wrap a Plotly div/script fragment in a marginless full-size HTML page."""
+    return (
+        "<!DOCTYPE html>\n"
+        "<html><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<style>"
+        f"html,body{{margin:0;padding:0;width:{REPORT_PLOT_WIDTH};height:{REPORT_PLOT_HEIGHT}px;min-height:{REPORT_PLOT_HEIGHT}px;overflow:hidden;background:#021108;}}"
+        f"#plot-root{{width:{REPORT_PLOT_WIDTH};height:{REPORT_PLOT_HEIGHT}px;min-height:{REPORT_PLOT_HEIGHT}px;}}"
+        f"#plot-root .plotly-graph-div{{width:{REPORT_PLOT_WIDTH}!important;height:{REPORT_PLOT_HEIGHT}px!important;min-height:{REPORT_PLOT_HEIGHT}px!important;}}"
+        "</style></head><body><div id=\"plot-root\">"
+        f"{plot_html}"
+        "</div></body></html>"
+    )
+
+
+def _copy_shared_css(output_dir: str, css_files: list[str]) -> None:
+    """Copy shared CSS assets next to generated reports so they can be loaded by URL."""
+    base_dir = p.dirname(__file__)
+    output_path = p.abspath(output_dir)
+    os.makedirs(output_path, exist_ok=True)
+    for css_name in css_files:
+        source_path = p.join(base_dir, css_name)
+        target_path = p.join(output_path, css_name)
+        if p.isfile(source_path):
+            shutil.copy2(source_path, target_path)
 
 ######################################################################
 def check_vitals(simDir: DirectoryPath,
@@ -96,56 +124,323 @@ def check_vitals(simDir: DirectoryPath,
     ## decide whether a property has converged
     converganceDiagnosis: Dict[str, str] = diagnose_convergance(propertiesConvergedInfo)
     ## plot all traces with line-of-best-fit for each property
-    plot_traces(vitalsDf, plottingData, converganceDiagnosis, simDir)
+    create_vitals_html(
+        simDir=simDir,
+        vitalsDf=vitalsDf,
+        progressDf=progressDf,
+        smoothedDf=smoothedDf,
+        plottingData=plottingData,
+        converganceDiagnosis=converganceDiagnosis,
+    )
 
-    timeDataDf: pd.DataFrame = extract_time_data(vitalsDf, progressDf)
-    timeDataPng: FilePath = plot_time_data(timeDataDf, simDir)
-
-    ## get systemName and stepName from dir
-    stepName: str = p.basename(simDir)
-    systemName: str = p.basename(p.dirname(simDir))
-
-    ## plot system info
-    plot_system_info(systemName, stepName, simDir)
-
-    ## create vitals pdf
-    create_vitals_pdf(simDir)
-
+    drRMSD(simDir)
     ## tidy up reporters to avoid clutter
     tidy_up(simDir)
+
+    drMethodsWriter.add_analysis_step_to_log("vitals")
+    drMethodsWriter.add_parameter_to_analysis_log("vitals", "stepName", "all")
+    drMethodsWriter.add_parameter_to_analysis_log("vitals", "convergedProperties", vitalsDf.columns.tolist())
+
 ###############################################################################################
 ###############################################################################################
-def create_vitals_pdf(simDir):
+def create_vitals_html(simDir, vitalsDf, progressDf, smoothedDf, plottingData, converganceDiagnosis):
     """
-    Uses Jinja2 to create a vitals report PDF from 
-    the PNG files generated in this script
+    Uses Jinja2 and Plotly to create an interactive vitals report HTML.
 
     Args:   
         simDir (DirectoryPath): The directory of the simulation
     """
     ## get the instruments directory path
     instrumentsDir: DirectoryPath = p.dirname(__file__)
-    env: Environment = Environment(loader=FileSystemLoader(instrumentsDir))
+    env: Environment = Environment(loader=FileSystemLoader(instrumentsDir), autoescape=True)
     template = env.get_template("vitals_template.html")
-    
-    # Render the template with any context variables you need
+
+    stepName: str = p.basename(simDir)
+    systemName: str = p.basename(p.dirname(simDir))
+
+    metricOrder = list(plottingData.keys())
+    plotDir = p.join(simDir, "00_plotly_plots")
+    os.makedirs(plotDir, exist_ok=True)
+    _copy_shared_css(simDir, ["report_theme.css"])
+    metricPlots = []
+    for metric_name in metricOrder:
+        metricFigure = build_vitals_metric_figure(
+            vitalsDf=vitalsDf,
+            smoothedDf=smoothedDf,
+            plottingData=plottingData,
+            metricName=metric_name,
+            diagnosis=converganceDiagnosis.get(metric_name, "N/A"),
+        )
+        safeMetricName = re.sub(r"[^A-Za-z0-9_.-]+", "_", metric_name).strip("_") or "metric"
+        plotPath = p.join(plotDir, f"vitals_{safeMetricName}_plot.html")
+        plotHtml = metricFigure.to_html(
+            full_html=False,
+            include_plotlyjs="cdn",
+            config={
+                "responsive": True,
+                "displaylogo": False,
+                "scrollZoom": True,
+            },
+        )
+        plotHtml = _wrap_plotly_html_fragment(plotHtml)
+        with open(plotPath, "w", encoding="utf-8") as plotFile:
+            plotFile.write(plotHtml)
+
+        metricPlots.append({
+            "label": metric_name,
+            "diagnosis": converganceDiagnosis.get(metric_name, "N/A"),
+            "plotPath": p.relpath(plotPath, simDir),
+        })
+
+    timeDataDf = extract_time_data(vitalsDf, progressDf)
+    timeSummaryRows = [
+        {
+            "label": row["index"],
+            "value": row["Value"],
+        }
+        for _, row in timeDataDf.iterrows()
+    ]
+
+    vitalsCsvName = "vitals_report.csv"
+    vitalsCsvPath = p.join(simDir, vitalsCsvName)
+
     context = {
+        "vitals_data": {
+            "systemName": systemName,
+            "stepName": stepName,
+            "nFrames": len(vitalsDf),
+            "reportPath": vitalsCsvName,
+            "reportName": vitalsCsvName,
+            "reportCsvLink": vitalsCsvName if p.isfile(vitalsCsvPath) else None,
+            "metricPlots": metricPlots,
+            "timeSummaryRows": timeSummaryRows,
+        }
     }
     rendered_html = template.render(context)
     
-    # Generate the PDF with error handling
-    outPdf = p.join(simDir, "vitals_report.pdf")
-    try:
-        baseUrl = simDir  # Set the base URL to the current working directory
-        css = CSS(string='''
-            @page {
-                size: A4 landscape;
-                margin: 0;
-            }
-        ''')
-        HTML(string=rendered_html, base_url=baseUrl).write_pdf(outPdf, stylesheets=[css])
-    except Exception as e:
-        raise e
+    outHtml = p.join(simDir, "vitals_report.html")
+    with open(outHtml, "w", encoding="utf-8") as reportFile:
+        reportFile.write(rendered_html)
+
+    drLogger.log_info(f"Created vitals report HTML: {outHtml}", True)
+
+
+def build_vitals_trace_figure(vitalsDf: pd.DataFrame,
+                              smoothedDf: pd.DataFrame,
+                              plottingData: dict,
+                              converganceDiagnosis: dict):
+    """
+    Builds the interactive Plotly figure for all vitals traces.
+    """
+    metricOrder = list(plottingData.keys())
+
+    if not metricOrder:
+        fig = go.Figure()
+        fig.update_layout(
+            template="plotly_dark",
+            title="Vitals Traces",
+            height=400,
+        )
+        fig.add_annotation(
+            text="No vitals trace data available.",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+        return fig
+
+    traceColors: dict = {
+        "Potential Energy (kJ/mole)": "#00FF00",
+        "Kinetic Energy (kJ/mole)": "#00FFFF",
+        "Total Energy (kJ/mole)": "#FFFF00",
+        "Temperature (K)": "#FFA500",
+        "Box Volume (nm^3)": "#FF00FF",
+        "Density (g/mL)": "#FF7F50",
+        "Backbone RMSD (Angstrom)": "#FFC0CB",
+    }
+
+    subplotTitles = [f"{columnName}<br>{converganceDiagnosis.get(columnName, 'N/A')}" for columnName in metricOrder]
+    fig = make_subplots(
+        rows=len(metricOrder),
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.02,
+        subplot_titles=subplotTitles,
+    )
+
+    timeValues = vitalsDf["Time (ps)"]
+
+    for rowIndex, columnName in enumerate(metricOrder, start=1):
+        traceColor = traceColors.get(columnName, "#00FF00")
+
+        fig.add_trace(
+            go.Scatter(
+                x=timeValues,
+                y=vitalsDf[columnName],
+                mode="lines",
+                line=dict(color=traceColor, width=1),
+                opacity=0.35,
+                name=f"{columnName} raw",
+                hovertemplate=f"{columnName} raw<br>Time: %{{x:.2f}} ps<br>Value: %{{y:.2f}}<extra></extra>",
+                showlegend=False,
+            ),
+            row=rowIndex,
+            col=1,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=timeValues,
+                y=smoothedDf[columnName],
+                mode="lines",
+                line=dict(color=traceColor, width=2.5),
+                name=f"{columnName} smoothed",
+                hovertemplate=f"{columnName} smoothed<br>Time: %{{x:.2f}} ps<br>Value: %{{y:.2f}}<extra></extra>",
+                showlegend=False,
+            ),
+            row=rowIndex,
+            col=1,
+        )
+
+        for bestFitLine in plottingData[columnName].values():
+            bestFitTrace = bestFitLine["dy/dx"] * bestFitLine["Time (ps)"] + bestFitLine["intercept"]
+            fig.add_trace(
+                go.Scatter(
+                    x=bestFitLine["Time (ps)"],
+                    y=bestFitTrace,
+                    mode="lines",
+                    line=dict(color="#F5F5F5", width=1, dash="dash"),
+                    opacity=0.55,
+                    hoverinfo="skip",
+                    showlegend=False,
+                ),
+                row=rowIndex,
+                col=1,
+            )
+
+        fig.update_yaxes(title_text=columnName, row=rowIndex, col=1, automargin=True)
+
+    fig.update_xaxes(title_text="Time (ps)", row=len(metricOrder), col=1)
+    fig.update_layout(
+        template="plotly_dark",
+        title="Vitals Traces",
+        height=max(1800, 240 * len(metricOrder)),
+        margin=dict(l=70, r=30, t=90, b=60),
+        hovermode="x unified",
+        showlegend=False,
+    )
+
+    return fig
+
+
+def build_vitals_metric_figure(vitalsDf: pd.DataFrame,
+                              smoothedDf: pd.DataFrame,
+                              plottingData: dict,
+                              metricName: str,
+                              diagnosis: str):
+    """Build a separate Plotly figure for one vitals metric."""
+    traceColors: dict = {
+        "Potential Energy (kJ/mole)": "#00FF00",
+        "Kinetic Energy (kJ/mole)": "#00FFFF",
+        "Total Energy (kJ/mole)": "#FFFF00",
+        "Temperature (K)": "#FFA500",
+        "Box Volume (nm^3)": "#FF00FF",
+        "Density (g/mL)": "#FF7F50",
+        "Backbone RMSD (Angstrom)": "#FFC0CB",
+    }
+
+    fig = go.Figure()
+    timeValues = vitalsDf["Time (ps)"]
+    traceColor = traceColors.get(metricName, "#00FF00")
+
+    fig.add_trace(
+        go.Scatter(
+            x=timeValues,
+            y=vitalsDf[metricName],
+            mode="lines",
+            line=dict(color=traceColor, width=1),
+            opacity=0.35,
+            name=f"{metricName} raw",
+            hovertemplate=f"{metricName} raw<br>Time: %{{x:.2f}} ps<br>Value: %{{y:.2f}}<extra></extra>",
+            showlegend=False,
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=timeValues,
+            y=smoothedDf[metricName],
+            mode="lines",
+            line=dict(color=traceColor, width=2.5),
+            name=f"{metricName} smoothed",
+            hovertemplate=f"{metricName} smoothed<br>Time: %{{x:.2f}} ps<br>Value: %{{y:.2f}}<extra></extra>",
+            showlegend=False,
+        )
+    )
+
+    for bestFitLine in plottingData.get(metricName, {}).values():
+        bestFitTrace = bestFitLine["dy/dx"] * bestFitLine["Time (ps)"] + bestFitLine["intercept"]
+        fig.add_trace(
+            go.Scatter(
+                x=bestFitLine["Time (ps)"],
+                y=bestFitTrace,
+                mode="lines",
+                line=dict(color="#F5F5F5", width=1, dash="dash"),
+                opacity=0.55,
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+
+    fig.update_layout(
+        template="plotly_dark",
+        title=f"{metricName}<br>{diagnosis}",
+        xaxis_title="Time (ps)",
+        yaxis_title=metricName,
+        height=REPORT_PLOT_HEIGHT,
+        margin=dict(l=60, r=30, t=60, b=60),
+        hovermode="x unified",
+        showlegend=False,
+    )
+    return fig
+
+
+def build_time_summary_figure(vitalsDf: pd.DataFrame, progressDf: pd.DataFrame):
+    """
+    Builds a Plotly table summarizing the timing information for the run.
+    """
+    timeDataDf: pd.DataFrame = extract_time_data(vitalsDf, progressDf)
+
+    fig = go.Figure(
+        data=[
+            go.Table(
+                header=dict(
+                    values=["Metric", "Value"],
+                    fill_color="#444444",
+                    font=dict(color="#00FF00", size=14),
+                    align="left",
+                ),
+                cells=dict(
+                    values=[timeDataDf["index"].tolist(), timeDataDf["Value"].tolist()],
+                    fill_color="#2a2a2a",
+                    font=dict(color="#f0f0f0", size=13),
+                    align="left",
+                    height=34,
+                ),
+            )
+        ]
+    )
+
+    fig.update_layout(
+        template="plotly_dark",
+        title="Run Time Summary",
+        margin=dict(l=20, r=20, t=70, b=20),
+        height=REPORT_PLOT_HEIGHT,
+    )
+
+    return fig
 
 ###############################################################################################
 
@@ -609,6 +904,21 @@ def calculate_rmsd_mda(trajectoryDcd: FilePath, trajectoryPdb: FilePath) -> pd.D
     rmsdDf['Backbone RMSD (Angstrom)'] = rmsdDf['Backbone RMSD (Angstrom)'].round(2)
 
     return rmsdDf
+#########################################################################################################
+def calculate_ccs_shadow(trajectoryDcd: FilePath, trajectoryPdb: FilePath) -> pd.DataFrame:
+    """
+    Uses the Shadow Screen to calculate CCS
+
+    Args:
+        trajectoryDcd (FilePath): The trajectory DCD file
+        trajectoryPdb (FilePath): The trajectory PDB file
+
+    Returns:
+        ccsDf (pd.DataFrame): The CCS dataframe
+    """
+
+    universe: mda.Universe = mda.Universe(trajectoryPdb, trajectoryDcd)
+    trajectoryLength= len(universe.trajectory)
 #########################################################################################################
 def plot_traces(vitalsDf: pd.DataFrame, plottingData: dict, convergedDiagnosis: dict, outDir: DirectoryPath) -> FilePath:
     """

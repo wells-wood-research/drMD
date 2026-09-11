@@ -1,0 +1,16 @@
+
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+ ########################################################################
+  - stepName: ESI_NVT_production
+    simulationType: NVT
+    duration: 50 ps
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 380
+    logInterval: 10 ps
+    
+

@@ -10,12 +10,17 @@ import shlex
 import pytraj as pt
 import subprocess
 from subprocess import run
-from StandardOperations import drManual, drESI
+from StandardOperations import drManual
+from ESIWing.SpecialistEquipment import  drESI
+from drOperationReportIndex import build_operation_report_index
 import textwrap
+import MDAnalysis as mda
 import io
 import logging
 import select
 import sys
+from shutil import copy, copy2, copyfile
+from csv import DictReader, DictWriter
 
 ## ERROR HANDLING ##
 import traceback
@@ -35,18 +40,18 @@ from typing import Optional, Dict, Tuple
 
 class DirectoryPath:
     def __init__(self, path: str):
-        if not os.path.isdir(path):
+        if not p.isdir(path):
             raise ValueError(f"{path} is not a valid directory path")
-        self.path = os.path.abspath(path)
+        self.path = p.abspath(path)
 
     def __str__(self):
         return self.path
 
 class FilePath:
     def __init__(self, path: str):
-        if not os.path.isfile(path):
+        if not p.isfile(path):
             raise ValueError(f"{path} is not a valid file path")
-        self.path = os.path.abspath(path)
+        self.path = p.abspath(path)
 
     def __str__(self):
         return self.path
@@ -69,7 +74,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         ## read bacth config file into a dictionary
     try:
         batchConfig: dict = read_input_yaml(batchConfigYaml)
-    except (FileNotFoundError, yaml.YAMLError, KeyError, TypeError, ValueError) as e:
+    except (FileNotFoundError, yaml.YAMLError, KeyError, typeError, ValueError) as e:
         drSplash.print_config_error(e)
         ## unpack batchConfig into variables for this function
 
@@ -77,10 +82,15 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     outDir: DirectoryPath = batchConfig["pathInfo"]["outputDir"]
     pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
     pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
-    drMD_src= __file__.removesuffix("drReferral.py")
-    
+    drMD_src = p.dirname(p.abspath(__file__))
+
     ## Checks to see if the config file has multiple "Operations" or is just a standard config file
     if batchConfig.get('Operations') != None:
+        combinedReport= p.join(outDir, "Full_Methods_Report.md")
+        try:
+            os.remove(combinedReport)
+        except FileNotFoundError:
+            pass
 
         ## creates a new file for the new config files
         try:
@@ -94,6 +104,8 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         
         ## Process and run each "Operation"
         for Procedure in batchConfig['Operations']:
+
+            
             
             ## finds all pdb files in the input file
             pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
@@ -101,7 +113,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
             ## to run multiple drMD simulations one after the other, pdb files needed to be collated through aftercare
             ## This copys trajectory pdb files as well as the save pdb files.
             ## the trajectory files are deleted to prevent reducndancy
-            if os.path.exists(f"{pdbDir}/trajectory.pdb"):
+            if p.exists(f"{pdbDir}/trajectory.pdb"):
                 os.remove(f"{pdbDir}/trajectory.pdb")
             pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
 
@@ -111,31 +123,36 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
 
             ## handles "condensed" config files that use standard operations configs found in "StandardOpperations"
             if Procedure.get('simulationInfo') == None:
-                simulationInfo= drManual.StandardOperation(Procedure['OperationName'])
-                Procedure.update( {'simulationInfo': simulationInfo['simulationInfo']})
-                Type= drManual.GetSimulationType(Procedure['OperationName'])
-                Procedure.update({'Type': Type})
+                simulationInfo= drManual.standardOperation(Procedure['OperationName'])
+                if simulationInfo != None:
+                    Procedure.update( {'simulationInfo': simulationInfo['simulationInfo']})
+                type= drManual.getSimulationType(Procedure['OperationName'])
+                Procedure.update({'type': type})
 
             ## Handles the diffrent system types (solution phase, gas phase and ESI simulations)
-            if Procedure['Type'] == "Solution":
+            if Procedure["type"] == "Solution":
                 write_referral(batchConfig, Procedure)
-                Procedure_Name= Procedure['OperationName']
-                drMDCommand = f"python3 {drMD_src}SolutionWing/drMD.py --config Config_Files/{Procedure_Name}.yaml "
+                Procedure_Name= Procedure["OperationName"]
+                drMDCommand = build_drmd_command("SolutionWing", f"Config_Files/{Procedure_Name}.yaml")
                 Run_drMD(drMDCommand)
-            elif Procedure['Type'] == "Vacuum":
+            elif Procedure["type"] == "Vacuum":
                 ## removes water from the PDB files
                 for PDB in pdbFiles:
                     Water_Count= Count_Water(PDB)
                     if Water_Count !=0:
                         Remove_Solvent(PDB)
                 write_referral(batchConfig, Procedure)
-                Procedure_Name= Procedure['OperationName']
-                drMDCommand = f"python3 {drMD_src}GasWing/drMD.py --config Config_Files/{Procedure_Name}.yaml "
+                Procedure_Name= Procedure["OperationName"]
+                drMDCommand = build_drmd_command("GasWing", f"Config_Files/{Procedure_Name}.yaml")
                 Run_drMD(drMDCommand)
 
-            elif Procedure['Type'] == "ESI":
+            elif Procedure["type"] == "ESI":
+                if Procedure.get("mode") == None:
+                    mode= "Positive"
+                else:
+                    mode= Procedure["mode"]
                 ESI_Count= 0
-                Procedure_Name= Procedure['OperationName']
+                Procedure_Name= Procedure["OperationName"]
                 for PDB in pdbFiles:
                     Water_Count = Count_Water(PDB)
 
@@ -144,27 +161,41 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
 
                     ## sets up an incremented ESI simulation
                     ESI_Count +=1
+                    simulationInfo= drESI.ESIOperation(ESI_Count, Water_Count)
+                    Procedure.update( {'simulationInfo': simulationInfo['simulationInfo']})
                     pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
-                    if os.path.exists(f"{pdbDir}/trajectory.pdb"):
+                    if p.exists(f"{pdbDir}/trajectory.pdb"):
                         os.remove(f"{pdbDir}/trajectory.pdb")
                     pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
                     newOutDir= outDir+ f"/{Procedure_Name}/ESI_{ESI_Count}"
                     (batchConfig["pathInfo"]).update({"outputDir": newOutDir})
 
-                    ## if no Cutoff is specified, use the defult of 10 angstroms
-                    if  Procedure.get('Cutoff') == None:
-                        Cutoff= 10
+                    ## if no cutoff is specified, use the defult of 10 angstroms
+                    if  Procedure.get('cutoff') == None:
+                        cutoff= 100
+                        Procedure.update({'cutoff': cutoff})
                     else:
-                        Cutoff= Procedure['Cutoff']
+                        cutoff= Procedure['cutoff']
 
-                    ## Removes all waters outside the cutoff distance    
+                    ## Removes all waters outside the cutoff distance 
+
+                    Do_Prep= True
                     for PDBs in pdbFiles:
-                        drESI.RemoveWater(Cutoff, PDBs, ESI_Count)
+                        if PDBs.find(f"ESI_{ESI_Count}") != -1:
+                            Do_Prep=False
+                    if Do_Prep == False:
+                        for PDBs in pdbFiles:
+                            if PDBs.find(f"ESI_{ESI_Count}") == -1:
+                                os.remove(PDBs)
+                    else:
+                        for PDBs in pdbFiles:
+                            if PDBs.find(f"ESI_{ESI_Count}") == -1:
+                                drESI.ESI_Handler(cutoff, PDBs, ESI_Count, mode)
                     Procedure.update({'OperationName': f'ESI_{ESI_Count}'})
 
                     ## run the simulation with the new pdb file
                     write_referral(batchConfig, Procedure)
-                    drMDCommand = f"python3 {drMD_src}ESIWing/drMD.py --config Config_Files/{Procedure_Name}_{ESI_Count}.yaml "
+                    drMDCommand = build_drmd_command("ESIWing", f"Config_Files/{Procedure_Name}_{ESI_Count}.yaml")
                     Run_drMD(drMDCommand)
 
                     ## input directory is the directory that contains the outputs from the previous simulation
@@ -178,15 +209,48 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
                         Water_Count = Count_Water(PDB)
 
                         ## if a maximum iteration has been specified, stop the simulations when reached
-                        if Procedure["maxIterations"] != None:
-                            if ESI_Count >= Procedure["maxIterations"]:
+                        if Procedure.get("maxESIIter") != None:
+                            if ESI_Count >= Procedure["maxESIIter"]:
                                 Water_Count=0
+                combine_simulation_ESI(outDir, batchConfig)
+                
+            elif Procedure["type"] == "VacuumCM":
+                Procedure_Name= Procedure["OperationName"]
+                totalDuration= Procedure["simulationInfo"][-1]["duration"] 
+                if totalDuration.find("ns") != -1:
+                    totalDuration= float(totalDuration.replace("ns", ""))*1000
+                elif totalDuration.find("ps") != -1:
+                    totalDuration= float(totalDuration.replace("ps", ""))
+                totalSims= totalDuration/20
+                for I in range(int(totalSims)):
+                    Procedure["simulationInfo"][-1]["duration"]= "20 ps"
+                    newOutDir= outDir+ f"/{Procedure_Name}/CM_{I+1}"
+                    (batchConfig["pathInfo"]).update({"outputDir": newOutDir})
+                    write_referral(batchConfig, Procedure)
+                    drMDCommand = build_drmd_command("GasWing", f"Config_Files/{Procedure['OperationName']}.yaml")
+                    Run_drMD(drMDCommand)
+                    newInDir= newOutDir+ "/00_collated_pdbs/"+ Procedure["simulationInfo"][-1]["stepName"]
+                    (batchConfig["pathInfo"]).update({"inputDir": newInDir})
+                    pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
+                    os.remove(f"{pdbDir}/trajectory.pdb")
+                    pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
+                combineDir= outDir+ f"/{Procedure_Name}"
+                combine_simulation(combineDir, batchConfig)
+                run_combined_report(combineDir, f"Config_Files/{Procedure['OperationName']}.yaml")
+                    
 
 
+
+            combine_method_report(p.join(newOutDir, "methods.md"), outDir, Procedure)
             newInDir= newOutDir+ "/00_collated_pdbs/"+ Procedure["simulationInfo"][-1]["stepName"]
             (batchConfig["pathInfo"]).update({"inputDir": newInDir})
             pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
             pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
+            
+
+        finalReportIndex = build_operation_report_index(str(outDir))
+        if finalReportIndex is not None:
+            print(f"\nCreated batch full report index: {finalReportIndex}")
 
 
     ## If the config file is the standard config file then run as normal
@@ -194,14 +258,31 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
 
         ## assume if boxGeomtry and size are not specified then vacuum simulations are to be ran
         if (batchConfig['miscInfo']).get('boxGeometry') == None and (batchConfig['miscInfo']).get('boxSize') == None:
-            drMDCommand= f"python3 {drMD_src}GasWing/drMD.py --config {batchConfigYaml}"
+            drMDCommand = build_drmd_command("GasWing", batchConfigYaml)
             Run_drMD(drMDCommand)
-            
-        else:
-            drMDCommand= f"python3 {drMD_src}SolutionWing/drMD.py --config {batchConfigYaml} "
-            Run_drMD(drMDCommand)
-            
 
+        else:
+            drMDCommand = build_drmd_command("SolutionWing", batchConfigYaml)
+            Run_drMD(drMDCommand)
+            
+    
+    print("\n")          
+
+
+######################################################################################################
+def build_drmd_command(module_name: str, config_path: str) -> list[str]:
+    """
+    Build a subprocess command for launching drMD with the current Python interpreter.
+
+    Args:
+        module_name (str): Name of the drMD module directory, e.g. "GasWing".
+        config_path (str): Path to the config file to pass to the child process.
+
+    Returns:
+        list[str]: Command tokens for subprocess execution.
+    """
+    script_path = p.join(p.dirname(p.abspath(__file__)), module_name, "drMD.py")
+    return [sys.executable, script_path, "--config", config_path]
 
 ######################################################################################################
 def write_referral(Equipment: dict, Procedure: dict) -> None:
@@ -222,6 +303,9 @@ def write_referral(Equipment: dict, Procedure: dict) -> None:
         stepNames= [Procedure["simulationInfo"][-1]["stepName"]]
         endpointInfo= {"stepNames": stepNames}
         aftercareInfo= {"endPointInfo": endpointInfo}
+    elif Procedure['aftercareInfo'].get('endPointInfo') == None:
+        aftercareInfo = Procedure["aftercareInfo"]
+        aftercareInfo.update({"endPointInfo": {"stepNames": [Procedure["simulationInfo"][-1]["stepName"]]}})
     else:
         aftercareInfo = Procedure["aftercareInfo"]
     
@@ -250,6 +334,10 @@ def write_referral(Equipment: dict, Procedure: dict) -> None:
         Referral.update({"equilibriationRestraints": Procedure["equilibriationRestraints"]})
     Procedure_Name= Procedure["OperationName"]
     
+    if Procedure.get("mode") != None and Procedure.get("cutoff") != None:
+        ESIDict= {"mode": Procedure["mode"], "cutoff": Procedure["cutoff"]}
+        Referral.update({"ESIInfo": ESIDict})
+
     ## write the new config file
     with open(f'Config_Files/{Procedure_Name}.yaml', 'w') as Config:
         yaml.dump(Referral, Config)
@@ -363,9 +451,9 @@ def Remove_Solvent(PDBfile: str) -> None:
     stripped_traj = traj.strip(':HOH')
     stripped_traj = traj.strip('@H')
     ## if there are any Ions
-    if (traj.top.select("@Cl-")).any != None:
+    if (traj.top.select(":Cl-")).any():
         stripped_traj = traj.strip(':Cl-')
-    elif (traj.top.select("@Na+")).any != None:
+    if (traj.top.select(":Na+")).any():
         stripped_traj = traj.strip(':Na+')
     pt.write_traj(f"{PDBfile}", stripped_traj, overwrite=True)
 
@@ -377,11 +465,15 @@ def Run_drMD(command, print_output= True,log_output=False, check=True, *args, **
     Args:
         command(str): command to run drMD
     """
-    shell = isinstance(command.split(), str)
-    logging.debug(f"Running command: {command}")
+    if isinstance(command, str):
+        command_parts = shlex.split(command)
+    else:
+        command_parts = list(command)
+
+    logging.debug(f"Running command: {command_parts}")
     process = subprocess.Popen(  # type: ignore
-        command.split(),
-        shell=shell,
+        command_parts,
+        shell=False,
         bufsize=1,  # Output is line buffered, required to print output in real time
         universal_newlines=True,  # Required for line buffering
         stdout=subprocess.PIPE,
@@ -488,6 +580,189 @@ def ConfigChecker(Config: dict) -> dict:
 
 
     return Config
+
+
+def combine_simulation(outDir: FilePath, batchConfig: dict = None) -> None:
+    """
+    Combines the results of multiple simulations into a single output directory.
+
+    Args:
+        outDir (FilePath): The base output directory containing simulation subDirectories.
+    """
+    # Get all subDirectories in the output directory
+    subDirs = [d for d in os.listdir(outDir) if p.isdir(p.join(outDir, d)) and not d.startswith("00_")]
+    pdbDir= batchConfig["pathInfo"]["inputDir"] 
+    pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"] if pdbDir else [] 
+    # Create a combined output directory
+    for pdbFile in pdbFiles:
+        
+        protDir= p.join(outDir, p.basename(pdbFile).removesuffix(".pdb"), "00_combined_simulation")
+        os.makedirs(protDir, exist_ok=True)
+        trajectoryFiles = []
+        with open (p.join(protDir, "vitals_report.csv"), "w") as vitals_report:
+            fieldNames= ['#"Step"','Time (ps)',"Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Total Energy (kJ/mole)","Temperature (K)","Box Volume (nm^3)","Density (g/mL)"]
+            writer=DictWriter(vitals_report, fieldnames=fieldNames)
+            writer.writeheader()
+            stepOffset=0
+            timeOffset=0
+            for subDir in subDirs:
+                subDirPath = p.join(outDir, subDir)
+                for root, dirs, files in os.walk(subDirPath):
+                    for file in files:
+                        if root.find(p.basename(pdbFile).removesuffix(".pdb")) != -1 and root.find("CM_") != -1:
+                            sourceFile = p.join(root, file)
+                            relativePath = p.relpath(sourceFile, subDirPath)
+                            targetFile = p.join(protDir, relativePath)
+                            if file.endswith("trajectory.pdb"):
+                                copyfile(sourceFile,   p.join(protDir, "trajectory.pdb"))
+                            elif file.endswith(".dcd"):
+                                trajectoryFiles.append(sourceFile)
+                            elif file == "vitals_report.csv":
+                                with open(sourceFile, "r", newline="") as input_csv:
+                                    reader = DictReader(input_csv)
+
+                                    lastStep = stepOffset
+                                    lastTime = timeOffset
+                                    for row in reader:
+                                        row['#"Step"'] = str(
+                                            int(row['#"Step"']) + stepOffset
+                                        )
+                                        row["Time (ps)"] = str(
+                                            float(row["Time (ps)"]) + timeOffset
+                                        )
+
+                                        writer.writerow(row)
+                                        lastStep = int(row['#"Step"'])
+                                        lastTime = float(row["Time (ps)"])
+                                    stepOffset = lastStep
+                                    timeOffset = lastTime
+
+        traj= pt.iterload(trajectoryFiles, top= p.join(protDir, "trajectory.pdb"))
+        traj.save(p.join(protDir, "trajectory.dcd"), overwrite=True)
+
+def combine_simulation_ESI(outDir: FilePath, batchConfig: dict = None) -> None:
+    """
+    Combines the results of multiple simulations into a single output directory.
+
+    Args:
+        outDir (FilePath): The base output directory containing simulation subDirectories.
+    """
+    # Get all subDirectories in the output directory
+    subDirs = [d for d in os.listdir(outDir) if p.isdir(p.join(outDir, d)) and not d.startswith("00_")]
+    pdbDir= batchConfig["pathInfo"]["inputDir"] 
+    pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"] if pdbDir else [] 
+    # Create a combined output directory
+    for pdbFile in pdbFiles:
+        
+        protDir= p.join(outDir, p.basename(pdbFile).removesuffix(".pdb"), "00_combined_simulation")
+        os.makedirs(protDir, exist_ok=True)
+        trajectoryFiles = []
+        topologyFiles = []
+        with open (p.join(protDir, "vitals_report.csv"), "w") as vitals_report:
+            fieldNames= ['#"Step"','Time (ps)',"Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Total Energy (kJ/mole)","Temperature (K)","Box Volume (nm^3)","Density (g/mL)"]
+            writer=DictWriter(vitals_report, fieldnames=fieldNames)
+            writer.writeheader()
+            stepOffset=0
+            timeOffset=0
+            for subDir in subDirs:
+                subDirPath = p.join(outDir, subDir)
+                for root, dirs, files in os.walk(subDirPath):
+                    for file in files:
+                        if root.find(p.basename(pdbFile).removesuffix(".pdb")) != -1 and root.find("ESI_") != -1 and root.find("00_collated_pdbs") == -1:
+                            sourceFile = p.join(root, file)
+                            relativePath = p.relpath(sourceFile, subDirPath)
+                            targetFile = p.join(protDir, relativePath)
+                            if file.endswith("trajectory.pdb"):
+                                if root.find("ESI_1") != -1:
+                                    copyfile(sourceFile,   p.join(protDir, "trajectory.pdb"))
+                                else:
+                                    topologyFiles.append(sourceFile)                   
+                            elif file.endswith(".dcd"):
+                                if root.find("ESI_1") != -1:
+                                    initialTrajectoryFile= sourceFile
+                                else:
+                                    trajectoryFiles.append(sourceFile)
+                            elif file == "vitals_report.csv":
+                                with open(sourceFile, "r", newline="") as input_csv:
+                                    reader = DictReader(input_csv)
+
+                                    lastStep = stepOffset
+                                    lastTime = timeOffset
+                                    for row in reader:
+                                        row['#"Step"'] = str(
+                                            int(row['#"Step"']) + stepOffset
+                                        )
+                                        row["Time (ps)"] = str(
+                                            float(row["Time (ps)"]) + timeOffset
+                                        )
+
+                                        writer.writerow(row)
+                                        lastStep = int(row['#"Step"'])
+                                        lastTime = float(row["Time (ps)"])
+                                    stepOffset = lastStep
+                                    timeOffset = lastTime
+        initialUniverse= mda.Universe(p.join(protDir, "trajectory.pdb"), initialTrajectoryFile)
+        masterUniverse= mda.Merge(initialUniverse.atoms)
+        totalAtoms= initialUniverse.atoms.n_atoms
+        with mda.Writer(p.join(protDir, "trajectory.dcd"), masterUniverse.atoms.n_atoms) as W:
+            for frames in initialUniverse.trajectory:
+                masterUniverse.atoms.positions= initialUniverse.atoms.positions
+                W.write(masterUniverse.atoms)
+            for topologyFile in topologyFiles:
+                ESIcountTop= topologyFile.split("ESI_")[-1].split("/")[0]
+                for trajectoryFile in trajectoryFiles:
+                    ESIcountTraj= topologyFile.split("ESI_")[-1].split("/")[0]
+                    if ESIcountTop == ESIcountTraj:
+                        universe= mda.Universe(topologyFile, trajectoryFile)
+                        smallAtomCount= universe.atoms.n_atoms
+                        if smallAtomCount < totalAtoms:
+                            for ts in universe.trajectory:
+                                framePosition= np.zeros((totalAtoms, 3))
+                                framePosition[:smallAtomCount, :] = universe.atoms.positions
+                                framePosition[smallAtomCount:, :] = 999
+
+                masterUniverse.atoms.positions= framePosition
+                W.write(masterUniverse.atoms)
+
+def combine_method_report(methodReport:str, outDir:str, operationConfig: dict) -> None:
+    combinedReport= p.join(outDir, "Full_Methods_Report.md")
+    operationName= operationConfig.get("OperationName", "Unknown Operation")
+    if operationConfig.get("type") == "solution":
+        version= "SolutionWing"
+    elif operationConfig.get("type") == "vacuum" or operationConfig.get("type") == "vacuumCM":
+        version= "GasWing"
+    elif operationConfig.get("type") == "ESI":
+        version= "ESIWing"
+    else:
+        version= "Unknown Version"
+    with open(combinedReport, "a") as combinedFile:
+        combinedFile.write(f"# Methods Report for {operationName}\n\n")
+        combinedFile.write(f"The following operation was run using the {version} version of drMD.\n\n")
+        with open(methodReport, "r") as methodFile:
+            combinedFile.write(methodFile.read())
+            combinedFile.write("\n\n")
+
+        
+
+
+    
+######################################################################################################
+def run_combined_report(combined_dir: str, batch_config: dict) -> None:
+    report_script = p.join(
+        p.dirname(p.abspath(__file__)),
+        "GasWing",
+        "drCombinedReport.py",
+    )
+
+    Run_drMD(
+        [
+            sys.executable,
+            report_script,
+            combined_dir,
+            "--config",
+            batch_config
+        ]
+    )
 ######################################################################################################
 
 if __name__ == "__main__":

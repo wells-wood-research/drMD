@@ -7,7 +7,7 @@ from collections import Counter
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger
-from UtilitiesCloset import drSplash, drListInitiator
+from UtilitiesCloset import drSplash, drListInitiator, drFixer
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -66,10 +66,12 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     ## get list of pdb files
     pdbNames = [p.splitext(file)[0] for file in os.listdir(pdbDir) if file.endswith(".pdb")]
     inputPdbs = [p.join(pdbDir, file) for file in os.listdir(pdbDir) if file.endswith(".pdb")]
+    for inputPdb in inputPdbs:
+        drFixer.renumber_pdb_atom_serials(inputPdb)
     ## convert to dataframes
-    pdbDfs = [pdbUtils.pdb2df(pdbFile) for pdbFile in inputPdbs]
+    #pdbDfs = [pdbUtils.pdb2df(pdbFile) for pdbFile in inputPdbs]
 
-    pdbDisorders = {}
+    #pdbDisorders = {}
     ## check for pdb files with problems
     #pdbDisorders["01_broken_protein_chains"] = check_for_broken_chains(pdbDfs, pdbNames)
     #pdbDisorders["02_residues_missing_atoms"] = check_for_missing_sidechains(pdbDfs, pdbNames)
@@ -156,7 +158,7 @@ def check_for_organometallic_ligand(pdbDfs: List[pd.DataFrame], pdbNames: List[s
     """
     # Initialize lists
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
-    
+    WaterResNames = drListInitiator.get_Solvent_residue_names()
     organicElements = {"C", "N", "H", "O", "S", "P", "F", "CL"
                         "BR", "I", "SE", "B", "SI"}
 
@@ -174,6 +176,8 @@ def check_for_organometallic_ligand(pdbDfs: List[pd.DataFrame], pdbNames: List[s
                 # Skip if amino acid residue
                 resName: str = resDf["RES_NAME"].iloc[0]
                 if resName in aminoAcidResNames:
+                    continue
+                elif resName in WaterResNames:
                     continue
                 try: 
                     resElements: Set[str] = set(resDf["ELEMENT"])
@@ -205,7 +209,7 @@ def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: Li
     """
     # Initialize lists
     aminoAcidResNames = drListInitiator.get_amino_acid_residue_names()
-
+    waterResNames= drListInitiator.get_solvent_residue_names()
     backboneAtoms: set  = {"N", "CA", "C", "O"}
     problemPdbs: List = []
     # Dictionary to store residue IDs and messages
@@ -215,7 +219,7 @@ def check_for_non_canonical_amino_acids(pdbDfs: List[pd.DataFrame], pdbNames: Li
             for resId, resDf in chainDf.groupby(f"RES_ID"):
                 resName: str = resDf["RES_NAME"].iloc[0]
                 # Skip if cannonical amio acid residue, water,
-                if resName in aminoAcidResNames or resName == "HOH":
+                if resName in aminoAcidResNames or waterResNames :
                     continue
                 # Skip residues with no backbone residues (i.e. ligand)
                 if  not  backboneAtoms.issubset(resDf["ATOM_NAME"].unique()):

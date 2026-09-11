@@ -10,7 +10,7 @@ from openmm import app
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger
-from UtilitiesCloset import drSelector
+from UtilitiesCloset import drSelector, drMethodsWriter
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -47,8 +47,10 @@ def restraints_handler(
             clear_all_restraints(saveFile)
     ## check if there are any restraints specified in simulation config
     if "restraintInfo" in sim:
+
         ## load restraintInfo from simluation config
         restraintInfo: List[Dict] = sim["restraintInfo"]
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "restraintInfo", restraintInfo)
         ## create a counter for naming restraint parameters
         kNumber: int = 0
         ## loop through restraints 

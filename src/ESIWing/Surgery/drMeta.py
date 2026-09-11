@@ -13,7 +13,7 @@ import  openmm.unit  as unit
 ## drMD LIBRARIES
 from Surgery import drSim, drRestraints, drFirstAid
 from ExaminationRoom import drLogger, drCheckup
-from UtilitiesCloset import drSelector, drFixer
+from UtilitiesCloset import drSelector, drFixer, drMethodsWriter
 
 ########################################################################################################
 ########################################################################################################
@@ -54,6 +54,8 @@ def run_metadynamics(prmtop: app.Topology,
     """
     stepName = sim["stepName"]
     drLogger.log_info(f"Running MetaDynamics Step: {stepName}",True)
+    drMethodsWriter.add_step_to_simulation_log(stepName)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationType", sim["simulationType"])
     ## make a simulation directory
     simDir: str = p.join(outDir, stepName)
     os.makedirs(simDir, exist_ok=True)
@@ -62,10 +64,11 @@ def run_metadynamics(prmtop: app.Topology,
     # Define the nonbonded method and cutoff.
     nonbondedMethod: openmm.NonbondedForce = app.NoCutoff
 
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "nonbondedMethod", "NoCutoff")
 
     # Define the restraints.
     hBondconstraints: openmm.Force = app.HBonds
-
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "constraints", hBondconstraints)
     # Create the system.
     system: openmm.System = prmtop.createSystem(nonbondedMethod=nonbondedMethod,
                                                 constraints=hBondconstraints)
@@ -73,6 +76,7 @@ def run_metadynamics(prmtop: app.Topology,
     # Deal with restraints (clear all lurking restraints and constants)
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
 
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "temperature", sim["temperature"])
     # Read metaDynamicsInfo from sim config
     metaDynamicsInfo: dict = sim["metaDynamicsInfo"]
 
@@ -86,22 +90,23 @@ def run_metadynamics(prmtop: app.Topology,
         atomCoords: list = get_atom_coords_for_metadynamics(prmtop, inpcrd)
         # Create bias variable based on the type of bias
         if bias["biasVar"].upper() == "RMSD":
-            biasVariable: metadynamics.BiasVariable = gen_rmsd_bias_variable(bias, atomCoords, atomIndexes)
+            biasVariable, addedBias= gen_rmsd_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
         elif bias["biasVar"].upper() == "TORSION":
-            biasVariable: metadynamics.BiasVariable = gen_dihedral_bias_variable(bias, atomCoords, atomIndexes)
+            biasVariable, addedBias= gen_dihedral_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
         elif bias["biasVar"].upper() == "DISTANCE":
-            biasVariable: metadynamics.BiasVariable = gen_distance_bias_variable(bias, atomCoords, atomIndexes)
+            biasVariable, addedBias= gen_distance_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
         elif bias["biasVar"].upper() == "ANGLE":
-            biasVariable: metadynamics.BiasVariable = gen_angle_bias_variable(bias, atomCoords, atomIndexes)
+            biasVariable, addedBias= gen_angle_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
         elif bias["biasVar"].upper() == "RG":
-            biasVariable: metadynamics.BiasVariable = gen_gyration_bias_variable(bias, atomCoords, atomIndexes)
+            biasVariable, addedBias= gen_gyration_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
 
-        
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", addedBiases)    
+   
     # Create metadynamics object and add bias variables as forces to the system
     meta: metadynamics.Metadynamics = metadynamics.Metadynamics(system=system,
                                      variables=biasVariables,
@@ -112,9 +117,16 @@ def run_metadynamics(prmtop: app.Topology,
                                      saveFrequency=50,
                                      biasDir=simDir)
     
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biasFactor", metaDynamicsInfo["biasFactor"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "height", metaDynamicsInfo["height"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "frequency", 50)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "saveFrequency", 50)
 
     # Set up integrator
     integrator: openmm.LangevinMiddleIntegrator = openmm.LangevinMiddleIntegrator(sim["temperature"], 1/unit.picosecond, sim["timestep"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "integrator", "LangevinMiddleIntegrator")
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "timeStep", sim["timestep"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "friction", "1 ps^-1")
     # Create new simulation
     simulation: app.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, platform)
     # Load state from previous simulation (or continue from checkpoint)
@@ -128,6 +140,12 @@ def run_metadynamics(prmtop: app.Topology,
                                 simulation=simulation,
                                 dcdAtomSelections= config["miscInfo"]["trajectorySelections"],
                                 refPdb=refPdb)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "totalSteps", totalSteps)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "reportInterval", reportInterval)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationTime", totalSteps * sim['timestep'])
+
+    
+    
     # Run metadynamics simulation
     meta.step(simulation, sim["nSteps"])
  
@@ -148,6 +166,7 @@ def run_metadynamics(prmtop: app.Topology,
     # save simulation as XML
     saveXml: str = p.join(simDir, f"{stepName}.xml")
     simulation.saveState(saveXml)
+    drFixer.reset_chains_residues(refPdb, endPointPdb, config)
 
     ## get free energy and write to csv
     metadynamicsFreeEnergy = meta.getFreeEnergy()
@@ -211,6 +230,7 @@ def gen_angle_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: lis
     # Create an angle bias force
     angleForce: openmm.CustomAngleForce = openmm.CustomAngleForce("theta")
 
+
     # Add the atom indexes for the angle
     angleForce.addAngle(atomIndexes[0],
                           atomIndexes[1],
@@ -221,7 +241,9 @@ def gen_angle_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: lis
                                                     maxValue = bias["maxValue"] * unit.degrees,
                                                     biasWidth = bias["biasWidth"] * unit.degrees,
                                                      periodic = False)
-    return angleBiasVariable
+    bias.update({"periodic": False})
+    bias.update({"energy": angleForce.getEnergyExpression()})
+    return angleBiasVariable, bias
 
 ########################################################################################################
 def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list) -> metadynamics.BiasVariable:
@@ -249,7 +271,8 @@ def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
     # Create a custom torsion force object
     dihedralForce: openmm.CustomTorsionForce = openmm.CustomTorsionForce(dihedralEnergyExpression)
 
-    
+    drMethodsWriter.update_methods_log(f"              force: {dihedralForce}")
+ 
     # Add the atom indexes for the dihedral angle
     dihedralForce.addTorsion(atomIndexes[0],
                               atomIndexes[1],
@@ -262,8 +285,9 @@ def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
                                                     maxValue = bias["maxValue"] * unit.degrees,
                                                     biasWidth = bias["biasWidth"] * unit.degrees,
                                                     periodic = True)
-    
-    return dihedralBiasVariable
+    bias.update({"periodic": True})
+    bias.update({"energy": dihedralForce.getEnergyExpression()})
+    return dihedralBiasVariable, bias
 
 ########################################################################################################
 def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list) -> metadynamics.BiasVariable:
@@ -287,6 +311,7 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
 
     # Create a distance bias force
     distanceForce: openmm.CustomBondForce = openmm.CustomBondForce("r")
+    drMethodsWriter.update_methods_log(f"              force: {distanceForce}")
 
     distanceForce.addBond(atomIndexes[0],
                           atomIndexes[1])
@@ -296,9 +321,9 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
                                                     maxValue = bias["maxValue"] * unit.angstrom,
                                                     biasWidth = bias["biasWidth"] * unit.angstrom,
                                                     periodic = False)
-    
-    return distanceBiasVariable
-
+    bias.update({"periodic": False})
+    bias.update({"energy": distanceForce.getEnergyExpression()})
+    return distanceBiasVariable, bias
 ########################################################################################################
 def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list) -> metadynamics.BiasVariable:
     """
@@ -320,7 +345,8 @@ def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
     """
 
      # Generate a Rg bias force
-    rgForce: openmm.RGForce = openmm.RGForce(atomCoords, atomIndexes)
+    rgForce: openmm.RGForce = openmm.RGForce(atomIndexes)
+    drMethodsWriter.update_methods_log(f"              force: {rgForce}")
 
     # Create a Rg bias variable
     gyrationBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(
@@ -329,8 +355,9 @@ def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
         maxValue = bias["maxValue"] * unit.angstrom,
         biasWidth = bias["biasWidth"] * unit.angstrom,
         periodic=False)
-
-    return gyrationBiasVariable
+    bias.update({"periodic": False})
+    bias.update({"energy": rgForce.getEnergyExpression()})
+    return gyrationBiasVariable, bias
 
 
 
@@ -356,6 +383,7 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
 
     # Generate a RMSD bias force
     rmsdForce: openmm.RMSDForce = openmm.RMSDForce(atomCoords, atomIndexes)
+    drMethodsWriter.update_methods_log(f"              force: {rmsdForce}")
 
     # Create a RMSD bias variable
     rmsdBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(
@@ -364,8 +392,9 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
         maxValue = bias["maxValue"] * unit.angstrom,
         biasWidth = bias["biasWidth"] * unit.angstrom,
         periodic=False)
-
-    return rmsdBiasVariable
+    bias.update({"periodic": False})
+    bias.update({"energy": rmsdForce.getEnergyExpression()})
+    return rmsdBiasVariable, bias
 
 
 

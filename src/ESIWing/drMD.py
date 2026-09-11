@@ -60,9 +60,14 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     parallelCPU: int = batchConfig["hardwareInfo"]["parallelCPU"]
     subprocessCpus: int = batchConfig["hardwareInfo"]["subprocessCpus"]
 
+
+
     ## create logDir if it doesn't exist
     logDir: DirectoryPath = p.join(outDir, "00_drMD_logs")
     os.makedirs(logDir, exist_ok=True)
+
+
+
 
     skipPdbTriage = batchConfig["miscInfo"].get("skipPdbTriage", False)
     if not skipPdbTriage:
@@ -71,6 +76,29 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         if not p.exists(pdbTriageLog):
             drPdbTriage.pdb_triage(pdbDir, batchConfig)
 
+    drMethodsWriter.create_methods_log(outDir.removesuffix(outDir.split(os.sep)[-1]))
+    drMethodsWriter.add_hardware_info_to_log(batchConfig["hardwareInfo"])
+
+    esi_config = batchConfig.get("ESIInfo")
+    if isinstance(esi_config, dict):
+        mode_value = esi_config.get("mode", esi_config.get("Mode"))
+        cutoff_value = esi_config.get("cutoff", esi_config.get("Cutoff"))
+    elif esi_config is None:
+        raise KeyError("ESIInfo is missing from the config.")
+    else:
+        mode_value = batchConfig.get("mode", batchConfig.get("Mode"))
+        cutoff_value = esi_config
+
+    if mode_value is None:
+        raise KeyError("ESI mode is missing from ESIInfo.")
+    if cutoff_value is None:
+        raise KeyError("ESI cutoff is missing from ESIInfo.")
+
+    esiInfo = {
+        "esiCount": outDir.split(os.sep)[-1].split("_")[0].removeprefix("ESI"),
+        "mode": mode_value,
+        "cutoff": cutoff_value,
+    }
     ## set environment variables for OpenMP and OpenMM - this should limit their CPU useage
     manage_cpu_usage_for_subprocesses("ON",subprocessCpus)
 
@@ -90,9 +118,9 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     ## write methods section if desired
     if writeMyMethodsSection:
         try:
-            drMethodsWriter.methods_writer_protocol(batchConfig, yamlDir, outDir)
+            drMethodsWriter.write_log_to_methods_file(outDir)
         except Exception as e:
-            drLogger.log_info(f"Error writing my methods section: {e}", True, True)
+            drLogger.log_info(f"Error writing methods log: {e}", True, True)
     ## perform post simulation operations
     drCleanup.clean_up_handler(batchConfig)
 
