@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ rmsd_data.reportTitle | default('RMSD Report') }}</title>
+    <link rel="stylesheet" href="report_theme.css">
+</head>
+<body>
+    <div class="page">
+        
+        <div class="meta">
+            <div class="meta-card">
+                <span class="label">System</span>
+                <div class="value">{{ rmsd_data.systemName | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Step</span>
+                <div class="value">{{ rmsd_data.stepName | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Frames</span>
+                <div class="value">{{ rmsd_data.nFrames | default('N/A') }}</div>
+            </div>
+            <div class="meta-card">
+                <span class="label">Raw CSV</span>
+                <div class="value">
+                    {% if rmsd_data.embeddedCsvFiles %}
+                    <div class="csv-actions">
+                        {% for csvFile in rmsd_data.embeddedCsvFiles %}
+                        <a class="csv-download-btn" href="{{ csvFile.href }}" target="_blank" rel="noopener" download>
+                            Open {{ csvFile.label }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="rmsd-layout">
+            <div class="rmsd-main">
+                <section class="section">
+                    <div class="section-head">
+                        <h2>Trajectory Analysis</h2>
+                        <span>Tabbed RMSD and RMSF comparison views</span>
+                    </div>
+
+                    <div class="rmsd-tabs" role="tablist" aria-label="RMSD and RMSF tabs">
+                        <button type="button" class="rmsd-tab-btn active" role="tab" aria-selected="true" data-tab-target="rmsd-initial-tab">Initial RMSD</button>
+                        <button type="button" class="rmsd-tab-btn" role="tab" aria-selected="false" data-tab-target="rmsd-average-tab">Average RMSD</button>
+                        <button type="button" class="rmsd-tab-btn" role="tab" aria-selected="false" data-tab-target="rmsf-tab">RMSF</button>
+                    </div>
+
+                    <div class="rmsd-tab-panels">
+                        <section class="rmsd-tab-panel active" id="rmsd-initial-tab" role="tabpanel">
+                            {% if rmsd_data.rmsdInitialPlot %}
+                                <div class="plot-frame plot-preview">
+                                    <iframe
+                                        class="embedded-plot-frame"
+                                        src="{{ rmsd_data.rmsdInitialPlot }}"
+                                        title="Initial RMSD plot preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            {% else %}
+                            <div class="empty-state">No initial RMSD data were available for this report.</div>
+                            {% endif %}
+                        </section>
+
+                        <section class="rmsd-tab-panel" id="rmsd-average-tab" role="tabpanel">
+                            {% if rmsd_data.rmsdAveragePlot %}
+                            <div class="plot-subsection">
+                                <h3>Average structure reference</h3>
+                                <div class="plot-frame plot-preview">
+                                    <iframe
+                                        class="embedded-plot-frame"
+                                        src="{{ rmsd_data.rmsdAveragePlot }}"
+                                        title="Average RMSD plot preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">No average RMSD data were available for this report.</div>
+                            {% endif %}
+                        </section>
+
+                        <section class="rmsd-tab-panel" id="rmsf-tab" role="tabpanel">
+                            {% if rmsd_data.rmsfPlot %}
+                            <div class="plot-subsection">
+                                <h3>Residue RMSF</h3>
+                                <div class="plot-frame plot-preview">
+                                    <iframe
+                                        class="embedded-plot-frame"
+                                        src="{{ rmsd_data.rmsfPlot }}"
+                                        title="RMSF plot preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">No RMSF data were available for this report.</div>
+                            {% endif %}
+                        </section>
+                    </div>
+                </section>
+            </div>
+
+            <div class="rmsd-side">
+                <section class="section simulation-info">
+                    <div class="section-head">
+                        <h2>Simulation Info</h2>
+                    </div>
+                    <div class="simulation-info-stack">
+                        <div class="info-panel">
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <h3>Initial RMSD Mean</h3>
+                                    <p>{{ rmsd_data.rmsdInitialMean | default('N/A') }} Å</p>
+                                </div>
+                                <div class="info-card">
+                                    <h3>Average RMSD Mean</h3>
+                                    <p>{{ rmsd_data.rmsdAverageMean | default('N/A') }} Å</p>
+                                </div>
+                                <div class="info-card">
+                                    <h3>Maximum RMSF</h3>
+                                    <p>{{ rmsd_data.rmsfMax | default('N/A') }} Å</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            document.querySelectorAll('.rmsd-tabs').forEach(function (tabGroup) {
+                var tabButtons = tabGroup.querySelectorAll('[data-tab-target]');
+                var panelContainer = tabGroup.parentElement.querySelector('.rmsd-tab-panels');
+                if (!panelContainer) {
+                    return;
+                }
+
+                tabButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var targetId = button.getAttribute('data-tab-target');
+
+                        tabButtons.forEach(function (tabButton) {
+                            var isActive = tabButton === button;
+                            tabButton.classList.toggle('active', isActive);
+                            tabButton.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                        });
+
+                        panelContainer.querySelectorAll('.rmsd-tab-panel').forEach(function (panel) {
+                            panel.classList.toggle('active', panel.id === targetId);
+                        });
+                    });
+                });
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            document.querySelectorAll('.csv-download-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var sourceId = button.getAttribute('data-csv-source-id');
+                    var fileName = button.getAttribute('data-csv-filename') || 'report.csv';
+                    var source = sourceId ? document.getElementById(sourceId) : null;
+                    if (!source) {
+                        return;
+                    }
+
+                    var blob = new Blob([source.textContent || ''], { type: 'text/csv;charset=utf-8' });
+                    var downloadUrl = URL.createObjectURL(blob);
+                    var anchor = document.createElement('a');
+                    anchor.href = downloadUrl;
+                    anchor.download = fileName;
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    document.body.removeChild(anchor);
+                    URL.revokeObjectURL(downloadUrl);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

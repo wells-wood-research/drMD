@@ -1,0 +1,53 @@
+equilibriationRestraints: &equilibriationRestraints
+  - restraintType: position
+    parameters:
+      k: 1000
+    selection:
+        keyword: protein
+
+  - restraintType: position
+    selection: 
+        keyword: ligand  
+    parameters:
+        k: 1000
+########################################################################
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+########################################################################
+  - stepName: 02_NVT_pre-equilibriation
+    simulationType: NVT
+    duration: 100 ps
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 1 ps
+    restraintInfo: *equilibriationRestraints
+
+#########################################################################
+  - stepName: 03_NPT_pre-equilibriation
+    simulationType: NPT
+    duration: 100 ps
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 1 ps
+    restraintInfo: *equilibriationRestraints
+
+########################################################################
+  - stepName: 04_NpT_slowTimeStep
+    simulationType: NpT
+    duration: 10 ps
+    timestep: 0.5 fs
+    temperature: 300
+    logInterval: 1 ps
+########################################################################
+  - stepName: 05_Equilibriation
+    simulationType: NpT
+    duration: 10 ns
+    timestep: 2 fs
+    heavyProtons: False
+    temperature: 300
+    logInterval: 500 ps

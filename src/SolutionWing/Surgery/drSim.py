@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=TypeCastPerformanceWarning)
 ## drMD LIBRARIES
 from Surgery import drRestraints, drFirstAid
 from ExaminationRoom import drLogger, drCheckup
-from UtilitiesCloset import drFixer, drSelector
+from UtilitiesCloset import drFixer, drSelector, drMethodsWriter
 
 ## CLEAN CODE
 from typing import Optional, Dict, List, Tuple, Union, Any
@@ -51,9 +51,18 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
     nonbondedMethod: openmm.NonbondedForce = app.PME
     nonbondedCutoff: unit.Quantity = 1 * unit.nanometer
 
+
+
+
+
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "nonbondedMethod", "PME")
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "nonbondedCutoff", nonbondedCutoff.value_in_unit(unit.nanometer))
+
+
     ## deal with heavy protons
     heavyProtons = sim.get("heavyProtons", False)
     if heavyProtons:
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "heavyProtons", True)
         protonMass = 1.00784 * 4 * unit.amu
         ## check to see if a large timestep has been used
         timestep = sim["timestep"].value_in_unit(unit.femtoseconds)
@@ -63,6 +72,7 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
 
     else:
         protonMass = 1.00784 * unit.amu
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "heavyProtons", False)
  
 
     # Create the system.
@@ -76,8 +86,10 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
     ## use static temperature if specified, or use first value in temperatureRange to start with
     if "temperature" in sim:
         initailSimulationTemp = sim["temperature"]
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperature", initailSimulationTemp)
     elif "temperatureRange" in sim:
         initailSimulationTemp = sim["temperatureRange"][0]
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperatureRange", f"{sim['temperatureRange'][0]}-{sim['temperatureRange'][-1]}")
 
     ## deal with any restraints
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
@@ -87,16 +99,23 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
             system.addForce(openmm.MonteCarloBarostat(1*unit.bar, initailSimulationTemp))
         elif "temperatureRange" in sim:
             system.addForce(openmm.MonteCarloBarostat(1*unit.bar, initailSimulationTemp))
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "barostat", "MonteCarloBarostat")
 
     ## setup an intergrator
     if sim["simulationType"].upper() == "EM":
         integrator: openmm.Integrator = openmm.LangevinMiddleIntegrator(initailSimulationTemp,
                                                                   1/unit.picosecond,
                                                                   4*unit.femtosecond)
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "integrator", "LangevinMiddleIntegrator")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", "4 fs")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "friction", "1 ps^-1")
     else:
         integrator: openmm.Integrator = openmm.LangevinMiddleIntegrator(initailSimulationTemp,
                                                                          1/unit.picosecond,
                                                                            sim["timestep"])
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "integrator", "LangevinMiddleIntegrator")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", f"{sim['timestep']}")
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "friction", "1 ps^-1")
 
 
     simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, )
@@ -288,7 +307,7 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
         refPdb (str): The path to the reference PDB file.
         config (Dict): Dictionary containing information for all simluations in this run
     """
-
+    
     stepName = sim["stepName"]
     drLogger.log_info(f"Running {stepName} for {config['proteinInfo']['proteinName']}")
     protName = config["proteinInfo"]["proteinName"]
@@ -297,6 +316,9 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)
 
+    drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "simulationType", sim["simulationType"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "duration", str(sim["duration"]))
 
     ## initialise a new system from parameters
     hardwareInfo = config["hardwareInfo"]
@@ -317,6 +339,9 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
                                 )
     # run NVT / NPT simulation
     simulation: app.Simulation = step_simulation(simulation, integrator, sim)
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "totalSteps", str(totalSteps))
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "reportInterval", str(reportInterval))
+
 
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
@@ -324,6 +349,8 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)
     endPointPdb: str = p.join(simDir, f"{protName}.pdb")
     write_pdb(endPointPdb, simulation)
+
+    drFixer.reset_chains_residues(refPdb, endPointPdb, config)
 
     ## create a PDB file with the same atoms as the trajectory
     trajectoryPdb = p.join(simDir, "trajectory.pdb")
@@ -386,8 +413,13 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     the result as a PDB file, resets the chain and residue Ids, saves the simulation
     state as an XML file, and returns the path to the XML file.
     """
+
     stepName: str = sim["stepName"]
     protName: str = config["proteinInfo"]["proteinName"]
+
+    drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", sim["maxIterations"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "type", "EM")
 
     drLogger.log_info(f"Running {stepName} Step for: {protName} {' '*10}", True)
     ## create simluation directory
@@ -401,7 +433,6 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     ## if needed, convert temperature to kelvin
     if isinstance(sim["temperature"], int):
         sim["temperature"] = sim["temperature"] * unit.kelvin
-
     ## set coordinates of simulation 
     simulation.context.setPositions(inpcrd.positions)
 
@@ -416,6 +447,8 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
         simulation.minimizeEnergy(maxIterations=0)
     else:   
         simulation.minimizeEnergy(maxIterations=sim['maxIterations'])
+
+
 
     # save result as pdb - reset chain and residue Ids
     state: openmm.State = simulation.context.getState(getPositions=True, getEnergy=True)

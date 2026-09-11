@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Full Report Index</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0d0f12;
+            color: #f2f4f8;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .page {
+            width: auto;
+            margin: 0 auto;
+            padding: 28px 0 40px;
+        }
+
+        h1 {
+            margin: 0 0 18px;
+            letter-spacing: -0.04em;
+        }
+
+        p {
+            color: #aab2bf;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+            background: #171a1f;
+            border: 1px solid #30353d;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #30353d;
+            vertical-align: top;
+        }
+
+        th {
+            color: #d9d9d9;
+            background: #1f232a;
+        }
+
+        .report-preview {
+            margin-top: 10px;
+            width: min(100%, 650px);
+        }
+
+        .report-preview-frame {
+            width: 100%;
+            height: auto;
+            min-height: 240px;
+            max-height: none;
+            border: 1px solid #30353d;
+            border-radius: 12px;
+            background: #0f1115;
+            display: block;
+            overflow: visible;
+        }
+
+        .report-inline-actions {
+            margin-top: 8px;
+        }
+
+        a {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>Batch Full Report Index</h1>
+        <p>Open a protein-level report from the table below.</p>
+        <table>
+            <thead>
+                <tr><th>Protein</th><th>HTML Reports</th><th>Report</th></tr>
+            </thead>
+            <tbody>
+                {% for entry in indexEntries %}
+                <tr>
+                    <td>{{ entry.proteinName }}</td>
+                    <td>{{ entry.reportCount }}</td>
+                    <td>
+                        <div class="report-preview">
+                            <iframe
+                                class="report-preview-frame"
+                                src="{{ entry.reportRelPath }}"
+                                title="{{ entry.proteinName }} report preview"
+                                loading="lazy"
+                                scrolling="no"
+                            ></iframe>
+                        </div>
+                        <div class="report-inline-actions">
+                            <a href="{{ entry.reportRelPath }}" target="_blank" rel="noopener">Open direct</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        (function () {
+            function suppressFrameScrollbars(frame, doc) {
+                if (!frame) {
+                    return;
+                }
+                frame.setAttribute('scrolling', 'no');
+                frame.style.overflow = 'hidden';
+                if (!doc) {
+                    return;
+                }
+                if (doc.documentElement) {
+                    doc.documentElement.style.overflow = 'hidden';
+                }
+                if (doc.body) {
+                    doc.body.style.overflow = 'hidden';
+                }
+            }
+
+            function sizePreviewFrame(frame) {
+                if (!frame || !frame.contentWindow || !frame.contentWindow.document) {
+                    return;
+                }
+                try {
+                    var doc = frame.contentWindow.document;
+                    suppressFrameScrollbars(frame, doc);
+                    var docRoot = doc.documentElement || doc.body;
+                    var body = doc.body || {};
+                    var height = Math.max(
+                        docRoot ? (docRoot.scrollHeight || 0) : 0,
+                        body.scrollHeight || 0,
+                        docRoot ? (docRoot.offsetHeight || 0) : 0,
+                        body.offsetHeight || 0,
+                        docRoot ? (docRoot.clientHeight || 0) : 0,
+                        body.clientHeight || 0,
+                        220
+                    );
+                    frame.style.height = (height + 12) + 'px';
+                } catch (error) {
+                    suppressFrameScrollbars(frame, null);
+                    frame.style.height = '400px';
+                }
+            }
+
+            function refreshPreviewFrames() {
+                document.querySelectorAll('.report-preview-frame').forEach(function (frame) {
+                    if (!frame.dataset.autosizeBound) {
+                        frame.dataset.autosizeBound = '1';
+                        frame.addEventListener('load', function () {
+                            sizePreviewFrame(frame);
+                            window.setTimeout(function () { sizePreviewFrame(frame); }, 150);
+                            window.setTimeout(function () { sizePreviewFrame(frame); }, 400);
+                            window.setTimeout(function () { sizePreviewFrame(frame); }, 900);
+                        });
+                    }
+                    sizePreviewFrame(frame);
+                });
+            }
+
+            refreshPreviewFrames();
+            window.addEventListener('resize', refreshPreviewFrames);
+        })();
+    </script>
+</body>
+</html>

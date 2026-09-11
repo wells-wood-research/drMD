@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ proteinName }} Full Report</title>
+    <link rel="stylesheet" href="full_report_template.css">
+</head>
+<body>
+    <div class="page">
+        {% if stepEntries %}
+        <div class="tab-group step-tabs" data-tab-group="steps">
+            <div class="tab-strip" role="tablist" aria-label="Simulation steps">
+                {% for step in stepEntries %}
+                <button
+                    type="button"
+                    class="tab-button{% if step.isActive %} active{% endif %}"
+                    role="tab"
+                    aria-selected="{% if step.isActive %}true{% else %}false{% endif %}"
+                    data-tab-target="step-panel-{{ loop.index0 }}"
+                >
+                    {{ step.stepName }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="tab-panels">
+                {% for step in stepEntries %}
+                {% set stepIndex = loop.index0 %}
+                <section
+                    class="tab-panel{% if step.isActive %} active{% endif %}"
+                    id="step-panel-{{ stepIndex }}"
+                    role="tabpanel"
+                >
+
+                        <div class="step-body">
+                            {% if step.reports %}
+                            <div class="tab-group report-tabs" data-tab-group="reports-step-{{ stepIndex }}">
+                                <div class="tab-strip" role="tablist" aria-label="Reports for {{ step.stepName }}">
+                                    {% for report in step.reports %}
+                                    <button
+                                        type="button"
+                                        class="tab-button report-button{% if report.isActive or loop.first %} active{% endif %}"
+                                        role="tab"
+                                        aria-selected="{% if report.isActive or loop.first %}true{% else %}false{% endif %}"
+                                        data-tab-target="report-panel-{{ stepIndex }}-{{ loop.index0 }}"
+                                    >
+                                        {{ report.title }}
+                                    </button>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="tab-panels">
+                                    {% for report in step.reports %}
+                                    <section
+                                        class="tab-panel{% if report.isActive or loop.first %} active{% endif %}"
+                                        id="report-panel-{{ stepIndex }}-{{ loop.index0 }}"
+                                        role="tabpanel"
+                                    >
+                                        <article class="report-card">
+                                            <div class="report-card-header">
+                                                <span class="report-title">{{ report.title }}</span>
+                                                <span class="report-meta">Source: {{ report.sourceRelPath }}</span>
+                                            </div>
+                                            <div class="report-preview">
+                                                <iframe
+                                                    class="report-frame"
+                                                    src="{{ report.copyRelPath }}"
+                                                    title="{{ report.title }} preview"
+                                                    loading="eager"
+                                                    scrolling="no"
+                                                ></iframe>
+                                            </div>
+                                        </article>
+                                    </section>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">No HTML reports were found for this step.</div>
+                            {% endif %}
+                        </div>
+                </section>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">No HTML reports were found for this protein.</div>
+        {% endif %}
+    </div>
+
+    <script>
+        (function () {
+            function suppressFrameScrollbars(frame, doc) {
+                if (!frame) {
+                    return;
+                }
+                frame.setAttribute('scrolling', 'no');
+                frame.style.overflow = 'hidden';
+                if (!doc) {
+                    return;
+                }
+                if (doc.documentElement) {
+                    doc.documentElement.style.overflow = 'hidden';
+                }
+                if (doc.body) {
+                    doc.body.style.overflow = 'hidden';
+                }
+            }
+
+            function sizePreviewIframe(frame) {
+                if (!frame || !frame.contentWindow || !frame.contentWindow.document) {
+                    return;
+                }
+                try {
+                    var doc = frame.contentWindow.document;
+                    suppressFrameScrollbars(frame, doc);
+                    var reportBounds = doc.querySelector('.report-bounds');
+                    var boundsHeight = 0;
+                    if (reportBounds) {
+                        var rect = reportBounds.getBoundingClientRect();
+                        var style = doc.defaultView && doc.defaultView.getComputedStyle
+                            ? doc.defaultView.getComputedStyle(reportBounds)
+                            : null;
+                        var marginTop = style ? parseFloat(style.marginTop) || 0 : 0;
+                        var marginBottom = style ? parseFloat(style.marginBottom) || 0 : 0;
+                        boundsHeight = rect.height + marginTop + marginBottom;
+                    }
+                    var docRoot = doc.documentElement || doc.body;
+                    var body = doc.body || {};
+                    var height = Math.max(
+                        boundsHeight,
+                        docRoot ? (docRoot.scrollHeight || 0) : 0,
+                        body.scrollHeight || 0,
+                        docRoot ? (docRoot.offsetHeight || 0) : 0,
+                        body.offsetHeight || 0,
+                        docRoot ? (docRoot.clientHeight || 0) : 0,
+                        body.clientHeight || 0,
+                        220
+                    );
+                    frame.style.height = (height + 10) + 'px';
+                } catch (error) {
+                    suppressFrameScrollbars(frame, null);
+                    frame.style.height = '1600px';
+                }
+            }
+
+            function refreshPreviewHeights(root) {
+                if (!root) {
+                    return;
+                }
+
+                root.querySelectorAll('iframe').forEach(function (iframe) {
+                    if (!iframe.dataset.autosizeBound) {
+                        iframe.dataset.autosizeBound = '1';
+                        iframe.addEventListener('load', function () {
+                            sizePreviewIframe(iframe);
+                            window.setTimeout(function () {
+                                sizePreviewIframe(iframe);
+                            }, 120);
+                            window.setTimeout(function () {
+                                sizePreviewIframe(iframe);
+                            }, 320);
+                            window.setTimeout(function () {
+                                sizePreviewIframe(iframe);
+                            }, 900);
+                        });
+                    }
+                    try {
+                        if (iframe.contentWindow) {
+                            iframe.contentWindow.dispatchEvent(new Event('resize'));
+                        }
+                    } catch (error) {
+                        // Ignore cross-origin or transient iframe access issues.
+                    }
+                    sizePreviewIframe(iframe);
+                });
+            }
+
+            function setActiveTab(group, targetId) {
+                var buttons = group.querySelectorAll(':scope > .tab-strip [data-tab-target]');
+                var panels = group.querySelectorAll(':scope > .tab-panels > .tab-panel');
+
+                buttons.forEach(function (button) {
+                    var isActive = button.getAttribute('data-tab-target') === targetId;
+                    button.classList.toggle('active', isActive);
+                    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                panels.forEach(function (panel) {
+                    panel.classList.toggle('active', panel.id === targetId);
+                });
+
+                var activePanel = group.querySelector(':scope > .tab-panels > .tab-panel.active');
+                if (!activePanel) {
+                    return;
+                }
+
+                window.setTimeout(function () {
+                    refreshPreviewHeights(activePanel);
+                }, 50);
+
+                window.setTimeout(function () {
+                    refreshPreviewHeights(activePanel);
+                }, 250);
+            }
+
+            document.querySelectorAll('.tab-group').forEach(function (group) {
+                var buttons = group.querySelectorAll(':scope > .tab-strip [data-tab-target]');
+                if (!buttons.length) {
+                    return;
+                }
+
+                buttons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        setActiveTab(group, button.getAttribute('data-tab-target'));
+                    });
+                });
+
+                var initialButton = group.querySelector('.tab-button.active') || buttons[0];
+                if (initialButton) {
+                    setActiveTab(group, initialButton.getAttribute('data-tab-target'));
+                }
+            });
+
+            window.addEventListener('resize', function () {
+                document.querySelectorAll('.tab-group iframe').forEach(function (iframe) {
+                    sizePreviewIframe(iframe);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

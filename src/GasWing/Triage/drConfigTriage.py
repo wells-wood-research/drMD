@@ -248,11 +248,12 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
     if miscInfo is None:
         config["miscInfo"] = configDefaults["miscInfo"]
         for argName in ["forcefield",
-                            "pH",
-                                "firstAidMaxRetries",
-                                        "writeMyMethodsSection",
-                                            "skipPdbTriage",
-                                                "trajectorySelections"]:
+                            "charge",
+                            "chargeMethod",
+                            "firstAidMaxRetries",
+                            "writeMyMethodsSection",
+                            "skipPdbTriage",
+                            "trajectorySelections"]:
             miscInfoDisorders[argName] = "Automatic Default Used!"
 
         return config, miscInfoDisorders, True
@@ -269,21 +270,27 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
         else:
             miscInfoDisorders["forcefield"] = None   
     ## validate pH
-    pH = miscInfo.get("pH", None)
-    if pH is None:
+    charge = miscInfo.get("charge", None)
+    if charge is None:
         ## use a default value
-        config["miscInfo"]["pH"] = configDefaults["miscInfo"]["pH"]
-        miscInfoDisorders["pH"] = "No pH specified, using default of 7"
+        config["miscInfo"]["charge"] = 0       
+        miscInfoDisorders["charge"] = "No charge specified, using native charge"
     else:
-        if not isinstance(pH, (int, float)):
-            miscInfoDisorders["pH"] = "pH must be an int or float between 0 and 14"
+        if not isinstance(charge, (int, float)):
+            miscInfoDisorders["charge"] = "Charge must be an int or float"
+            miscInfoOk = False
+
+        chargeMethod = miscInfo.get("chargeMethod", None)
+    if chargeMethod is None:
+        ## use a default value
+        config["miscInfo"]["chargeMethod"] = configDefaults["miscInfo"]["chargeMethod"]
+        miscInfoDisorders["chargeMethod"] = "No Charge Method specified, using the simple method"
+    else:
+        if not isinstance(chargeMethod, str):
+            miscInfoDisorders["chargeMethod"] = "Charge Method must be a string, either simple or dynamic"
             miscInfoOk = False
         else:
-            if pH < 0 or pH > 14:
-                miscInfoDisorders["pH"] = "pH must be an int or float between 0 and 14"
-                miscInfoOk = False
-            else:
-                miscInfoDisorders["pH"] = None
+            miscInfoDisorders["chargeMethod"] = None   
 
     ## validate firstAidMaxRetries
     firstAidMaxRetries = miscInfo.get("firstAidMaxRetries", None)
@@ -523,6 +530,12 @@ def check_aftercareInfo(config: dict) -> Tuple[dict,bool]:
             aftercareInfoDisorders["collateVitalsReports"] = "collateVitalsReports must be a boolean"
             afterCareInfoOk = False
 
+    fullReport = aftercareInfo.get("fullReport", True)
+    if fullReport is not None:
+        if not isinstance(fullReport, bool):
+            aftercareInfoDisorders["fullReport"] = "fullReport must be a boolean"
+            aftercareInfoOk = False
+    
     return aftercareInfoDisorders, aftercareInfoOk
 
 

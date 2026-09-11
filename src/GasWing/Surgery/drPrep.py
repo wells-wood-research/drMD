@@ -12,7 +12,7 @@ import numpy as np
 from pathlib import Path
 
 ## drMD MODULES
-from UtilitiesCloset import drFixer, drSplash, drListInitiator, drForcefield
+from UtilitiesCloset import drFixer, drSplash, drListInitiator, drForcefield, drCharger, drMethodsWriter
 from ExaminationRoom import drLogger
 
 ## PDB // DATAFRAME UTILS
@@ -61,36 +61,34 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
     ## read config for path info
     outDir: DirectoryPath = config["pathInfo"]["outputDir"]
     protName: str = config["proteinInfo"]["proteinName"]
+    
+    
     ## create a prep dir if it doesn't exist
-    prepDir: DirectoryPath = p.join(outDir,"00_prep")
-    os.makedirs(prepDir,exist_ok=True)
+    prepDir: DirectoryPath = p.join(outDir, "00_prep")
+    os.makedirs(prepDir, exist_ok=True)
 
     set_up_logging(outDir, protName)
 
-
     skipPrep, prepFiles = choose_to_skip_prep(config=config,
-                                               prepDir=prepDir,
-                                                 protName=protName)
+                                            prepDir=prepDir,
+                                            protName=protName)
+    
+    
     if skipPrep:
         drLogger.log_info(f"Prep steps already complete for {protName}: Skipping ...",True)
         return prepFiles
 
-
+    drMethodsWriter.add_protein_to_preparation_log(protName)
     ######### MAIN PREP PROTOCOL #########
     if "ligandInfo" in config:
         GasPdb, inputCoords, amberParams = ligand_prep_protocol(config=config,
-                                                                      protName=protName,
-                                                                        prepDir=prepDir)
-        
-
-    
+                                                                protName=protName,
+                                                                prepDir=prepDir)
     else:
         GasPdb, inputCoords, amberParams = no_ligand_prep_protocol(config=config,
-                                                                          protName=protName,
-                                                                            prepDir=prepDir)
-        
+                                                                    protName=protName,
+                                                                    prepDir=prepDir)
 
-    
     drLogger.log_info(f"Prep steps complete for {protName}!",True)
     drLogger.close_logging()
 
@@ -99,11 +97,14 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
 def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[FilePath, FilePath, FilePath]:
     ## SPLIT INPUT PDB INTO PROT AND IONS IF PRESENT
     inputPdb: FilePath = config["pathInfo"]["inputPdb"]
+    drFixer.renumber_pdb_atom_serials(inputPdb)
+
     split_input_pdb(inputPdb =inputPdb,
                     config = config,
                     outDir=prepDir)
     ## PREPARE PROTEIN STRUCTURE
-    protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir)  
+
+    protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir, protName=protName)  
     nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
 
     protPrepDir = p.join(prepDir,"PROT")
@@ -127,6 +128,7 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
                                                 nonCannonicalAminoAcidData=nonCannonicalAminoAcidData,
                                                 config = config)
     
+    drFixer.renumber_pdb_atom_serials(GasPdb)
     GasPdb = drFixer.reset_chains_residues(protPdb, GasPdb, config)
 
     return GasPdb, inputCoords, amberParams
@@ -134,37 +136,48 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
 
 #####################################################################################
 def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[str, str, str, str]:
-        ## SPLIT INPUT PDB INTO PROT AND ONE FILE PER LIGAND
-        inputPdb: FilePath = config["pathInfo"]["inputPdb"]
-        split_input_pdb(inputPdb =inputPdb,
-                        config = config,
-                        outDir=prepDir)
-        ## PREPARE LIGAND PARAMETERS, OUTPUT LIGAND PDBS
-        ligandPdbs, ligandFileDict = prepare_ligand_parameters(config = config)
-        ## PREPARE PROTEIN STRUCTURE
-        protPdb = prepare_protein_structure(config=config, outDir = prepDir)
-        ## GET NON-CANONICAL AMINO ACID DATA (IF PRESENT)
-        nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
-        ## RE-COMBINE PROTEIN AND LIGAND PDB FILES
-        wholePrepDir: DirectoryPath = p.join(prepDir,"WHOLE")
-        os.makedirs(wholePrepDir,exist_ok=True)
-        allPdbs: List[FilePath] = [protPdb] + ligandPdbs
-        if p.isdir(p.join(prepDir, "IONS")):
-            allPdbs = allPdbs + [p.join(prepDir, "IONS", f"IONS.pdb")]
-        outName: str = config["pathInfo"]["outputName"]
-        mergedPdb: FilePath = p.join(wholePrepDir,f"{protName}.pdb")
-        pdbUtils.mergePdbs(pdbList=allPdbs, outFile = mergedPdb)
-        ## RESET ATOM NUMBERS AFTER MERGING
-        mergedPdb: FilePath = drFixer.reset_atom_numbers(pdbFile = mergedPdb)
-        ## MAKE AMBER PARAMETER FILES WITH TLEAP
-        inputCoords, amberParams, GasPdb  = make_amber_params(outDir = wholePrepDir,
-                            ligandFileDict=ligandFileDict,
-                            nonCannonicalAminoAcidData= nonCannonicalAminoAcidData,
-                            pdbFile= mergedPdb,
-                            config= config,
-                            outName= outName)
-        niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, GasPdb, config)
-        return niceChainsPdb, inputCoords, amberParams
+    ## SPLIT INPUT PDB INTO PROT AND ONE FILE PER LIGAND
+    inputPdb: FilePath = config["pathInfo"]["inputPdb"]
+    drFixer.renumber_pdb_atom_serials(inputPdb)
+
+    split_input_pdb(inputPdb=inputPdb,
+                    config=config,
+                    outDir=prepDir)
+
+    ## PREPARE LIGAND PARAMETERS, OUTPUT LIGAND PDBS
+    drMethodsWriter.add_parameter_to_prep_log(protName, "ligands", config["ligandInfo"])
+    ligandPdbs, ligandFileDict = prepare_ligand_parameters(config=config)
+
+    ## PREPARE PROTEIN STRUCTURE
+    protPdb = prepare_protein_structure(config=config, outDir=prepDir, protName=protName)
+
+    ## GET NON-CANONICAL AMINO ACID DATA (IF PRESENT)
+    nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb=protPdb, config=config)
+
+    ## RE-COMBINE PROTEIN AND LIGAND PDB FILES
+    wholePrepDir: DirectoryPath = p.join(prepDir, "WHOLE")
+    os.makedirs(wholePrepDir, exist_ok=True)
+    allPdbs: List[FilePath] = [protPdb] + ligandPdbs
+    if p.isdir(p.join(prepDir, "IONS")):
+        allPdbs = allPdbs + [p.join(prepDir, "IONS", f"IONS.pdb")]
+    outName: str = config["pathInfo"]["outputName"]
+    mergedPdb: FilePath = p.join(wholePrepDir, f"{protName}.pdb")
+    pdbUtils.mergePdbs(pdbList=allPdbs, outFile=mergedPdb)
+
+    ## RESET ATOM NUMBERS AFTER MERGING
+    mergedPdb: FilePath = drFixer.reset_atom_numbers(pdbFile=mergedPdb)
+
+    ## MAKE AMBER PARAMETER FILES WITH TLEAP
+    inputCoords, amberParams, GasPdb = make_amber_params(outDir=wholePrepDir,
+                                                        ligandFileDict=ligandFileDict,
+                                                        nonCannonicalAminoAcidData=nonCannonicalAminoAcidData,
+                                                        pdbFile=mergedPdb,
+                                                        config=config,
+                                                        outName=outName)
+    
+    drFixer.renumber_pdb_atom_serials(mergedPdb)
+    niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, GasPdb, config)
+    return niceChainsPdb, inputCoords, amberParams
 
 #####################################################################################
 def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[dict]:
@@ -188,6 +201,7 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
         return {}
 
     nonCannonicalAminoAcidData = {}
+    drMethodsWriter.add_parameter_to_prep_log(protPdb, "nonCanonicalResidueNames", ncaaResNames)
 
     for resName in ncaaResNames:
         mol2 = p.join(inputDir, f"{resName}.mol2")
@@ -195,6 +209,7 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
         lib = p.join(inputDir, f"{resName}.lib")
         if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
             nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
+    drMethodsWriter.add_parameter_to_prep_log(protPdb, "nonCanonicalResidueData", nonCannonicalAminoAcidData)
 
     return nonCannonicalAminoAcidData
 
@@ -385,10 +400,13 @@ def ligand_protonation(
     # If the ligand is already protonated, return the ligand pdb file
     if ligand["protons"]:
         ligandPdbs.append(ligPdb)
+
+
         return ligPdb, ligandPdbs
 
     # If the ligand is not protonated, perform protonation using Open Babel and pdb4amber
     else:
+
         # # find pdb ligand pdb file
         ligPdb_H: FilePath = p.join(ligPrepDir, f"{ligandName}_H.pdb")
 
@@ -519,49 +537,40 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
             - ligandPdbs (List[str]): A list of ligand PDB files.
             - ligandFileDict (Dict[str, Dict[str, str]]): A dictionary containing the ligand file information.
     """
-    # read inputs from config file
     outDir: DirectoryPath = config["pathInfo"]["outputDir"]
     ligandInfo: dict = config["ligandInfo"]
     inputDir: DirectoryPath = config["pathInfo"]["inputDir"]
     mainDir: DirectoryPath = p.dirname(config["pathInfo"]["outputDir"])
-    # create a dir to save parameter files in (saves re-running on subsequent runs)
-    ligParamDir: DirectoryPath = p.join(mainDir,"01_ligand_parameters")
-    os.makedirs(ligParamDir,exist_ok=True)
-    # initialise list to store pdb files and dict to store all infod
+
+    ligParamDir: DirectoryPath = p.join(mainDir, "01_ligand_parameters")
+    os.makedirs(ligParamDir, exist_ok=True)
+
     ligandPdbs: List[FilePath] = []
     ligandFileDict: Dict = {}
-    # for each ligand in config
+
     for ligand in ligandInfo:
-        ## init an empty dict to store the ligand file paths
-        ligFileDict: Dict = {}
-        ## get ligand name
+        ligFileDict = {}
         ligandName: str = ligand["ligandName"]
-        ## write to log
-        drLogger.log_info(f"Preparing ligand {ligandName}...",True)
-        # find files and directories
-        ligPrepDir: DirectoryPath = p.join(outDir,"00_prep",ligandName)
+        drLogger.log_info(f"Preparing ligand {ligandName}...", True)
+
+        ligPrepDir: DirectoryPath = p.join(outDir, "00_prep", ligandName)
         os.chdir(ligPrepDir)
-        ## get ligand pdb location
         ligPdb: FilePath = p.join(ligPrepDir, f"{ligandName}.pdb")
 
-        # Protonate the ligand
-        drLogger.log_info(f"Protonating ligand {ligandName}...",True)
-        ligPdb, ligandPdbs = ligand_protonation(ligand,ligPrepDir,ligandName,ligandPdbs, ligPdb)  
+        drLogger.log_info(f"Protonating ligand {ligandName}...", True)
+        ligPdb, ligandPdbs = ligand_protonation(ligand, ligPrepDir, ligandName, ligandPdbs, ligPdb)
 
-        # deal with atom names in ligand, make sure they are all unique
         ligPdb = ensure_ligand_atoms_are_unique(ligPdb)
 
+        ligMol2, ligFileDict = ligand_mol2(ligand, inputDir, ligandName, ligParamDir,
+                                          ligPrepDir, ligPdb, ligFileDict)
 
-        # Create mol2 file
-        ligMol2, ligFileDict = ligand_mol2(ligand,inputDir,ligandName,ligParamDir,
-                                          ligPrepDir,ligPdb,ligFileDict)
-        
-        # Create frcmod file
-        drLogger.log_info(f"Creating parameter files for ligand {ligandName}...",True)
-        ligFileDict = ligand_frcmod(ligand,inputDir,ligandName,ligParamDir,
-                                    ligPrepDir,ligMol2,ligFileDict)
+        drLogger.log_info(f"Creating parameter files for ligand {ligandName}...", True)
+        ligFileDict = ligand_frcmod(ligand, inputDir, ligandName, ligParamDir,
+                                   ligPrepDir, ligMol2, ligFileDict)
 
-        ligandFileDict.update({ligandName:ligFileDict})
+        ligandFileDict.update({ligandName: ligFileDict})
+
     return ligandPdbs, ligandFileDict
 
 #####################################################################################
@@ -636,7 +645,7 @@ def rename_hydrogens(pdbFile: FilePath, outFile: DirectoryPath) -> None:
     # Write the modified DataFrame back to the PDB file
     pdbUtils.df2pdb(pdbDf, outFile, chain=False)
 #####################################################################################
-def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
+def prepare_protein_structure(config: Dict, outDir: DirectoryPath, protName: str) -> FilePath:
     """
     Prepare the protein structure for simulations.
 
@@ -651,7 +660,6 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     Returns:
        Union[os.PathLike, str]: The PATH to a PDB file.
     """
-    # Find files and directories
     protPrepDir: DirectoryPath = p.join(outDir, "PROT")  # Directory to prepare the protein
     os.makedirs(protPrepDir, exist_ok=True)
     os.chdir(protPrepDir)
@@ -660,40 +668,28 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     if not p.isfile(protPdb):
         # Copy the input PDB file to the output directory
         copy(config["pathInfo"]["inputPdb"], protPdb)
-
     ## read per-protein config file and return protein PDB if already protonated
     proteinInfo: Dict = config.get("proteinInfo")
-    isProteinProtonated: bool = proteinInfo.get("protons")
-    if isProteinProtonated:
-        protPdb = replace_c_terminal_oxygen_names(protPdb)
-        newHisPdb = sort_out_histidine_names(protPdb)
-        return newHisPdb
+    protPdb= sort_out_histidine_names(protPdb)
+    protPdb =sort_out_charged_names(protPdb)
+    drMethodsWriter.add_parameter_to_prep_log(protName, "charge", config["miscInfo"]["charge"])
+    drMethodsWriter.add_parameter_to_prep_log(protName, "chargeMethod", config["miscInfo"]["chargeMethod"])
+    targetCharge= config["miscInfo"]["charge"]
+    if targetCharge is None:
+        charge= 0
+        protPqr= protPdb
+    if config["miscInfo"]["chargeMethod"] == "Simple":
+        protPqr= drCharger.SimpleCharger(protPdb, targetCharge)
+    elif config["miscInfo"]["chargeMethod"] == "Dynamic":
+        protPqr= drCharger.DynamicCharger(protPdb, targetCharge)
 
-    
 
-    ## use pdb2pqr to protonate the protein at a specific pH
-    pH: int = str(float(config["miscInfo"]["pH"]))
-    protPqr = p.join(protPrepDir, "PROT.pqr")
-    pdb2pqrCommand: str = ["pdb2pqr",
-                         "--ffout", "AMBER",
-                         "--titration-state-method", "propka",
-                          "--keep-chain",
-                           "--with-ph", str(float(pH)),
-                             protPdb, protPqr]
-    
-    run_with_log(pdb2pqrCommand, "Protein protonation with pdb2pqr and propka", protPqr, None)
-    ## fix the betafactor and occupancy cols to zero
     protPqr = pdbUtils.pdb2df(protPqr)
     protPqr["OCCUPANCY"] = 0
     protPqr["BETAFACTOR"] = 0
-    ## add the element column using the first letter of the ATOM_NAME 
-    # (breaks for two-letter element symbols like "Cl", should be ok for proteins)
     protPqr["ELEMENT"] = protPqr["ATOM_NAME"].str[0]
-    ## replace OT1 and OT2 with O and OXT
 
-    ## write to pdb file
     protonatedPdb: FilePath = p.join(protPrepDir, "PROT_protonated.pdb")
-
     pdbUtils.df2pdb(protPqr, protonatedPdb)
     protonatedPdb = replace_c_terminal_oxygen_names(protonatedPdb)
 
@@ -727,17 +723,58 @@ def sort_out_histidine_names(protPdb: str) -> str:
         for resId, resDf in chainDf.groupby("RES_ID"):
             resAtomNames = resDf["ATOM_NAME"].tolist()
             if "HD1" in resAtomNames and "HE2" in resAtomNames:
-                # Rename to HIP
+                # Rename to HIP (doubly protonated)
                 pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HIP"
             elif "HD1" in resAtomNames:
-                # Rename to HID
+                # Rename to HID (protonated at delta nitrogen)
                 pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HID"
             elif "HE2" in resAtomNames:
-                # Rename to HIE
+                # Rename to HIE (protonated at epsilon nitrogen)
                 pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HIE"
+            else:
+                # Default to HIS if no protonation pattern detected
+                pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "HIS"
 
     # Save the modified DataFrame back to a PDB file
     outputPdb = protPdb.replace(".pdb", "_newHis.pdb")
+    pdbUtils.df2pdb(pdbDf, outputPdb)
+
+    return outputPdb
+#################################################################################
+def sort_out_charged_names(protPdb: str) -> str:
+    """ 
+    Rename any protonated or deprotonated sites to the correct residue 
+    """
+    pdbDf = pdbUtils.pdb2df(protPdb)
+    chargedResmnames= {"LYS", "LYN", "GLU", "GLH", "ASP", "ASH"}
+    chargedDf= pdbDf[pdbDf["RES_NAME"].isin(chargedResmnames)]
+    for chainId, chainDf in chargedDf.groupby("CHAIN_ID"):
+        for resId, resDf in chainDf.groupby("RES_ID"):
+            resAtomNames= resDf["ATOM_NAME"].tolist()
+            resNames= resDf["RES_NAME"].tolist()
+            currentResName = resNames[0] if resNames else None
+            
+            # Lysine: LYS (protonated) vs LYN (deprotonated)
+            if currentResName in ["LYS", "LYN"]:
+                if "HZ3" in resAtomNames:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "LYS"
+                else:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "LYN"
+            
+            # Glutamate: GLU (deprotonated) vs GLH (protonated)
+            if currentResName in ["GLU", "GLH"]:
+                if "HE2" in resAtomNames:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "GLH"
+                else:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "GLU"
+            
+            # Aspartate: ASP (deprotonated) vs ASH (protonated)
+            if currentResName in ["ASP", "ASH"]:
+                if "HD2" in resAtomNames:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "ASH"
+                else:
+                    pdbDf.loc[(pdbDf["CHAIN_ID"] == chainId) & (pdbDf["RES_ID"] == resId), "RES_NAME"] = "ASP"
+    outputPdb = protPdb.replace(".pdb", "_RENAMED.pdb")
     pdbUtils.df2pdb(pdbDf, outputPdb)
 
     return outputPdb
@@ -776,9 +813,9 @@ def make_amber_params(
     outDir: DirectoryPath,
     pdbFile: FilePath,
     outName: str,
-    config : Dict,
+    config: Dict,
     ligandFileDict: Optional = None,
-    nonCannonicalAminoAcidData: Optional= None
+    nonCannonicalAminoAcidData: Optional = None
 ) -> Tuple[FilePath, FilePath, FilePath]:
     """
     Prepare the protein structure for simulations using Amber.
@@ -796,38 +833,35 @@ def make_amber_params(
             parameter files and a pdb file
     """
 
-    drLogger.log_info(f"Preparing parameters for system: {outName}...",True)
-    # Change the working directory to the output directory
+    drLogger.log_info(f"Preparing parameters for system: {outName}...", True)
     os.chdir(outDir)
 
-
-    ## find dusulphides
     disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(pdbFile)
 
-
-    ## to cope with disulphides between different chains, we need to first renumber the residues
-    ## then redetect the disulphides
     if len(disulphideAtomPairs) > 0:
-        amberNumberedPdb: FilePath = p.join(outDir, f"PROT_renumbered.pdb") 
+        amberNumberedPdb: FilePath = p.join(outDir, f"PROT_renumbered.pdb")
         make_amber_renumbered_pdb(pdbFile, amberNumberedPdb)
-        disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(amberNumberedPdb)
+        disulphideAtomPairs = detect_disulphides(amberNumberedPdb)
         change_cys_to_cyx(amberNumberedPdb, disulphideAtomPairs)
         remove_hydrogens_for_disulfides(amberNumberedPdb, disulphideAtomPairs)
-        add_ter_at_end(amberNumberedPdb,amberNumberedPdb)
+        cleanPairs= [list(pair) for pair in disulphideAtomPairs]
+        drMethodsWriter.add_parameter_to_prep_log(outName, "disulphides", cleanPairs)
         pdbFile = amberNumberedPdb
-    add_ter_at_end(pdbFile,pdbFile)
 
 
 
-    ## Specify force fields based on user input
+
     SytemFF: dict = config["miscInfo"]["forcefield"]
-    ForcefieldDict= drForcefield.Forcefield(SytemFF['protein'], "Tip4p")
-    proteinff= ForcefieldDict["protein"]
-    ion1ff= ForcefieldDict["ion1"]
-    ion2ff= ForcefieldDict["ion2"]
-    
+    ForcefieldDict = drForcefield.Forcefield(SytemFF['protein'], SytemFF['water'])
+    proteinff = ForcefieldDict["protein"]
+    waterff = ForcefieldDict["water"]
+    ion1ff = ForcefieldDict["ion1"]
+    ion2ff = ForcefieldDict["ion2"]
+    WaterType = (config["miscInfo"]["forcefield"]['water']).upper()
+    SolvBox = f"{WaterType}BOX"
 
-    
+
+
 
 
     # Write the TLEAP input file
@@ -890,6 +924,28 @@ def make_amber_params(
     leapLog: FilePath = p.join(outDir, "leap.log")
     run_with_log(tleapCommand, "System Parameterisation with TLEAP", amberParams, leapLog)
 
+    drMethodsWriter.add_parameter_to_prep_log(outName, "forceFields", {
+        "protein": proteinff.split('.')[-1],
+        "ion1": ion1ff.split('.')[-1],
+        "ion2": ion2ff.split('.')[-1],
+        "general": "gaff2"
+    })
+
+    anionCont: int = 0
+    cationCont: int = 0
+    with open(GasPdb, "r") as f:
+        for line in f:
+            if line.find("Cl-") != -1:
+                anionCont += 1
+            if line.find("Na+") != -1:
+                cationCont += 1
+
+    drMethodsWriter.add_parameter_to_prep_log(outName, "ionCounts", {
+        "anions": anionCont,
+        "cations": cationCont
+    })
+
+    
     # Execute ParmEd to fix dihedral periodicity
     import parmed as pmd
     # Load the AMBER topology
@@ -912,6 +968,8 @@ def make_amber_params(
     amber.save(f"{outName}.prmtop", overwrite=True)
     if changed_count >= 1:
         print(f"--> Detected non-positive dihedral periodicity, fixing periodicity for openMM simulation.\n-->Fixed {changed_count} torsions. Saved to {outName}.prmtop")
+    
+    drMethodsWriter.add_parameter_to_prep_log(outName, "alteredDihedrals", changed_count)
 
 
     # Reset chain and residue IDs in Amber PDB file
@@ -1019,31 +1077,3 @@ def run_with_log(
         return
     else:
         raise FileNotFoundError(f"Expected output:\n{' '*4}{expectedOutput}\n{' '*4}{' '*4} not found for {stepName}.")
-
-
-#####################################################################################
-def add_ter_at_end(input_pdb, output_pdb):
-    with open(input_pdb, 'r') as f:
-        lines = f.readlines()
-    
-    # Find the last line that contains atom coordinates
-    last_atom_idx = -1
-    for i, line in enumerate(lines):
-        if line.startswith(("ATOM")):
-            last_atom_idx = i
-            last_atom_Vals= line.split()
-            last_atom_res=  last_atom_Vals[3]
-            last_atom_res_number= last_atom_Vals[5]
-    
-    if last_atom_idx != -1:
-        # Check if the next line is already a TER
-        if (last_atom_idx + 1 >= len(lines)) or not lines[last_atom_idx + 1].startswith("TER"):
-            lines.insert(last_atom_idx + 1, f"TER    {last_atom_idx}      {last_atom_res}   {last_atom_res_number}\n")
-    
-    for i, line in enumerate(lines):
-        lineVals= line.split()
-        if line.find("EPW") !=-1:
-            lines[i] = f'TER    {i-1}      {lineVals[3]}   {lineVals[5]}\n'
-    with open(output_pdb, 'w') as f:
-        f.writelines(lines)
-    return

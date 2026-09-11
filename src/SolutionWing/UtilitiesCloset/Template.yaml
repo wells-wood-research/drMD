@@ -1,0 +1,89 @@
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+esiInfo:
+  esiCount:
+  mode:
+  cutoff:
+prep:
+  - proteinName:
+    ligands:
+      - ligandName:
+        charge:
+        protons:
+        frcmod:
+        mol2:
+    nonCanconicalResidueNames:
+      - residueName
+    protonation: (False/pH)
+    disulphides:
+      - disulphidePair
+    boxGeometry:
+    boxSize:
+    radius:
+    center:
+    charge:
+    chargeMethod:
+    forcefield:
+      protein:
+      water:
+      ion1:
+      ion2:
+      general:
+    ionCounts:
+      anions:
+      cations:
+    alteredDihedrals:
+simulation:
+  - stepName:
+    simulationType:
+    duration:
+    maxIterations:
+    nonbondedMethod:
+    nonbondedCutoff:
+    heavyProtons:
+    constraints:
+    temperature: 
+    tempratureRange:
+    restraintInfo:
+      - restraintType:
+        parameters:
+          k:
+        selection:
+          keyword:
+    barostat:
+    intergrator:
+    timestep:
+    friction:
+    totalSteps:
+    reportInterval:
+    biases:
+      - biasVar:
+        selection:
+          keyword:
+        minValue:
+        maxValue:
+        biasWidth:
+        periodicity:
+        energy:
+    biasFactor:
+    height:
+    frequency:
+    saveFrequency:
+analysis:
+  - analysisStep:
+    stepNames: {all/list of steps}
+    clusterMethod:
+    removeAtoms:
+    clusterBy:
+    nClusters:
+    convergedProperties:
+      - property
+    selectionRMSD:
+    selectionRMSF:
+    stride:
+    
+
+
+    

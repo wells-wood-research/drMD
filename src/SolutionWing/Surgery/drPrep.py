@@ -12,7 +12,7 @@ import numpy as np
 from pathlib import Path
 
 ## drMD MODULES
-from UtilitiesCloset import drFixer, drSplash, drListInitiator, drForcefield
+from UtilitiesCloset import drFixer, drSplash, drListInitiator, drForcefield, drMethodsWriter
 from ExaminationRoom import drLogger
 
 ## PDB // DATAFRAME UTILS
@@ -61,6 +61,7 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
     ## read config for path info
     outDir: DirectoryPath = config["pathInfo"]["outputDir"]
     protName: str = config["proteinInfo"]["proteinName"]
+    drMethodsWriter.add_protein_to_preparation_log(protName)
     ## create a prep dir if it doesn't exist
     prepDir: DirectoryPath = p.join(outDir,"00_prep")
     os.makedirs(prepDir,exist_ok=True)
@@ -99,11 +100,13 @@ def prep_protocol(config: dict) -> Tuple[str, str, str]:
 def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[FilePath, FilePath, FilePath]:
     ## SPLIT INPUT PDB INTO PROT AND IONS IF PRESENT
     inputPdb: FilePath = config["pathInfo"]["inputPdb"]
+    drFixer.renumber_pdb_atom_serials(inputPdb)
+
     split_input_pdb(inputPdb =inputPdb,
                     config = config,
                     outDir=prepDir)
     ## PREPARE PROTEIN STRUCTURE
-    protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir)  
+    protPdb: FilePath = prepare_protein_structure(config=config, outDir = prepDir, protName=protName)  
     nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
 
     protPrepDir = p.join(prepDir,"PROT")
@@ -126,7 +129,9 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
                                                 outName= outName, 
                                                 nonCannonicalAminoAcidData=nonCannonicalAminoAcidData,
                                                 config = config)
-    
+
+
+    drFixer.renumber_pdb_atom_serials(solvatedPdb)
     solvatedPdb = drFixer.reset_chains_residues(protPdb, solvatedPdb, config)
 
     return solvatedPdb, inputCoords, amberParams
@@ -136,13 +141,16 @@ def no_ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath)
 def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) -> Tuple[str, str, str, str]:
         ## SPLIT INPUT PDB INTO PROT AND ONE FILE PER LIGAND
         inputPdb: FilePath = config["pathInfo"]["inputPdb"]
+        drFixer.renumber_pdb_atom_serials(inputPdb)
         split_input_pdb(inputPdb =inputPdb,
                         config = config,
                         outDir=prepDir)
         ## PREPARE LIGAND PARAMETERS, OUTPUT LIGAND PDBS
-        ligandPdbs, ligandFileDict = prepare_ligand_parameters(config = config)
+        
+        ligandPdbs, ligandFileDict, ligandInfo = prepare_ligand_parameters(config = config)
+        drMethodsWriter.add_parameter_to_prep_log(protName, "ligands", config["ligandInfo"])
         ## PREPARE PROTEIN STRUCTURE
-        protPdb = prepare_protein_structure(config=config, outDir = prepDir)
+        protPdb = prepare_protein_structure(config=config, outDir = prepDir, protName=protName)
         ## GET NON-CANONICAL AMINO ACID DATA (IF PRESENT)
         nonCannonicalAminoAcidData = get_non_cannonical_amino_acid_data(protPdb = protPdb, config = config)
         ## RE-COMBINE PROTEIN AND LIGAND PDB FILES
@@ -163,6 +171,8 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
                             pdbFile= mergedPdb,
                             config= config,
                             outName= outName)
+        
+        drFixer.renumber_pdb_atom_serials(mergedPdb)
         niceChainsPdb = drFixer.reset_chains_residues(mergedPdb, solvatedPdb, config)
         return niceChainsPdb, inputCoords, amberParams
 
@@ -188,13 +198,15 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
         return {}
 
     nonCannonicalAminoAcidData = {}
-
+    drMethodsWriter.add_parameter_to_prep_log(config["proteinInfo"]["proteinName"], "nonCanonicalResidueNames", ncaaResNames)
     for resName in ncaaResNames:
+        
         mol2 = p.join(inputDir, f"{resName}.mol2")
         frcmod = p.join(inputDir, f"{resName}.frcmod")
         lib = p.join(inputDir, f"{resName}.lib")
         if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
             nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
+    drMethodsWriter.add_parameter_to_prep_log(config["proteinInfo"]["proteinName"], "nonCanonicalResidueData", nonCannonicalAminoAcidData)
 
     return nonCannonicalAminoAcidData
 
@@ -520,6 +532,7 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
             - ligandFileDict (Dict[str, Dict[str, str]]): A dictionary containing the ligand file information.
     """
     # read inputs from config file
+    
     outDir: DirectoryPath = config["pathInfo"]["outputDir"]
     ligandInfo: dict = config["ligandInfo"]
     inputDir: DirectoryPath = config["pathInfo"]["inputDir"]
@@ -636,7 +649,7 @@ def rename_hydrogens(pdbFile: FilePath, outFile: DirectoryPath) -> None:
     # Write the modified DataFrame back to the PDB file
     pdbUtils.df2pdb(pdbDf, outFile, chain=False)
 #####################################################################################
-def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
+def prepare_protein_structure(config: Dict, outDir: DirectoryPath, protName: str) -> FilePath:
     """
     Prepare the protein structure for simulations.
 
@@ -652,6 +665,7 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
        Union[os.PathLike, str]: The PATH to a PDB file.
     """
     # Find files and directories
+
     protPrepDir: DirectoryPath = p.join(outDir, "PROT")  # Directory to prepare the protein
     os.makedirs(protPrepDir, exist_ok=True)
     os.chdir(protPrepDir)
@@ -664,7 +678,9 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
     ## read per-protein config file and return protein PDB if already protonated
     proteinInfo: Dict = config.get("proteinInfo")
     isProteinProtonated: bool = proteinInfo.get("protons")
+    
     if isProteinProtonated:
+        drMethodsWriter.add_parameter_to_prep_log(protName, "protonation", False)
         protPdb = replace_c_terminal_oxygen_names(protPdb)
         newHisPdb = sort_out_histidine_names(protPdb)
         return newHisPdb
@@ -673,6 +689,7 @@ def prepare_protein_structure(config: Dict, outDir: DirectoryPath) -> FilePath:
 
     ## use pdb2pqr to protonate the protein at a specific pH
     pH: int = str(float(config["miscInfo"]["pH"]))
+    drMethodsWriter.add_parameter_to_prep_log(protName, "protonation", pH)
     protPqr = p.join(protPrepDir, "PROT.pqr")
     pdb2pqrCommand: str = ["pdb2pqr",
                          "--ffout", "AMBER",
@@ -778,7 +795,7 @@ def make_amber_params(
     outName: str,
     config : Dict,
     ligandFileDict: Optional = None,
-    nonCannonicalAminoAcidData: Optional= None
+    nonCannonicalAminoAcidData: Optional= None,
 ) -> Tuple[FilePath, FilePath, FilePath]:
     """
     Prepare the protein structure for simulations using Amber.
@@ -813,6 +830,8 @@ def make_amber_params(
         disulphideAtomPairs: List[Tuple[int, int]] = detect_disulphides(amberNumberedPdb)
         change_cys_to_cyx(amberNumberedPdb, disulphideAtomPairs)
         remove_hydrogens_for_disulfides(amberNumberedPdb, disulphideAtomPairs)
+        cleanPairs= [list(pair) for pair in disulphideAtomPairs]
+        drMethodsWriter.add_parameter_to_prep_log(outName, "disulphides", cleanPairs)
         pdbFile = amberNumberedPdb
 
 
@@ -822,9 +841,10 @@ def make_amber_params(
         solvateKeyword: str = "solvatebox"
     elif boxGeometry == "octahedral":
         solvateKeyword: str = "solvateoct"
-
+    drMethodsWriter.add_parameter_to_prep_log(outName, "boxGeometry", boxGeometry)
     ## box size
     boxSize: int = config["miscInfo"]["boxSize"]
+    drMethodsWriter.add_parameter_to_prep_log(outName, "boxSize", boxSize)
     ## force fields
     SytemFF: dict = config["miscInfo"]["forcefield"]
     ForcefieldDict= drForcefield.Forcefield(SytemFF['protein'], SytemFF['water'])
@@ -832,7 +852,8 @@ def make_amber_params(
     waterff= ForcefieldDict["water"]
     ion1ff= ForcefieldDict["ion1"]
     ion2ff= ForcefieldDict["ion2"]
-    SolvBox= ForcefieldDict["box"]
+    WaterType=(config["miscInfo"]["forcefield"]['water']).upper()
+    SolvBox= f"{WaterType}BOX"
 
 
     
@@ -902,6 +923,29 @@ def make_amber_params(
     leapLog: FilePath = p.join(outDir, "leap.log")
     run_with_log(tleapCommand, "System Parameterisation with TLEAP", amberParams, leapLog)
 
+    drMethodsWriter.add_parameter_to_prep_log(outName, "forceFields", {
+        "protein": proteinff.split('.')[-1],
+        "water": waterff.split('.')[-1],
+        "ion1": ion1ff.split('.')[-1],
+        "ion2": ion2ff.split('.')[-1],
+        "general": "gaff2"
+    })
+
+
+    anionCont: int = 0
+    cationCont: int = 0
+    with open(solvatedPdb, "r") as f:
+        for line in f:
+            if line.find("Cl-") != -1:
+                anionCont += 1
+            if line.find("Na+") != -1:
+                cationCont += 1
+
+    drMethodsWriter.add_parameter_to_prep_log(outName, "ionCounts", {
+        "anions": anionCont,
+        "cations": cationCont
+    })
+
     # Execute ParmEd to fix dihedral periodicity
     import parmed as pmd
     # Load the AMBER topology
@@ -924,7 +968,8 @@ def make_amber_params(
     amber.save(f"{outName}.prmtop", overwrite=True)
     if changed_count >= 1:
         print(f"--> Detected non-positive dihedral periodicity, fixing periodicity for openMM simulation.\n-->Fixed {changed_count} torsions. Saved to {outName}.prmtop")
-
+    
+    drMethodsWriter.add_parameter_to_prep_log(outName, "alteredDihedrals", changed_count)
 
     # Reset chain and residue IDs in Amber PDB file
     solvatedPdb: FilePath = p.join(outDir, solvatedPdb)

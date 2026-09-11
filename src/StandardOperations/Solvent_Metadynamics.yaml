@@ -1,0 +1,42 @@
+
+simulationInfo:
+  - stepName: 01_Production_MD
+    simulationType: NpT
+    duration: 50 ns
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 50 ps
+  - stepName: 01_Metadynamics
+    simulationType: META
+    duration: 1000 ns
+    timestep: 1 fs
+    heavyProtons: False
+    temperature: 300
+    logInterval: 10 ns
+    metaDynamicsInfo:
+      height: 0.8
+      biasFactor: 10
+      frequency: 500
+      biases:
+        - biasVar: "RMSD"
+          minValue: 0  
+          maxValue: 30
+          biasWidth: 1
+          selection: 
+            keyword: "backbone"
+
+
+################################################
+aftercareInfo:
+  clusterInfo:
+    stepNames: [01_Metadynamics] 
+    nClusters: 25
+    clusterBy:
+      - selection:
+          keyword: protein
+    removeAtoms:
+      - selection:
+          keyword: ions
+  collateVitalsReports: True
+

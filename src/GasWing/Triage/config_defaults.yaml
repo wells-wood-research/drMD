@@ -12,10 +12,13 @@ miscInfo:
     protein: a19SB
     water: Tip3p
   pH: 7
+  chargeMethod: simple
+  charge: 0
   firstAidMaxRetries: 10
   writeMyMethodsSection: True
   skipPdbTriage: False
   trajectorySelections:
   - selection:
       keyword: all
+    
   

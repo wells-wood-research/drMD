@@ -60,9 +60,14 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     parallelCPU: int = batchConfig["hardwareInfo"]["parallelCPU"]
     subprocessCpus: int = batchConfig["hardwareInfo"]["subprocessCpus"]
 
+
+
+
     ## create logDir if it doesn't exist
     logDir: DirectoryPath = p.join(outDir, "00_drMD_logs")
     os.makedirs(logDir, exist_ok=True)
+
+
 
     skipPdbTriage = batchConfig["miscInfo"].get("skipPdbTriage", False)
     if not skipPdbTriage:
@@ -70,6 +75,10 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         pdbTriageLog = p.join(logDir,"pdb_triage.log")
         if not p.exists(pdbTriageLog):
             drPdbTriage.pdb_triage(pdbDir, batchConfig)
+
+    drMethodsWriter.create_methods_log(outDir)
+    drMethodsWriter.add_hardware_info_to_log(batchConfig["hardwareInfo"])
+
 
     ## set environment variables for OpenMP and OpenMM - this should limit their CPU useage
     manage_cpu_usage_for_subprocesses("ON",subprocessCpus)
@@ -90,9 +99,9 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     ## write methods section if desired
     if writeMyMethodsSection:
         try:
-            drMethodsWriter.methods_writer_protocol(batchConfig, yamlDir, outDir)
+            drMethodsWriter.write_log_to_methods_file(outDir.removesuffix(outDir.split(os.sep)[-1]))
         except Exception as e:
-            drLogger.log_info(f"Error writing my methods section: {e}", True, True)
+            drLogger.log_info(f"Error writing methods log: {e}", True, True)
     ## perform post simulation operations
     drCleanup.clean_up_handler(batchConfig)
 
@@ -147,9 +156,11 @@ def run_serial(batchConfig: Dict) -> None:
     botchedSimulations = []
     ## unpack batchConfig to get pdbDir
     pdbDir: DirectoryPath = batchConfig["pathInfo"]["inputDir"]
+    outDir: DirectoryPath = batchConfig["pathInfo"]["outputDir"]
     ## create a list of PDB files
     pdbFiles = [p.join(pdbDir, pdbFile) for pdbFile in os.listdir(pdbDir) if p.splitext(pdbFile)[1] == ".pdb"]
     # Iterate over each file in the PDB directory
+
     for pdbFile in pdbFiles:
         # Process the PDB file
         runConfigYaml: FilePath = drConfigWriter.make_per_protein_config(pdbFile, batchConfig)

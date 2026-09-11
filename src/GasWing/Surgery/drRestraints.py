@@ -10,7 +10,7 @@ from openmm import app
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger
-from UtilitiesCloset import drSelector
+from UtilitiesCloset import drSelector, drMethodsWriter
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -45,35 +45,27 @@ def restraints_handler(
     if saveFile:
         if p.splitext(saveFile)[1] == ".xml":
             clear_all_restraints(saveFile)
+
     ## check if there are any restraints specified in simulation config
     if "restraintInfo" in sim:
-        ## load restraintInfo from simluation config
         restraintInfo: List[Dict] = sim["restraintInfo"]
-        ## create a counter for naming restraint parameters
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "restraintInfo", restraintInfo)
         kNumber: int = 0
-        ## loop through restraints 
-        ## create position, distance, angle, and torsion restraints
         for restraint in restraintInfo:
             selection: List = restraint["selection"]
             parameters: Dict = restraint["parameters"]
-            ## add a position restraint
+
             if restraint["restraintType"] == "position":
                 system: openmm.System = create_position_restraint(system, inpcrd, selection, parameters, kNumber, pdbFile)
-            ## add a distance restraint
             elif restraint["restraintType"] == "distance":
                 system: openmm.System = create_distance_restraint(system, selection, parameters, kNumber, pdbFile)
-            ## add an angle restraint
             elif restraint["restraintType"] == "angle":
                 system: openmm.System = create_angle_restraint(system, selection, parameters, kNumber, pdbFile)
-            ## add a torsion restraint
             elif restraint["restraintType"] == "torsion":
                 system: openmm.System = create_torsion_restraint(system, selection, parameters, kNumber, pdbFile)
-            ## increment kNumber
             kNumber += 1
 
     else:
-        ## if we have a checkpoint file, we are continuing a simulation
-        ## just return the checkpoint file as-is
         if saveFile:
             if p.splitext(saveFile)[1] == ".chk":
                 return system

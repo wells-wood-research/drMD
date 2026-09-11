@@ -1,0 +1,361 @@
+<!-- templates/ccs_report_template.html -->
+<link rel="stylesheet" href="report_theme.css">
+
+<div class="report-bounds">
+<div class="page-content-wrapper">
+ 
+    <div class="meta">
+        <div class="meta-card">
+            <span class="label">System</span>
+            <div class="value">{{ ccs_data.protein | default('N/A') }}</div>
+        </div>
+        <div class="meta-card">
+            <span class="label">Step</span>
+            <div class="value">{{ ccs_data.stepName | default('N/A') }}</div>
+        </div>
+        <div class="meta-card">
+            <span class="label">Gas Used</span>
+            <div class="value">{{ ccs_data.gas | default('N/A') }}</div>
+        </div>
+        <div class="meta-card">
+            <span class="label">Frames</span>
+            <div class="value">{{ ccs_data.nFrames | default('N/A') }}</div>
+        </div>
+        <div class="meta-card">
+            <span class="label">Raw CSV</span>
+            <div class="value">
+                {% if ccs_data.rawCsv %}
+                    <div class="csv-actions">
+                        <a class="csv-download-btn" href="{{ ccs_data.rawCsv }}" target="_blank" rel="noopener" download>
+                            Open CSV
+                        </a>
+                    </div>
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+    {% if ccs_data.ccsPlot or ccs_data.kmeansPlot or ccs_data.kdePlot %}
+        <div class="ccs-layout">
+            <div class="ccs-main">
+                <section class="section">
+                    <div class="section-head">
+                        <h2>CCS Plots</h2>
+                    </div>
+                        <div class="ccs-tabs" role="tablist">
+                            {% if ccs_data.ccsPlot %}
+                            <button type="button" class="ccs-tab-btn active" role="tab" aria-selected="true" data-tab-target="ccs-tab-time">CCS Over Time</button>
+                            {% endif %}
+                            {% if ccs_data.kmeansPlot %}
+                            <button type="button" class="ccs-tab-btn{% if not ccs_data.ccsPlot %} active{% endif %}" role="tab" aria-selected="{% if not ccs_data.ccsPlot %}true{% else %}false{% endif %}" data-tab-target="ccs-tab-kmeans">K-means Clustering</button>
+                            {% endif %}
+                            {% if ccs_data.kdePlot %}
+                            <button type="button" class="ccs-tab-btn{% if not ccs_data.ccsPlot and not ccs_data.kmeansPlot %} active{% endif %}" role="tab" aria-selected="{% if not ccs_data.ccsPlot and not ccs_data.kmeansPlot %}true{% else %}false{% endif %}" data-tab-target="ccs-tab-kde">CCS Density</button>
+                            {% endif %}
+                        </div>
+                        <div class="ccs-tab-panels">
+                            {% if ccs_data.ccsPlot %}
+                            <div class="ccs-tab-panel active" id="ccs-tab-time" role="tabpanel">
+                                <div class="plot-card">
+                                    <iframe
+                                        class="plot-preview"
+                                        src="{{ ccs_data.ccsPlot }}"
+                                        title="CCS over time preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if ccs_data.kmeansPlot %}
+                            <div class="ccs-tab-panel{% if not ccs_data.ccsPlot %} active{% endif %}" id="ccs-tab-kmeans" role="tabpanel">
+                                <div class="plot-card">
+                                    <iframe
+                                        class="plot-preview"
+                                        src="{{ ccs_data.kmeansPlot }}"
+                                        title="K-means clustering preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if ccs_data.kdePlot %}
+                            <div class="ccs-tab-panel{% if not ccs_data.ccsPlot and not ccs_data.kmeansPlot %} active{% endif %}" id="ccs-tab-kde" role="tabpanel">
+                                <div class="plot-card">
+                                    <iframe
+                                        class="plot-preview"
+                                        src="{{ ccs_data.kdePlot }}"
+                                        title="CCS density preview"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                </section>
+            </div>
+
+            <div class="ccs-side">
+                <section class="section">
+                    <div class="section-head">
+                        <h2>Binary Pixel Map</h2>
+                        <span>Hover or click CCS points</span>
+                    </div>
+                    <div id="ccsPixelMapViewer" class="ccs-pixel-map-viewer">
+                        {% if ccs_data.ccsPixelMapMap %}
+                        <div class="ccs-pixel-map-viewer-header">
+                            <h3>Current Frame</h3>
+                            <span class="ccs-pixel-map-viewer-label" id="ccsPixelMapViewerLabel">Awaiting hover...</span>
+                        </div>
+                        <div class="ccs-pixel-map-image-wrap" id="ccsPixelMapImageWrap">
+                            <canvas id="ccsPixelMapCanvas" aria-label="Binary pixel map preview" hidden></canvas>
+                        </div>
+                        <div class="ccs-pixel-map-viewer-note">
+                            Hover a point in the CCS or K-means plot to load the matching frame.
+                        </div>
+                        {% else %}
+                        <div class="empty-state">No binary pixel map files were available for this report.</div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if not ccs_data.ccsPlot and not ccs_data.kmeansPlot and not ccs_data.kdePlot %}
+    <div class="section">
+        <div class="empty-state">No CCS data available for this report.</div>
+    </div>
+    {% endif %}
+
+</div>
+</div>
+
+<script>
+    (function () {
+        function drawBinaryPixelMap(canvasEl, arrayBuffer) {
+            if (!(arrayBuffer instanceof ArrayBuffer) || arrayBuffer.byteLength < 8) {
+                throw new Error("Binary frame is missing width/height header.");
+            }
+
+            var view = new DataView(arrayBuffer);
+            var width = view.getUint32(0, true);
+            var height = view.getUint32(4, true);
+
+            if (!width || !height) {
+                throw new Error("Binary frame has invalid dimensions.");
+            }
+
+            var packedBits = new Uint8Array(arrayBuffer, 8);
+            var totalPixels = width * height;
+            var requiredBytes = Math.ceil(totalPixels / 8);
+            if (packedBits.length < requiredBytes) {
+                throw new Error("Binary frame payload is incomplete.");
+            }
+
+            canvasEl.width = width;
+            canvasEl.height = height;
+
+            var ctx = canvasEl.getContext("2d", { willReadFrequently: false });
+            if (!ctx) {
+                throw new Error("2D canvas context is unavailable.");
+            }
+
+            var image = ctx.createImageData(width, height);
+            var data = image.data;
+            for (var pixelIndex = 0; pixelIndex < totalPixels; pixelIndex++) {
+                var byteIndex = pixelIndex >> 3;
+                var bitIndex = 7 - (pixelIndex & 7);
+                var bit = (packedBits[byteIndex] >> bitIndex) & 1;
+
+                var out = pixelIndex * 4;
+                if (bit) {
+                    data[out] = 255;
+                    data[out + 1] = 255;
+                    data[out + 2] = 255;
+                    data[out + 3] = 255;
+                } else {
+                    data[out] = 0;
+                    data[out + 1] = 0;
+                    data[out + 2] = 0;
+                    data[out + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(image, 0, 0);
+        }
+
+        function showViewerError(message) {
+            var wrap = document.getElementById('ccsPixelMapImageWrap');
+            if (!wrap) return;
+            if (viewerCanvas) {
+                viewerCanvas.hidden = true;
+            }
+            wrap.innerHTML = '<div class="empty-state">' + message + '</div>';
+        }
+
+        function fileBaseName(path) {
+            if (!path) return '';
+            var normalized = String(path).split('?')[0].split('#')[0];
+            var parts = normalized.split('/');
+            return parts[parts.length - 1];
+        }
+
+        function isBinaryItem(item) {
+            if (!item) return false;
+            var href = item.href ? String(item.href).toLowerCase() : '';
+            var file = item.file ? String(item.file).toLowerCase() : '';
+            return href.endsWith('.bin') || file.endsWith('.bin') || item.data != null;
+        }
+
+        var mapByToken = {};
+        var sourceMap = {{ ccs_data.ccsPixelMapMap | tojson }};
+        Object.keys(sourceMap || {}).forEach(function (key) {
+            var item = sourceMap[key];
+            if (!isBinaryItem(item)) return;
+            mapByToken[String(key)] = item;
+            if (item.file) {
+                mapByToken[String(item.file)] = item;
+            }
+            if (item.href) {
+                mapByToken[String(item.href)] = item;
+                mapByToken[fileBaseName(item.href)] = item;
+            }
+        });
+
+        var viewerCanvas = document.getElementById('ccsPixelMapCanvas');
+        var viewerLabel = document.getElementById('ccsPixelMapViewerLabel');
+        var viewerOpenDirect = document.getElementById('ccsPixelMapOpenDirect');
+
+        function setViewerLabel(label) {
+            if (viewerLabel) {
+                viewerLabel.textContent = label || 'Awaiting hover...';
+            }
+        }
+
+        function showDirectLink(href) {
+            if (!viewerOpenDirect) return;
+            if (!href) {
+                viewerOpenDirect.style.display = 'none';
+                viewerOpenDirect.removeAttribute('href');
+                return;
+            }
+            viewerOpenDirect.href = href;
+            viewerOpenDirect.style.display = 'inline';
+        }
+
+        function base64ToArrayBuffer(base64) {
+            var binaryString = atob(base64);
+            var len = binaryString.length;
+            var bytes = new Uint8Array(len);
+            for (var i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function renderFromItem(item) {
+            if (!item || (!item.href && !item.data) || !viewerCanvas) {
+                return;
+            }
+
+            var href = item.href || '';
+            var isBin = isBinaryItem(item);
+            if (!isBin) {
+                showViewerError('Only .bin pixel-map frames are supported in this viewer.');
+                return;
+            }
+            setViewerLabel(item.file || href);
+            showDirectLink(href);
+
+            viewerCanvas.hidden = false;
+
+            // Prefer inline base64 data: report pages are opened directly from
+            // disk (file://), where fetch()/XHR to local files is blocked by the
+            // browser, so the binary frame bytes are embedded straight into the
+            // page's JSON instead of being fetched over the network.
+            if (item.data) {
+                try {
+                    var buffer = base64ToArrayBuffer(item.data);
+                    drawBinaryPixelMap(viewerCanvas, buffer);
+                } catch (err) {
+                    showViewerError('Unable to render this binary frame preview.');
+                }
+                return;
+            }
+
+            // Fallback for reports served over http(s), where fetch() works fine.
+            fetch(href)
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch binary frame: ' + response.status);
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(function (buffer) {
+                    drawBinaryPixelMap(viewerCanvas, buffer);
+                })
+                .catch(function () {
+                    showViewerError('Unable to render this binary frame preview.');
+                });
+        }
+
+        function renderFromToken(token) {
+            if (!token) return;
+            var key = String(token);
+            var item = mapByToken[key] || mapByToken[fileBaseName(key)];
+            if (!item) {
+                return;
+            }
+            renderFromItem(item);
+        }
+
+        window.addEventListener('message', function (event) {
+            var payload = event && event.data ? event.data : null;
+            if (!payload || payload.type !== 'ccs-frame-hover') {
+                return;
+            }
+            renderFromToken(payload.frameToken);
+        });
+
+        var firstItem = null;
+        Object.keys(sourceMap || {}).some(function (key) {
+            if (!firstItem && isBinaryItem(sourceMap[key])) {
+                firstItem = sourceMap[key];
+            }
+            return false;
+        });
+        if (firstItem) {
+            renderFromItem(firstItem);
+        } else {
+            showViewerError('No .bin pixel-map frames were available for this report.');
+        }
+
+        document.querySelectorAll('.ccs-tabs').forEach(function (tabGroup) {
+            var panelContainer = tabGroup.parentElement.querySelector('.ccs-tab-panels');
+            if (!panelContainer) return;
+
+            tabGroup.querySelectorAll('.ccs-tab-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var targetId = btn.getAttribute('data-tab-target');
+
+                    tabGroup.querySelectorAll('.ccs-tab-btn').forEach(function (b) {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-selected', 'false');
+                    });
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
+
+                    panelContainer.querySelectorAll('.ccs-tab-panel').forEach(function (panel) {
+                        panel.classList.toggle('active', panel.id === targetId);
+                    });
+                });
+            });
+        });
+    })();
+</script>
+

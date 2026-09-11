@@ -2,6 +2,7 @@
 import os
 from os import path as p
 from shutil import rmtree
+import yaml
 
 ## OPENMM LIBRARIES
 import openmm.app as app
@@ -65,7 +66,6 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
     logDir = p.join(p.dirname(outDir), "00_drMD_logs")
     protName = config["proteinInfo"]["proteinName"]
     drLogger.setup_logging(p.join(logDir,f"{protName}_simulations.log"))
-
     platform = choose_platform(config)
 
     # Load Amber files and create system
@@ -74,6 +74,8 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
 
     # Loop over simulations
     simulations = config["simulationInfo"]
+
+
     for i in range(len(simulations)):
         sim: dict = simulations[i]
         simDir: str = p.join(outDir, sim["stepName"])

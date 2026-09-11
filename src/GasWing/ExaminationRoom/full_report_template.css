@@ -1,0 +1,203 @@
+:root {
+    color-scheme: dark;
+    --bg: #000000;
+    --panel: #101010;
+    --panel-2: #181818;
+    --line: rgba(255, 255, 255, 0.16);
+    --text: #f5f5f5;
+    --muted: #d9d9d9;
+    --accent: #ffffff;
+    --accent-2: #f0f0f0;
+    --glow: rgba(255, 255, 255, 0.05);
+    --full-report-preview-min-height: 900px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+    background: #111111;
+    background-size: 22px 22px, 22px 22px, auto, auto;
+    color: var(--text);
+    font-family: "Space Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
+.page {
+    width: 100%;
+    margin: 0;
+    padding: 8px;
+    overflow: visible;
+}
+
+.tab-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    justify-content: left;
+    align-items: baseline;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    background: #111111;
+}
+
+.tab-button {
+    appearance: none;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(23, 26, 31, 0.96);
+    color: var(--muted);
+    padding: 11px 16px;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.tab-button:hover {
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.30);
+    transform: translateY(-1px);
+}
+
+.tab-button.active {
+    color: #111111;
+    background: #ffffff;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.tab-panels {
+    display: block;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.step-card {
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(15, 17, 21, 0.96);
+    overflow: visible;
+    box-shadow: none;
+}
+
+.step-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    justify-content: left;
+    align-items: baseline;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    background: #111111;
+}
+
+.step-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--accent-2);
+}
+
+.step-meta {
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.step-note {
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.report-button {
+    background: rgba(31, 35, 42, 0.9);
+}
+
+.report-card {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+    box-shadow: none;
+}
+
+.report-card-header {
+    display: none;
+}
+
+.report-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.report-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.report-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 0 16px 16px;
+}
+
+.report-links a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.report-preview {
+    padding: 8px;
+    min-height: var(--full-report-preview-min-height);
+}
+
+.report-frame {
+    width: 100%;
+    height: auto;
+    min-height: var(--full-report-preview-min-height);
+    max-height: 110vh;
+    border: 0;
+    display: block;
+    background: #000000;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    scrolling: auto;
+}
+
+.empty-state {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px dashed #3b424c;
+    color: var(--muted);
+    background: var(--panel-2);
+}
+
+@media (max-width: 900px) {
+    .page {
+        width: 100%;
+        padding: 6px;
+    }
+
+    .report-preview {
+        min-height: 520px;
+    }
+
+    .report-frame {
+        height: auto;
+        min-height: 520px;
+        max-height: none;
+    }
+}
