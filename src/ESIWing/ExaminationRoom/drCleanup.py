@@ -4,7 +4,7 @@ from os import path as p
 from shutil import copy, rmtree
 
 ## drMD LIBRARIES
-from ExaminationRoom import drLogger, drClusterizer
+from ExaminationRoom import drLogger, drClusterizer, drCollision
 from ExaminationRoom.drFullReport import full_report_handler
 from UtilitiesCloset import drSelector, drListInitiator
 

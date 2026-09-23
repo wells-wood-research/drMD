@@ -99,7 +99,7 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
                                                                          1/unit.picosecond,
                                                                            sim["timestep"])
         drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "integrator", "LangevinMiddleIntegrator")
-        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", sim["timestep"])
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "timeStep", f"{sim['timestep']}")
         drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "friction", "1 ps^-1")
 
 
@@ -323,8 +323,8 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     # run NVT / NPT simulation
     simulation: app.Simulation = step_simulation(simulation, integrator, sim)
 
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "totalSteps", totalSteps)
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "reportInterval", reportInterval)
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "totalSteps", str(totalSteps))
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "reportInterval", str(reportInterval))
 
     # find name to call outFiles
     protName: str = p.basename(p.dirname(simDir))
@@ -398,7 +398,7 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     stepName: str = sim["stepName"]
     protName: str = config["proteinInfo"]["proteinName"]
     drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", sim["maxIterations"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", str(sim["maxIterations"]))
     drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "type", "EM")
 
     drLogger.log_info(f"Running {stepName} Step for: {protName} {' '*10}", True)

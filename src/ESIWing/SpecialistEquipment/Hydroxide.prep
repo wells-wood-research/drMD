@@ -1,0 +1,20 @@
+    0    0    2
+
+This is a remark line
+molecule.res
+OH-   INT  0
+CORRECT     OMIT DU   BEG
+  0.0000
+   1  DUMM  DU    M    0  -1  -2     0.000      .0        .0      .00000
+   2  DUMM  DU    M    1   0  -1     1.449      .0        .0      .00000
+   3  DUMM  DU    M    2   1   0     1.523   111.21       .0      .00000
+   4  O     O     M    3   2   1     1.540   111.208  -180.000 -1.020000
+   5  H     HO    E    4   3   2     0.990    34.521   -99.227  0.020000
+
+
+LOOP
+
+IMPROPER
+
+DONE
+STOP

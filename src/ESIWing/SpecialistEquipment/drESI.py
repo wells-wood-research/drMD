@@ -56,7 +56,7 @@ def ESIOperation(ESI_Count, Water_Count) -> dict:
 
 
 
-def ESI_Handler(Cutoff: int, PDBfile: str, ESI_Count, Mode):
+def ESI_Handler(Cutoff: int, PDBfile: str, ESI_Count, Mode, charge):
     '''
     Removes all atoms from a pdb file further than the cutoff distance, then cleans the pdb file for further simulations using cpptraj
 
@@ -84,7 +84,7 @@ def ESI_Handler(Cutoff: int, PDBfile: str, ESI_Count, Mode):
     except:
       print(f"no file called {PDBfile} could be found")
     if ESI_Count <=1:
-        drDroplet.DropletFormation(saveName, Mode)
+        drDroplet.DropletFormation(saveName, Mode, charge)
     os.rename(saveName, PDBfile)
     return 
 

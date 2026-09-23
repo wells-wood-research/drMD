@@ -989,6 +989,8 @@ def add_hardware_info_to_log(hardwareInfo: dict):
         hardwareSnapshot["pythonVersion"] = sys.version.split()[0]
         hardwareSnapshot["operatingSystem"] = py_platform.system()
         hardwareSnapshot["osRelease"] = py_platform.release()
+        if logDict is None:
+            logDict = {}
         logDict.update({"hardwareInfo": hardwareSnapshot})
         with open(logFilePath, "w", encoding="utf-8") as logFile:
             yaml.safe_dump(logDict, logFile, default_flow_style=False, sort_keys=False)

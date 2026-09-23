@@ -17,7 +17,7 @@ from UtilitiesCloset.drCustomClasses import FilePath
 DEFAULT_RMSD_SELECTION = "name CA"
 DEFAULT_RMSF_SELECTION = "protein and name CA"
 DEFAULT_STRIDE = 1
-REPORT_PLOT_HEIGHT = 440
+REPORT_PLOT_HEIGHT = 780
 REPORT_PLOT_WIDTH = "100%"
 
 

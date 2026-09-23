@@ -1,0 +1,5 @@
+CHARGE     -1.00 ( -1 )
+Formula: H1 O1 
+ATOM      1  O   XOH     1      -2.755   0.218  -0.094 -1.020000        O
+ATOM      2  H   XOH     0      -3.571   0.308   0.460  0.020000        HO
+BOND    1    1    2    9      O    H

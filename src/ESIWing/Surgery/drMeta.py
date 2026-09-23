@@ -54,7 +54,7 @@ def run_metadynamics(prmtop: app.Topology,
     """
     stepName = sim["stepName"]
     drLogger.log_info(f"Running MetaDynamics Step: {stepName}",True)
-    drMethodsWriter.add_step_to_simulation_log(stepName)
+    drMethodsWriter.add_simulation_step_to_log(stepName)
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationType", sim["simulationType"])
     ## make a simulation directory
     simDir: str = p.join(outDir, stepName)

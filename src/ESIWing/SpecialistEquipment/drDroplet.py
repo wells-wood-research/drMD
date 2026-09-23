@@ -10,7 +10,7 @@ from subprocess import run
 
 
 
-def DropletFormation(PDBfile, Mode):
+def DropletFormation(PDBfile, Mode, charge):
     with open(PDBfile, 'r') as pdb:
         lines= pdb.readlines()
         AtomNumber=0
@@ -27,13 +27,12 @@ def DropletFormation(PDBfile, Mode):
     DropletCenter, DropletRadius= DefineDroplet(Coords)
 
     RLim=round((8*math.pi)*math.sqrt(0.072*8.8541878188*(10**-12)*((DropletRadius*(10**-9))**3))/(1.602*10**(-19)))
-    chargeNum= round(RLim*0.99)
     print(f"\n-->    Created a droplet centered around {round(DropletCenter[0],2)}, {round(DropletCenter[1],2)}, {round(DropletCenter[2],2)}, of radius {DropletRadius} nm")
     if Mode == "Positive":
         Hydronium_Number= RLim
-        Hydroxide_Number= RLim-chargeNum
+        Hydroxide_Number= RLim- charge - round(RLim*0.1)
     elif Mode == "Negative":
-        Hydronium_Number= RLim-chargeNum
+        Hydronium_Number= RLim+ charge + round(RLim*0.1)
         Hydroxide_Number= RLim
 
     ESI_Path= (os.path.dirname(os.path.abspath(sys.argv[0])))+ "/ESIWing/SpecialistEquipment"
@@ -52,8 +51,8 @@ def DropletFormation(PDBfile, Mode):
         #f.write(f"loadamberparams {ESI_Path}/Hydronium.frcmod \n")
         #f.write(f"loadamberprep {ESI_Path}/Hydronium.prep \n")
         f.write(f"mol = loadpdb {PDBfile} \n")
-        f.write(f"solvateShell mol TIP3PBOX 55 1.0 \n")
-        f.write("solvateCap mol TIP3PBOX {0, 0, 0}" + str(DropletRadius*10) + " 1.0 \n")
+        f.write(f"solvateShell mol TIP3PBOX 55 0.75 \n")
+        f.write("solvateCap mol TIP3PBOX {0.00, 0.00, 0.00} " + str(DropletRadius*10)+" 0.75 \n")
         #f.write(f"addions mol +O3 {Hydronium_Number}\n")
         #f.write(f"addions mol OH- {Hydroxide_Number}\n")
         f.write(f"addions mol Na+ {Hydronium_Number}\n")

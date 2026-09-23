@@ -3,6 +3,7 @@ import os
 from os import path as p
 import subprocess
 from subprocess import run
+import shlex
 import string
 from shutil import copy
 import logging
@@ -1097,8 +1098,15 @@ def run_with_log(
     drLogger.log_info(f"Running: {stepName}")
 
     ## split command into list
+    redirect_file = None
     if isinstance(command, str):
-        command = command.split()
+        command = shlex.split(command)
+        if ">" in command:
+            redirect_index = command.index(">")
+            if redirect_index + 1 >= len(command):
+                raise ValueError(f"Missing output path for command redirection: {command}")
+            redirect_file = command[redirect_index + 1]
+            command = command[:redirect_index]
 
     try: 
         # Execute the command and capture its output
@@ -1111,6 +1119,12 @@ def run_with_log(
         )
     except Exception as errorMessage:
         drSplash.print_prep_failed(errorMessage, stepName, debugFileToCheck)
+        raise
+
+    if redirect_file is not None:
+        with open(redirect_file, "w") as output:
+            output.write(result.stdout or "")
+            output.write(result.stderr or "")
 
 
     # Log the command output

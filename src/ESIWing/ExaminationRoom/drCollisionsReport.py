@@ -16,7 +16,7 @@ import plotly.express as px
 import plotly.figure_factory as ff
 from sklearn.cluster import KMeans
 
-REPORT_PLOT_HEIGHT = 440
+REPORT_PLOT_HEIGHT = 780
 REPORT_PLOT_WIDTH = "100%"
 
 
