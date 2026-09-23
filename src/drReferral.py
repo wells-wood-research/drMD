@@ -158,7 +158,10 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
 
                 ## while ther is still water in the pdb
                 while Water_Count >=1:
-
+                    if Procedure.get("miscInfo") == None:
+                        charge= batchConfig["miscInfo"]["charge"]
+                    elif batchConfig.get("miscInfo") == None:
+                        charge= Procedure["miscInfo"]["charge"]
                     ## sets up an incremented ESI simulation
                     ESI_Count +=1
                     simulationInfo= drESI.ESIOperation(ESI_Count, Water_Count)
@@ -170,7 +173,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
                     newOutDir= outDir+ f"/{Procedure_Name}/ESI_{ESI_Count}"
                     (batchConfig["pathInfo"]).update({"outputDir": newOutDir})
 
-                    ## if no cutoff is specified, use the defult of 10 angstroms
+                    ## if no cutoff is specified, use the defult of 10 nanometers
                     if  Procedure.get('cutoff') == None:
                         cutoff= 100
                         Procedure.update({'cutoff': cutoff})
@@ -190,7 +193,7 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
                     else:
                         for PDBs in pdbFiles:
                             if PDBs.find(f"ESI_{ESI_Count}") == -1:
-                                drESI.ESI_Handler(cutoff, PDBs, ESI_Count, mode)
+                                drESI.ESI_Handler(cutoff, PDBs, ESI_Count, mode, charge)
                     Procedure.update({'OperationName': f'ESI_{ESI_Count}'})
 
                     ## run the simulation with the new pdb file

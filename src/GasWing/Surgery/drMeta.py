@@ -54,8 +54,8 @@ def run_metadynamics(prmtop: app.Topology,
     """
     stepName = sim["stepName"]
     drLogger.log_info(f"Running MetaDynamics Step: {stepName}", True)
-    drMethodsWriter.add_step_to_simulation_log(stepName)
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationType", sim["simulationType"])
+    drMethodsWriter.add_simulation_step_to_log(stepName)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationType", str(sim["simulationType"]))
 
     ## make a simulation directory
     simDir: str = p.join(outDir, stepName)
@@ -68,7 +68,7 @@ def run_metadynamics(prmtop: app.Topology,
 
     # Define the restraints.
     hBondconstraints: openmm.Force = app.HBonds
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "constraints", hBondconstraints)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "constraints", str(hBondconstraints))
     # Create the system.
     system: openmm.System = prmtop.createSystem(nonbondedMethod=nonbondedMethod,
                                                 constraints=hBondconstraints)
@@ -77,7 +77,7 @@ def run_metadynamics(prmtop: app.Topology,
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
     system: openmm.System = scale_dielectric_constant(system)
 
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "temperature", sim["temperature"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "temperature", str(sim["temperature"]))
     # Read metaDynamicsInfo from sim config
     metaDynamicsInfo: dict = sim["metaDynamicsInfo"]
 
@@ -123,17 +123,18 @@ def run_metadynamics(prmtop: app.Topology,
         biasDir=simDir,
     )
 
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biasFactor", metaDynamicsInfo["biasFactor"])
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "height", metaDynamicsInfo["height"])
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "frequency", 50)
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "saveFrequency", 50)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biasFactor", str(metaDynamicsInfo["biasFactor"]))
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "height", str(metaDynamicsInfo["height"]))
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "frequency", str(50))
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "saveFrequency", str(50))
 
     # Set up integrator
     integrator: openmm.LangevinMiddleIntegrator = openmm.LangevinMiddleIntegrator(
         sim["temperature"], 1/unit.picosecond, sim["timestep"]
     )
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "integrator", "LangevinMiddleIntegrator")
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "timeStep", sim["timestep"])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "temperature", str(sim["temperature"]))
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "timeStep", str(sim["timestep"]))
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "friction", "1 ps^-1")
 
     # Create new simulation

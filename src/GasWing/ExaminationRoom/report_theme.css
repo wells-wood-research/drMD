@@ -352,13 +352,14 @@ h3 strong {
 .ccs-viz-wrapper iframe {
     width: 100% !important;
     height: 100% !important;
+    min-height: var(--report-layout-min-height);
 }
 
 .plot-preview,
 .embedded-plot-frame {
     display: block;
     width: 100%;
-    min-height: inherit;
+    min-height: var(--report-layout-min-height);
     height: 100%;
     max-height: none;
     border: 0;

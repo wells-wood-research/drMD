@@ -172,7 +172,7 @@ def main(pdbFile, representation, probe, rotations, resolution) -> None:
     if probe == "N2":
         ccsCorrected= 0.843*ccsRaw**1.0503
     elif probe == "He":
-        ccsCorrected= 0.841*ccsRaw**1.0565
+        ccsCorrected= ccsRaw
 
 
     get_frame_shadow(pdbFile, representation, probe)
@@ -281,27 +281,44 @@ def ppm_to_bitmap(width, height, pixels, threshold=128):
 
     return bytes(out)
 
+def _find_max_ccs_debug_ppm(output_dir: str, pdb_base_name: str) -> str:
+    """Locate the generated max-CCS PPM regardless of the exact output directory layout."""
+    expected_names = {
+        f"{pdb_base_name}_max_ccs.ppm",
+        f"{pdb_base_name}.ppm",
+    }
+    for root, _, files in os.walk(output_dir):
+        for filename in files:
+            if filename.lower().endswith(".ppm") and filename in expected_names:
+                return p.join(root, filename)
+            if filename.lower().endswith("_max_ccs.ppm") and filename.startswith(f"{pdb_base_name}_"):
+                return p.join(root, filename)
+    return ""
+
+
 def get_frame_shadow(pdbFile, representation, probe):
     outDir= p.dirname(pdbFile)
     pdbBaseName = p.basename(pdbFile).removesuffix(".pdb")
     # Use a per-call temp directory so parallel workers do not race on debug_shadows.
     shadowOutDir = tempfile.mkdtemp(prefix=f"shadow_{pdbBaseName}_", dir=outDir)
-    shadowScreenCommand: list = [SHADOWSCREEN_EXE+"Frame", pdbFile, "100", "0.25", "--gas", probe, "--debug", "--output-dir", shadowOutDir]
-    try: 
+    shadowScreenCommand: list = [SHADOWSCREEN_EXE+representation+"Frame", pdbFile, "100", "0.25", "--gas", probe, "--debug", "--output-dir", shadowOutDir]
+    try:
         # Execute the command and capture its output
         result: subprocess.CompletedProcess[str] = subprocess.run(
                 shadowScreenCommand,
                 capture_output=True,
                 check=True,
-                text=True, 
-                env = os.environ
+                text=True,
+                env=os.environ,
             )
-    except Exception as errorMessage:
-            print(errorMessage)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"Shadow frame generation failed for {pdbFile}: {exc.stderr or exc.stdout}") from exc
 
-    pdbName= pdbBaseName.removeprefix(outDir)
-    framePpm= p.join(shadowOutDir, "debug_shadows", pdbName +"_max_ccs.ppm")
-    
+    pdbName = pdbBaseName
+    framePpm = _find_max_ccs_debug_ppm(shadowOutDir, pdbBaseName)
+    if not framePpm or not p.isfile(framePpm):
+        raise FileNotFoundError(f"Shadow debug image not found for {pdbFile} under {shadowOutDir}. Generated files: {os.listdir(shadowOutDir) if os.path.isdir(shadowOutDir) else 'n/a'}")
+
     width, height, pixels = read_image(framePpm)
 
     bitmap = ppm_to_bitmap(width, height, pixels, 128)
@@ -345,13 +362,8 @@ def plot_ccs_shadow_data(csvFile, gas: str, logTimeUnit: str) -> None:
     df = pd.read_csv(csvFile)
 
     # Plotting
-    cmap = plt.get_cmap("viridis")
     x = pd.to_numeric(df.iloc[:, 0], errors="coerce").astype(float)
     y = pd.to_numeric(df.iloc[:, 1], errors="coerce").astype(float)
-    shapeFactor = (
-        pd.to_numeric(df.iloc[:, 3], errors="coerce").astype(float)
-        / pd.to_numeric(df.iloc[:, 2], errors="coerce").astype(float)
-    )
 
     fig, ax = plt.subplots(figsize=(10, 6))
     scatter = ax.scatter(x, y, c=shapeFactor, cmap=cmap, s=60, edgecolor='k', linewidth=0.3)
@@ -359,34 +371,11 @@ def plot_ccs_shadow_data(csvFile, gas: str, logTimeUnit: str) -> None:
     valid = np.isfinite(x) & np.isfinite(y) & np.isfinite(shapeFactor)
     x = x[valid]
     y = y[valid]
-    shapeFactor = shapeFactor[valid]
-
-    if len(x) > 1:
-        segments = [
-            [(x[i], y[i]), (x[i + 1], y[i + 1])]
-            for i in range(len(x) - 1)
-        ]
-        color_values = np.linspace(0, 1, len(segments))
-        if len(shapeFactor) > 1:
-            color_values = (shapeFactor[:-1] - np.nanmin(shapeFactor)) / (
-                np.nanmax(shapeFactor) - np.nanmin(shapeFactor)
-            )
-        line_collection = plt.matplotlib.collections.LineCollection(
-            segments,
-            colors=cmap(color_values),
-            linewidths=1.2,
-            alpha=0.8,
-        )
-        ax.add_collection(line_collection)
-    # ax.plot(df.iloc[:, 0], df.iloc[:, 2], marker='x', label='Hull Area (Å²)')
-    # ax.plot(df.iloc[:, 0], df.iloc[:, 3], marker='s', label='SASA Area (Å²)')
 
     ax.set_title('CCS Analysis Over Time')
     ax.set_xlabel(f'Time Step ({logTimeUnit})')
     ax.set_ylabel(f'$^{{TH}}CCS_{{{gas}}} (Å^2)$')
     ax.legend()
-    cbar = fig.colorbar(scatter, ax=ax)
-    cbar.set_label('Shape Factor ( Solvent Accessable Surface Area/ Convex Hull Area)')
     ax.grid()
     fig.tight_layout()
     output_path = "CCSAnalysisOverTime".join(csvFile.split(".")[:-1]) + ".svg"
@@ -536,7 +525,7 @@ def process_ccs_frame_chunk(frameArgs: tuple):
         trajPdb = p.join(ccsDir, f"{timeStep}.pdb")
         Rg = universe.atoms.radius_of_gyration()
         universe.atoms.write(trajPdb)
-        ccs= main(trajPdb, model, gas, "1000", "0.75")
+        ccs= main(trajPdb, model, gas, "500", "0.75")
         results.append((timeStep * logTimeStep, ccs, Rg))
 
     return results

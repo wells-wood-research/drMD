@@ -331,9 +331,11 @@ h3 strong {
 .plot-card {
     background: #021108;
     min-height: var(--report-plot-height);
-    width: 100%
 }
 
+.plot-card {
+    width: 100%;
+}
 
 .plot-card h3 {
     margin: 0;
@@ -349,14 +351,15 @@ h3 strong {
 .embedded-plot-frame,
 .ccs-viz-wrapper iframe {
     width: 100% !important;
-    height: var(--report-plot-height);
+    height: 100% !important;
+    min-height: var(--report-layout-min-height);
 }
 
 .plot-preview,
 .embedded-plot-frame {
     display: block;
     width: 100%;
-    min-height: var(--report-plot-height);
+    min-height: var(--report-layout-min-height);
     height: 100%;
     max-height: none;
     border: 0;

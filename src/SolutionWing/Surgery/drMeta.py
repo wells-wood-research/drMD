@@ -53,7 +53,7 @@ def run_metadynamics(prmtop: app.Topology,
     XML file.
     """
     stepName = sim["stepName"]
-    drMethodsWriter.add_step_to_simulation_log(stepName)
+    drMethodsWriter.add_simulation_step_to_log(stepName)
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationType", sim["simulationType"])
     
     

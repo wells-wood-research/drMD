@@ -16,7 +16,7 @@ import plotly.express as px
 import plotly.figure_factory as ff
 from sklearn.cluster import KMeans
 
-REPORT_PLOT_HEIGHT = 440
+REPORT_PLOT_HEIGHT = 780
 REPORT_PLOT_WIDTH = "100%"
 
 
@@ -107,10 +107,7 @@ def interactive_ccs_over_time(df, logTimeUnit, stride):
     df["Frame File"] = df["Frame ID"].apply(lambda i: f"frame_{int(i) * (stride or 1)}.bin")
     # Calculate SASA / Convex Hull ratio
 
-    df["Shape Factor"] = (
-    df["SASA (Å²)"] /
-    df["Convex Hull Area (Å²)"]
-    )
+
 
     # Row-position identifier, used by the report's JS to look up each
     # point's binary pixel map image. Must stay in sync with the "Frame ID"
@@ -126,16 +123,13 @@ def interactive_ccs_over_time(df, logTimeUnit, stride):
     labels={
         f"Time ({logTimeUnit})": f"Time ({logTimeUnit})",
         "CCS (Å²)": "CCS (Å²)",
-        "Shape Factor": "Shape Factor"
     },
     hover_data={
             # Placed first so it lands at customdata[0] for the pixel-map viewer.
             "Frame File": True,
             "Frame ID": True,
             f"Time ({logTimeUnit})": ":.2f",
-            "SASA (Å²)": ":.2f",
             "CCS (Å²)": ":.2f",
-            "Convex Hull Area (Å²)": ":.2f",
         },
     )   
 
@@ -150,7 +144,6 @@ def interactive_ccs_over_time(df, logTimeUnit, stride):
     template="plotly_dark",
     hovermode="x unified",
     height=REPORT_PLOT_HEIGHT,
-    coloraxis_colorbar_title="Shape Factor"
     )
     return fig
 
@@ -179,7 +172,7 @@ def create_kmeans_plot(df, kmeans, logTimeUnit, stride):
     fig = px.scatter(
         df,
         x="CCS (Å²)",
-        y="Convex Hull Area (Å²)",
+        y="Radius of Gyration (Å²)",
         color="Cluster",
         category_orders={"Cluster": clusterOrder},
         color_discrete_map=colorMap,
@@ -187,7 +180,7 @@ def create_kmeans_plot(df, kmeans, logTimeUnit, stride):
         custom_data=["Frame Token"],
         labels={
             "CCS (Å²)": "CCS (Å²)",
-            "Convex Hull Area (Å²)": "Convex Hull Area (Å²)",
+            "Radius of Gyration (Å²)": "Radius of Gyration (Å²)",
             "Cluster": "Cluster",
         },
         hover_data={
@@ -195,9 +188,7 @@ def create_kmeans_plot(df, kmeans, logTimeUnit, stride):
             "Frame File": True,
             "Frame ID": True,
             f"Time ({logTimeUnit})": True,
-            "SASA (Å²)": ":.2f",
             "CCS (Å²)": ":.2f",
-            "Convex Hull Area (Å²)": ":.2f",
         },
     )
 
@@ -227,7 +218,7 @@ def create_kmeans_plot(df, kmeans, logTimeUnit, stride):
             showlegend=False,
             hovertemplate=(
                 f"Cluster {clusterLabel} centroid<br>"
-                "CCS: %{x:.2f}<br>Convex Hull: %{y:.2f}<extra></extra>"
+                "CCS: %{x:.2f}<br>Radius of Gyration: %{y:.2f}<extra></extra>"
             ),
             # customdata uses the mapping key used in `ccsPixelMapMap`.
             customdata=[[f"cluster_{clusterIdx+1}" ]],

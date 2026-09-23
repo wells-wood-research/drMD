@@ -48,7 +48,7 @@ import logging
 logging.getLogger('weasyprint').setLevel(logging.ERROR)
 warnings.filterwarnings('ignore')
 
-REPORT_PLOT_HEIGHT = 440
+REPORT_PLOT_HEIGHT = 780
 REPORT_PLOT_WIDTH = "100%"
 
 
