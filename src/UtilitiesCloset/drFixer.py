@@ -141,23 +141,36 @@ def reset_chain_residues_ligands(templateDf: pd.DataFrame, inputDf: pd.DataFrame
     
     """
 
-    ## init sets of amino acids and counter ions residue names
-    aminoAcids = drListInitiator.get_amino_acid_residue_names()
-    counterIonsAndWater = {"Na+", "Cl-", "HOH", "WAT"}
-
-
     ## create dataframes for ligands
     templateLigandsDf = templateDf[templateDf["RES_NAME"].isin(ligandNames)]
     
     inputLigandsDf = inputDf[inputDf["RES_NAME"].isin(ligandNames)]
-    
     outputDf = inputDf.copy()
-    ## loop over chains and residues for both target and template ligands
-    for (inputChain, inputChainDf), (templateChain, templateChainDf) in zip(inputLigandsDf.groupby("CHAIN_ID"), templateLigandsDf.groupby("CHAIN_ID")):
-        for (inputRes, inputResDf), (templateRes, templateResDf) in zip(inputChainDf.groupby("RES_ID"), templateChainDf.groupby("RES_ID")):
-            ## set chain and resid for input dataframe
-            outputDf.loc[inputDf["RES_ID"] == inputRes, "CHAIN_ID"] = templateChain
-            outputDf.loc[inputDf["RES_ID"] == inputRes, "RES_ID"] = templateRes
+
+    for ligandName in ligandNames:
+        inputResidues = inputLigandsDf[inputLigandsDf["RES_NAME"] == ligandName]
+        templateResidues = templateLigandsDf[templateLigandsDf["RES_NAME"] == ligandName]
+
+        inputRecords = list(inputResidues[["CHAIN_ID", "RES_ID"]].drop_duplicates().itertuples(index=False, name=None))
+        templateRecords = list(templateResidues[["CHAIN_ID", "RES_ID"]].drop_duplicates().itertuples(index=False, name=None))
+        if len(inputRecords) != len(templateRecords):
+            raise ValueError(
+                f"Cannot map ligand {ligandName}: found {len(inputRecords)} input copies "
+                f"and {len(templateRecords)} template copies."
+            )
+        if len(inputRecords) > 1:
+            raise ValueError(
+                f"Cannot map ligand {ligandName} unambiguously: multiple copies are present."
+            )
+
+        for (inputChain, inputRes), (templateChain, templateRes) in zip(inputRecords, templateRecords):
+            mask = (
+                (outputDf["RES_NAME"] == ligandName)
+                & (outputDf["CHAIN_ID"] == inputChain)
+                & (outputDf["RES_ID"] == inputRes)
+            )
+            outputDf.loc[mask, "CHAIN_ID"] = templateChain
+            outputDf.loc[mask, "RES_ID"] = templateRes
 
     return outputDf
 
@@ -207,11 +220,18 @@ def reset_chain_residues_protein(templateDf: pd.DataFrame, inputDf: pd.DataFrame
     for templateCa, inputCa in zip(templateCaDf.iterrows(), inputCaDf.iterrows()):
         ## extract chain and resid for both template and input dfs
         inputResidueId = inputCa[1]["RES_ID"]
+        inputChainId = inputCa[1]["CHAIN_ID"]
+        inputResidueName = inputCa[1]["RES_NAME"]
         targetResidueId = templateCa[1]["RES_ID"]
         targetChainId = templateCa[1]["CHAIN_ID"]
         ## reset chain and resid in inputDf
-        outputDf.loc[inputDf["RES_ID"] == inputResidueId, "CHAIN_ID"] = targetChainId
-        outputDf.loc[inputDf["RES_ID"] == inputResidueId, "RES_ID"] = targetResidueId
+        mask = (
+            (outputDf["CHAIN_ID"] == inputChainId)
+            & (outputDf["RES_ID"] == inputResidueId)
+            & (outputDf["RES_NAME"] == inputResidueName)
+        )
+        outputDf.loc[mask, "CHAIN_ID"] = targetChainId
+        outputDf.loc[mask, "RES_ID"] = targetResidueId
     return outputDf
 
 # ##################################################################################################
