@@ -1,0 +1,247 @@
+-->    Running Prep protocol for fapd_00011_0_0_1_0...
+-->    Preparing ligand FAD...
+-->    Protonating ligand FAD...
+-->    Calculating partial charges for ligand FAD...
+-->    Running: Ligand charge calculation with antechamber
+-->    Command output:
+
+Welcome to antechamber 22.0: molecular input file processor.
+
+Info: acdoctor mode is on: check and diagnose problems in the input file.
+Info: The atom type is set to gaff; the options available to the -at flag are
+      gaff, gaff2, amber, bcc, and sybyl.
+
+-- Check Format for pdb File --
+   Status: pass
+Info: Determining atomic numbers from atomic symbols which are case sensitive.
+-- Check Unusual Elements --
+   Status: pass
+-- Check Open Valences --
+   Status: pass
+-- Check Geometry --
+      for those bonded   
+      for those not bonded   
+   Status: pass
+-- Check Weird Bonds --
+   Status: pass
+-- Check Number of Units --
+   Status: pass
+acdoctor mode has completed checking the input file.
+
+Running: /opt/anaconda3/envs/drMD/bin/bondtype -j full -i ANTECHAMBER_BOND_TYPE.AC0 -o ANTECHAMBER_BOND_TYPE.AC -f ac
+
+Running: /opt/anaconda3/envs/drMD/bin/atomtype -i ANTECHAMBER_AC.AC0 -o ANTECHAMBER_AC.AC -p gaff
+Info: Total number of electrons: 408; net charge: -2
+
+Running: /opt/anaconda3/envs/drMD/bin/sqm -O -i sqm.in -o sqm.out
+
+Running: /opt/anaconda3/envs/drMD/bin/am1bcc -i ANTECHAMBER_AM1BCC_PRE.AC -o ANTECHAMBER_AM1BCC.AC -f ac -p /opt/anaconda3/envs/drMD/dat/antechamber/BCCPARM.DAT -s 2 -j 1
+
+Running: /opt/anaconda3/envs/drMD/bin/atomtype -f ac -p bcc -o ANTECHAMBER_AM1BCC.AC -i ANTECHAMBER_AM1BCC_PRE.AC
+
+
+-->    Ligand charge calculation with antechamber Completed Successfully
+-->    Creating parameter files for ligand FAD...
+-->    Running: Ligand parameter generation with parmchk2
+-->    Ligand parameter generation with parmchk2 Completed Successfully
+-->    Preparing ligand PLM...
+-->    Protonating ligand PLM...
+-->    Calculating partial charges for ligand PLM...
+-->    Running: Ligand charge calculation with antechamber
+-->    Command output:
+
+Welcome to antechamber 22.0: molecular input file processor.
+
+Info: acdoctor mode is on: check and diagnose problems in the input file.
+Info: The atom type is set to gaff; the options available to the -at flag are
+      gaff, gaff2, amber, bcc, and sybyl.
+
+-- Check Format for pdb File --
+   Status: pass
+Info: Determining atomic numbers from atomic symbols which are case sensitive.
+-- Check Unusual Elements --
+   Status: pass
+-- Check Open Valences --
+   Status: pass
+-- Check Geometry --
+      for those bonded   
+      for those not bonded   
+   Status: pass
+-- Check Weird Bonds --
+   Status: pass
+-- Check Number of Units --
+   Status: pass
+acdoctor mode has completed checking the input file.
+
+Running: /opt/anaconda3/envs/drMD/bin/bondtype -j full -i ANTECHAMBER_BOND_TYPE.AC0 -o ANTECHAMBER_BOND_TYPE.AC -f ac
+
+Running: /opt/anaconda3/envs/drMD/bin/atomtype -i ANTECHAMBER_AC.AC0 -o ANTECHAMBER_AC.AC -p gaff
+Info: Total number of electrons: 144; net charge: -1
+
+Running: /opt/anaconda3/envs/drMD/bin/sqm -O -i sqm.in -o sqm.out
+
+Running: /opt/anaconda3/envs/drMD/bin/am1bcc -i ANTECHAMBER_AM1BCC_PRE.AC -o ANTECHAMBER_AM1BCC.AC -f ac -p /opt/anaconda3/envs/drMD/dat/antechamber/BCCPARM.DAT -s 2 -j 1
+
+Running: /opt/anaconda3/envs/drMD/bin/atomtype -f ac -p bcc -o ANTECHAMBER_AM1BCC.AC -i ANTECHAMBER_AM1BCC_PRE.AC
+
+
+-->    Ligand charge calculation with antechamber Completed Successfully
+-->    Creating parameter files for ligand PLM...
+-->    Running: Ligand parameter generation with parmchk2
+-->    Ligand parameter generation with parmchk2 Completed Successfully
+-->    No non-canonical amino acids found in the protein.
+-->    Preparing parameters for system: fapd_00011_0_0_1_0...
+-->    Running: System Parameterisation with TLEAP
+-->    Command output:
+-I: Adding /opt/anaconda3/envs/drMD/dat/leap/prep to search path.
+-I: Adding /opt/anaconda3/envs/drMD/dat/leap/lib to search path.
+-I: Adding /opt/anaconda3/envs/drMD/dat/leap/parm to search path.
+-I: Adding /opt/anaconda3/envs/drMD/dat/leap/cmd to search path.
+-f: Source /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/WHOLE/TLEAP.in.
+
+Welcome to LEaP!
+(no leaprc in search path)
+Sourcing: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/WHOLE/TLEAP.in
+----- Source: /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.protein.ff19SB
+----- Source of /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.protein.ff19SB done
+Log file: ./leap.log
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/parm19.dat
+Reading title:
+PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA + ff19SB
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ff19SB
+Reading force field modification type file (frcmod)
+Reading title:
+ff19SB AA-specific backbone CMAPs for protein 07/25/2019
+Loading library: /opt/anaconda3/envs/drMD/dat/leap/lib/amino19.lib
+Loading library: /opt/anaconda3/envs/drMD/dat/leap/lib/aminoct12.lib
+Loading library: /opt/anaconda3/envs/drMD/dat/leap/lib/aminont12.lib
+----- Source: /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.gaff2
+----- Source of /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.gaff2 done
+Log file: ./leap.log
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/gaff2.dat
+Reading title:
+AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
+----- Source: /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /opt/anaconda3/envs/drMD/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /opt/anaconda3/envs/drMD/dat/leap/lib/atomic_ions.lib
+Loading library: /opt/anaconda3/envs/drMD/dat/leap/lib/solvents.lib
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+This is the additional/replacement parameter set for TIP3P water
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ionsjc_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /opt/anaconda3/envs/drMD/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading Mol2 file: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/FAD/FAD.mol2
+Reading MOLECULE named FAD
+Loading parameters: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/FAD/FAD.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/PLM/PLM.mol2
+Reading MOLECULE named PLM
+Loading parameters: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/PLM/PLM.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading PDB file: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/fapd_00011_0_0_1_0/00_prep/WHOLE/fapd_00011_0_0_1_0.pdb
+
+/opt/anaconda3/envs/drMD/bin/teLeap: Warning!
+Name change in pdb file residue 1 ;
+this residue is split into FAD and PLM.
+
+/opt/anaconda3/envs/drMD/bin/teLeap: Note.
+1 residues had naming warnings.
+Thus, there are split residues;
+residue sequence numbers will not correspond to those in the pdb.
+  total atoms in file: 2910
+  Solute vdw bounding box:              49.424 45.521 42.408
+  Total bounding box for atom centers:  69.424 65.521 62.408
+  Solvent unit box:                     18.774 18.774 18.774
+  Total vdw box size:                   72.535 68.414 65.657 angstroms.
+  Volume: 325817.172 A^3 
+  Total mass 156177.858 amu,  Density 0.796 g/cc
+  Added 7518 residues.
+7 Na+ ions required to neutralize.
+Adding 7 counter ions to "mol" using 1A grid
+Grid extends from solute vdw + 2.95  to  9.02
+Resolution:      1.00 Angstrom.
+Solvent present: replacing closest with ion
+	 when steric overlaps occur
+Calculating grid charges
+(Replacing solvent molecule)
+Placed Na+ in mol at (-17.49, -1.16, 6.53).
+(Replacing solvent molecule)
+Placed Na+ in mol at (25.38, 0.99, -0.71).
+(Replacing solvent molecule)
+Placed Na+ in mol at (-22.82, 5.12, -9.18).
+(Replacing solvent molecule)
+Placed Na+ in mol at (10.72, -9.85, -13.76).
+(Replacing solvent molecule)
+Placed Na+ in mol at (17.72, 5.72, 16.82).
+(Replacing solvent molecule)
+Placed Na+ in mol at (-3.56, 12.83, -20.28).
+(Replacing solvent molecule)
+Placed Na+ in mol at (17.63, 10.85, 0.47).
+
+Done adding ions.
+
+/opt/anaconda3/envs/drMD/bin/teLeap: Warning!
+addIons: 1st Ion & target unit have charges of the same sign:
+     unit charge = -2e-06; ion1 charge = -1;
+     can't neutralize.
+Writing pdb file: fapd_00011_0_0_1_0_solvated.pdb
+   printing CRYST1 record to PDB file with box info
+
+/opt/anaconda3/envs/drMD/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NILE -> ILE
+
+/opt/anaconda3/envs/drMD/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CALA -> ALA
+Checking Unit.
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 586 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+  (Residues lacking connect0/connect1 - 
+   these don't have chain types marked:
+
+	res	total affected
+
+	CALA	1
+	FAD	1
+	NILE	1
+	PLM	1
+	WAT	7511
+  )
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 4; Notes = 1.
+
+-->    System Parameterisation with TLEAP Completed Successfully
+-->    Prep steps complete for fapd_00011_0_0_1_0!
