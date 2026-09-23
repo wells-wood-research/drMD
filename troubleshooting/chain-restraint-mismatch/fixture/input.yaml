@@ -1,12 +1,12 @@
 pathInfo:
-  inputDir: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/inputs/fapd_00011_0_0_1_0
-  outputDir: /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0
+  inputDir: /home/mchrnwsk/drMD/troubleshooting/chain-restraint-mismatch/fixture/
+  outputDir: /home/mchrnwsk/drMD/troubleshooting/chain-restraint-mismatch/fixture/outputs/
 hardwareInfo:
   parallelCPU: 1
   platform: CPU
   subprocessCpus: 1
 proteinInfo:
-  proteinName: fapd_00011_0_0_1_0
+  proteinName: problematic_protein
   protons: true
 ligandInfo:
 - ligandName: PLM
@@ -21,7 +21,7 @@ ligandInfo:
   mol2: false
 miscInfo:
   pH: 7.0
-  firstAidMaxRetries: 1
+  firstAidMaxRetries: 0
   skipPdbTriage: false
   trajectorySelections:
   - selection:
