@@ -108,8 +108,7 @@ def run_metadynamics(prmtop: app.Topology,
         elif bias["biasVar"].upper() == "RG":
             biasVariable, addedBias= gen_gyration_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
-
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", addedBiases)    
+        drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", str(addedBias))    
 
         
     meta: metadynamics.Metadynamics = metadynamics.Metadynamics(
@@ -213,7 +212,6 @@ def scale_dielectric_constant(system: openmm.System) -> openmm.System:
             originalDielectric: float = force.getReactionFieldDielectric()
             newDielectric: float = originalDielectric * scaleFactor
             force.setReactionFieldDielectric(newDielectric)
-            drMethodsWriter.update_methods_log(f"Scaled dielectric constant from {originalDielectric} to {newDielectric}")
             break  # Assuming only one NonbondedForce exists
     return system
 ########################################################################################################
@@ -311,7 +309,7 @@ def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
     # Create a custom torsion force object
     dihedralForce: openmm.CustomTorsionForce = openmm.CustomTorsionForce(dihedralEnergyExpression)
 
-    drMethodsWriter.update_methods_log(f"              force: {dihedralForce}")
+
  
     # Add the atom indexes for the dihedral angle
     dihedralForce.addTorsion(atomIndexes[0],
@@ -351,7 +349,6 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
 
     # Create a distance bias force
     distanceForce: openmm.CustomBondForce = openmm.CustomBondForce("r")
-    drMethodsWriter.update_methods_log(f"              force: {distanceForce}")
 
     distanceForce.addBond(atomIndexes[0],
                           atomIndexes[1])
@@ -386,7 +383,7 @@ def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
 
      # Generate a Rg bias force
     rgForce: openmm.RGForce = openmm.RGForce(atomIndexes)
-    drMethodsWriter.update_methods_log(f"              force: {rgForce}")
+
 
     # Create a Rg bias variable
     gyrationBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(
@@ -396,7 +393,6 @@ def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
         biasWidth = bias["biasWidth"] * unit.angstrom,
         periodic=False)
     bias.update({"periodic": False})
-    bias.update({"energy": rgForce.getEnergyExpression()})
     return gyrationBiasVariable, bias
 
 
@@ -423,7 +419,7 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
 
     # Generate a RMSD bias force
     rmsdForce: openmm.RMSDForce = openmm.RMSDForce(atomCoords, atomIndexes)
-    drMethodsWriter.update_methods_log(f"              force: {rmsdForce}")
+
 
     # Create a RMSD bias variable
     rmsdBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(

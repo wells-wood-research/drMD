@@ -891,6 +891,8 @@ def make_amber_params(
 
     add_ter_at_end(pdbFile)
 
+    pdbFile = make_tleap_compatible_pdb(pdbFile)
+
     ## Specify force fields based on user input
     SytemFF: dict = config["miscInfo"]["forcefield"]
     ForcefieldDict= drForcefield.Forcefield(SytemFF['protein'], SytemFF["water"])
@@ -1010,7 +1012,7 @@ def make_amber_params(
     if changed_count >= 1:
         print(f"--> Detected non-positive dihedral periodicity, fixing periodicity for openMM simulation.\n-->Fixed {changed_count} torsions. Saved to {outName}.prmtop")
 
-    gaspdbDf= pdbUtils.pdb2df(GasPdb)
+    gaspdbDf= pdbUtils.pdb2df(pdbFile)
     Coordinates= gaspdbDf[["X","Y","Z"]].to_numpy()
     dropletCenter= np.mean(Coordinates, axis=0)
     Vectors= np.zeros((np.size(Coordinates,0),1))
@@ -1048,6 +1050,67 @@ def make_amber_renumbered_pdb(inPdb, outPdb):
     
 
     pdbUtils.df2pdb(outDf, outPdb)
+
+
+def make_tleap_compatible_pdb(pdbFile: FilePath) -> FilePath:
+    """Keep PDB identifiers within the fixed-width range supported by TLEAP while preserving TER records."""
+    with open(pdbFile, "r") as f:
+        lines = f.readlines()
+
+    chainIds = list(string.ascii_uppercase + string.digits)
+    nextResidueOrder = 0
+    currentResidueKey = None
+    currentAtomNames = set()
+    currentNormalizedResidue = None
+    nextAtomId = 1
+    normalizedLines = []
+
+    for line in lines:
+        if line.startswith("TER"):
+            normalizedLines.append("TER\n")
+            continue
+        if not (line.startswith("ATOM") or line.startswith("HETATM")):
+            normalizedLines.append(line)
+            continue
+
+        chainId = line[21:22].strip() or "A"
+        resIdRaw = line[22:26].strip() or "1"
+        resName = line[17:20].strip()
+        atomName = line[12:16].strip()
+        try:
+            residueKey = (chainId, int(resIdRaw), resName)
+        except ValueError:
+            residueKey = (chainId, resIdRaw, resName)
+
+        startsNewResidue = (
+            residueKey != currentResidueKey
+            or atomName in currentAtomNames
+        )
+        if startsNewResidue:
+            chainIndex, residueIndex = divmod(nextResidueOrder, 9999)
+            if chainIndex >= len(chainIds):
+                raise ValueError("PDB contains too many residues for TLEAP-compatible chain IDs")
+            currentNormalizedResidue = (chainIds[chainIndex], residueIndex + 1)
+            nextResidueOrder += 1
+            currentResidueKey = residueKey
+            currentAtomNames = set()
+
+        currentAtomNames.add(atomName)
+        normChain, normResId = currentNormalizedResidue
+        atomId = ((nextAtomId - 1) % 99999) + 1
+        nextAtomId += 1
+
+        recordType = line[0:6].strip() or "ATOM"
+        newLine = (
+            f"{recordType:<6}{atomId:>5d} {atomName:<4} {resName:<3} {normChain}{normResId:>4d}"
+            f"{line[26:30]}{line[30:38]}{line[38:46]}{line[46:54]}{line[54:60]}{line[60:66]}"
+            f"{line[66:76]}{line[76:78]:>2}"
+        )
+        normalizedLines.append(newLine.rstrip() + "\n")
+
+    with open(pdbFile, "w") as f:
+        f.writelines(normalizedLines)
+    return pdbFile
 
 
 
@@ -1144,22 +1207,34 @@ def run_with_log(
 
 #####################################################################################
 def add_ter_at_end(pdbFile: str) -> str:
-    drLogger.log_info(f"Adding the Terminal Tags at the End of Each Molecules")
-    resNames= drListInitiator.get_amino_acid_residue_names()
-    I=0
+    drLogger.log_info("Adding the terminal tags at the end of the protein")
+    residueNames = drListInitiator.get_amino_acid_residue_names()
     with open(pdbFile, "r") as pdbStr:
-        pdbStr
-        pdbAtoms= pdbStr.readlines()
-        for index, row in enumerate(pdbAtoms):
-            if row.find("ATOM") != -1 or row.find("HETAM") != -1:
-                atomVals= row.split()
-                if atomVals[3] in resNames:
-                    I += 1         
-    pdbAtoms.insert(I, "TER\n")
-    if pdbAtoms[-1] != "TER":
-        pdbAtoms.append("TER\n")
+        pdbAtoms = pdbStr.readlines()
+
+    firstNonProteinIndex = None
+    lastProteinIndex = None
+    for index, row in enumerate(pdbAtoms):
+        stripped = row.strip()
+        if not row.startswith(("ATOM", "HETATM")):
+            if stripped == "TER":
+                continue
+            continue
+        residueName = row[17:20].strip()
+        if residueName in residueNames:
+            lastProteinIndex = index
+        elif firstNonProteinIndex is None:
+            firstNonProteinIndex = index
+
+    if firstNonProteinIndex is not None:
+        if pdbAtoms[firstNonProteinIndex - 1].strip() != "TER":
+            pdbAtoms.insert(firstNonProteinIndex, "TER\n")
+    elif lastProteinIndex is not None and pdbAtoms[lastProteinIndex].strip() != "TER":
+        pdbAtoms.insert(lastProteinIndex + 1, "TER\n")
+
     with open(pdbFile, "w") as f:
         f.writelines(pdbAtoms)
-    
-    drLogger.log_info(f"Termmal Tags Added Successfully")
-    return 
+
+    drLogger.log_info("Terminal tags added successfully")
+    return pdbFile
+
