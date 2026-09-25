@@ -1,0 +1,121 @@
+pathInfo:
+  inputDir: /home/mchrnwsk/drMD/troubleshooting/chain-restraint-mismatch/fixture/
+  outputDir: /home/mchrnwsk/drMD/troubleshooting/chain-restraint-mismatch/fixture/outputs/
+hardwareInfo:
+  parallelCPU: 1
+  platform: CPU
+  subprocessCpus: 1
+proteinInfo:
+  proteinName: problematic_protein
+  protons: true
+ligandInfo:
+- ligandName: PLM
+  charge: -1
+  protons: true
+  frcmod: false
+  mol2: false
+- ligandName: FAD
+  charge: -2
+  protons: true
+  frcmod: false
+  mol2: false
+miscInfo:
+  pH: 7.0
+  firstAidMaxRetries: 0
+  skipPdbTriage: false
+  trajectorySelections:
+  - selection:
+      keyword: protein
+  - selection:
+      keyword: ligand
+simulationInfo:
+- stepName: minimisation_work
+  simulationType: EM
+  temperature: 300
+  maxIterations: -1
+  restraintInfo:
+  - restraintType: distance
+    parameters:
+      k: 1000
+      r0: 2.0
+    selection:
+      keyword: custom
+      customSelection:
+      - CHAIN_ID: A
+        RES_NAME: _
+        RES_ID: 171
+        ATOM_NAME: HG
+      - CHAIN_ID: B
+        RES_NAME: _
+        RES_ID: 1
+        ATOM_NAME: C2
+  - restraintType: distance
+    parameters:
+      k: 1000
+      r0: 4.0
+    selection:
+      keyword: custom
+      customSelection:
+      - CHAIN_ID: B
+        RES_NAME: _
+        RES_ID: 1
+        ATOM_NAME: O1
+      - CHAIN_ID: C
+        RES_NAME: _
+        RES_ID: 1
+        ATOM_NAME: N38
+  - restraintType: distance
+    parameters:
+      k: 1000
+      r0: 3.0
+    selection:
+      keyword: custom
+      customSelection:
+      - CHAIN_ID: A
+        RES_NAME: _
+        RES_ID: 170
+        ATOM_NAME: NH1
+      - CHAIN_ID: C
+        RES_NAME: _
+        RES_ID: 1
+        ATOM_NAME: N38
+  - restraintType: distance
+    parameters:
+      k: 1000
+      r0: 3.0
+    selection:
+      keyword: custom
+      customSelection:
+      - CHAIN_ID: A
+        RES_NAME: _
+        RES_ID: 170
+        ATOM_NAME: NE
+      - CHAIN_ID: B
+        RES_NAME: _
+        RES_ID: 1
+        ATOM_NAME: O2
+  - restraintType: distance
+    parameters:
+      k: 1000
+      r0: 3.0
+    selection:
+      keyword: custom
+      customSelection:
+      - CHAIN_ID: A
+        RES_NAME: _
+        RES_ID: 170
+        ATOM_NAME: NH2
+      - CHAIN_ID: A
+        RES_NAME: _
+        RES_ID: 171
+        ATOM_NAME: SG
+aftercareInfo:
+  endPointInfo:
+    stepNames:
+    - minimisation_work
+    removeAtoms:
+    - selection:
+        keyword: ions
+    - selection:
+        keyword: water
+  removeAllSimulationDirs: false

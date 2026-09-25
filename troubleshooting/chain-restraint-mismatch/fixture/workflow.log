@@ -1,0 +1,73 @@
+[H[J[38;5;37m[1m
+⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+            dddddddd                                                                       
+            d::::::d                   MMMMMMMM               MMMMMMMMDDDDDDDDDDDDD         
+            d::::::d                   M:::::::M             M:::::::MD::::::::::::DDD     
+            d::::::d                   M::::::::M           M::::::::MD:::::::::::::::DD   
+            d:::::d                    M:::::::::M         M:::::::::MDDD:::::DDDDD:::::D  
+    ddddddddd:::::drrrrr   rrrrrrrrr   M::::::::::M       M::::::::::M  D:::::D    D:::::D 
+  dd::::::::::::::dr::::rrr:::::::::r  M:::::::::::M     M:::::::::::M  D:::::D     D:::::D
+ d::::::::::::::::dr:::::::::::::::::r M:::::::M::::M   M::::M:::::::M  D:::::D     D:::::D
+d:::::::ddddd:::::drr::::::rrrrr::::::rM::::::M M::::M M::::M M::::::M  D:::::D     D:::::D
+d::::::d    d:::::d r:::::r     r:::::rM::::::M  M::::M::::M  M::::::M  D:::::D     D:::::D
+d:::::d     d:::::d r:::::r     rrrrrrrM::::::M   M:::::::M   M::::::M  D:::::D     D:::::D
+d:::::d     d:::::d r:::::r            M::::::M    M:::::M    M::::::M  D:::::D     D:::::D
+d:::::d     d:::::d r:::::r            M::::::M     MMMMM     M::::::M  D:::::D    D:::::D 
+d::::::ddddd::::::ddr:::::r            M::::::M               M::::::MDDD:::::DDDDD:::::D  
+ d:::::::::::::::::dr:::::r            M::::::M               M::::::MD:::::::::::::::DD        
+  d:::::::::ddd::::dr:::::r            M::::::M               M::::::MD::::::::::::DDD     
+   ddddddddd   dddddrrrrrrr            MMMMMMMM               MMMMMMMMDDDDDDDDDDDDD
+
+⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+                    Molecular Dynamics: Just what the Doctor Ordered!
+    [0m
+-->    Running propka to predict ligand charges for FAD at pH 7.4...            -->    Running propka to predict ligand charges for PLM at pH 7.4...            -->    Running Prep protocol for fapd_00011_0_0_1_0...                          -->    Preparing ligand FAD...                                                  -->    Protonating ligand FAD...                                                -->    Calculating partial charges for ligand FAD...                            -->    Creating parameter files for ligand FAD...                               -->    Preparing ligand PLM...                                                  -->    Protonating ligand PLM...                                                -->    Calculating partial charges for ligand PLM...                            -->    Creating parameter files for ligand PLM...                               -->    Preparing parameters for system: fapd_00011_0_0_1_0...                   -->    Prep steps complete for fapd_00011_0_0_1_0!                              -->    Running minimisation_work Step for: fapd_00011_0_0_1_0                   -->    Error running simulation: Expected exactly two atom indices for a distance restraint.[31m
+⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+  ██████  ██▓ ███▄ ▄███▓ █    ██  ██▓    ▄▄▄     ▄▄▄█████▓ ██▓ ▒█████   ███▄    █   ██████ 
+▒██    ▒ ▓██▒▓██▒▀█▀ ██▒ ██  ▓██▒▓██▒   ▒████▄   ▓  ██▒ ▓▒▓██▒▒██▒  ██▒ ██ ▀█   █ ▒██    ▒ 
+░ ▓██▄   ▒██▒▓██    ▓██░▓██  ▒██░▒██░   ▒██  ▀█▄ ▒ ▓██░ ▒░▒██▒▒██░  ██▒▓██  ▀█ ██▒░ ▓██▄   
+  ▒   ██▒░██░▒██    ▒██ ▓▓█  ░██░▒██░   ░██▄▄▄▄██░ ▓██▓ ░ ░██░▒██   ██░▓██▒  ▐▌██▒  ▒   ██▒
+▒██████▒▒░██░▒██▒   ░██▒▒▒█████▓ ░██████▒▓█   ▓██▒ ▒██▒ ░ ░██░░ ████▓▒░▒██░   ▓██░▒██████▒▒
+▒ ▒▓▒ ▒ ░░▓  ░ ▒░   ░  ░░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒▒   ▓▒█░ ▒ ░░   ░▓  ░ ▒░▒░▒░ ░ ▒░   ▒ ▒ ▒ ▒▓▒ ▒ ░
+░ ░▒  ░ ░ ▒ ░░  ░      ░░░▒░ ░ ░ ░ ░ ▒  ░ ▒   ▒▒ ░   ░     ▒ ░  ░ ▒ ▒░ ░ ░░   ░ ▒░░ ░▒  ░ ░
+░  ░  ░   ▒ ░░      ░    ░░░ ░ ░   ░ ░    ░   ▒    ░       ▒ ░░ ░ ░ ▒     ░   ░ ░ ░  ░  ░  
+      ░   ░         ░      ░         ░  ░     ░  ░         ░      ░ ░           ░       ░  
+
+                ▄▄▄▄    ▒█████  ▄▄▄█████▓ ▄████▄   ██░ ██ ▓█████ ▓█████▄  ▐██▌ 
+                ▓█████▄ ▒██▒  ██▒▓  ██▒ ▓▒▒██▀ ▀█  ▓██░ ██▒▓█   ▀ ▒██▀ ██▌ ▐██▌ 
+                ▒██▒ ▄██▒██░  ██▒▒ ▓██░ ▒░▒▓█    ▄ ▒██▀▀██░▒███   ░██   █▌ ▐██▌ 
+                ▒██░█▀  ▒██   ██░░ ▓██▓ ░ ▒▓▓▄ ▄██▒░▓█ ░██ ▒▓█  ▄ ░▓█▄   ▌ ▓██▒ 
+                ░▓█  ▀█▓░ ████▓▒░  ▒██▒ ░ ▒ ▓███▀ ░░▓█▒░██▓░▒████▒░▒████▓  ▒▄▄  
+                ░▒▓███▀▒░ ▒░▒░▒░   ▒ ░░   ░ ░▒ ▒  ░ ▒ ░░▒░▒░░ ▒░ ░ ▒▒▓  ▒  ░▀▀▒ 
+                ▒░▒   ░   ░ ▒ ▒░     ░      ░  ▒    ▒ ░▒░ ░ ░ ░  ░ ░ ▒  ▒  ░  ░ 
+                ░    ░ ░ ░ ░ ▒    ░      ░         ░  ░░ ░   ░    ░ ░  ░     ░ 
+                ░          ░ ░           ░ ░       ░  ░  ░   ░  ░   ░     ░    
+                    ░                   ░                        ░          
+⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+          [0m
+-->    drMD failed to complete simulations for [31m1[0m out of 1 input systems
+-->    Simluations on the following systems failed to complete: 
+[31m       ⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕[0m
+       For System:		[33mfapd_00011_0_0_1_0[0m
+
+[38;5;37m       ####       Traceback       ####[0m
+       In Script:		[38;5;172m/opt/drMD/src/drMD.py[0m
+       In Function:		[38;5;172mrun_serial[0m
+       With Error:		[31mValueError[0m
+       With Message:		[31mExpected exactly two atom indices for a distance restraint.[0m
+       At Line Number:		[31m158[0m
+[38;5;37m       ####       Full Debug Traceback       ####[0m
+	[38;5;172mLINE NUMBER[33m                      FUNCTION[0m	/path/to/crashed/[38;5;37mscript_name.py[0m
+	---                                  ---	---
+	[38;5;172m174       [33m        create_distance_restra[0m	/opt/drMD/src/Surgery/[38;5;37mdrRestraints.py[0m
+	[38;5;172m64        [33m                        restra[0m	/opt/drMD/src/Surgery/[38;5;37mdrRestraints.py[0m
+	[38;5;172m80        [33m                              [0m	/opt/drMD/src/Surgery/[38;5;37mdrSim.py[0m
+	[38;5;172m395       [33m                  run_energy_m[0m	/opt/drMD/src/Surgery/[38;5;37mdrSim.py[0m
+	[38;5;172m108       [33m                run_simulation[0m	/opt/drMD/src/Surgery/[38;5;37mdrOperator.py[0m
+	[38;5;172m119       [33m                run_simulation[0m	/opt/drMD/src/Surgery/[38;5;37mdrOperator.py[0m
+	[38;5;172m44        [33m                 drMD_protocol[0m	/opt/drMD/src/Surgery/[38;5;37mdrOperator.py[0m
+	[38;5;172m158       [33m                    run_serial[0m	/opt/drMD/src/[38;5;37mdrMD.py[0m
+[31m⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕⚕
+[0m
+-->    writing automatic methods section to /home/mchrnwsk/prometheozyme/runs/fapd/design/00011/cycle_0/validation/minimisation/output/fapd_00011_0_0_1_0/00_AutoMethods/drMD_AutoMethods.md-->    Error writing my methods section: object of type 'int' has no len()
+-->    Getting endpoint PDB files                                               -->    Removing atoms from pdb files...                                         -->    Collating 0 PDB files into per-step directories                          -->    Simulations Complete!                                                    

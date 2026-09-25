@@ -563,18 +563,18 @@ def get_restraint_target(restraint: str) -> str:
         return f" and an equilibrium dihedral angle of {restraint['parameters']['phi0']} degrees"
 
 ##########################################################################################
-def identifier_list_to_str(identifier: Union[str, list]) -> str:
+def identifier_list_to_str(identifier: Union[str, int, list]) -> str:
     """
     Helper function that puts an 's' for a list or nothing for a string
     
     Args:
-        identifier: (Union[str, list]) List or string
+        identifier: (Union[str, int, list]) List, string, or integer
 
     Returns:
         text: (str) methods text for the identifier
     """
-    if isinstance(identifier, str):
-        return " " + identifier
+    if isinstance(identifier, (str, int)):
+        return " " + str(identifier)
     else:
         return f"s {format_list(identifier)}"
 
@@ -786,4 +786,3 @@ if __name__ == "__main__":
     outDir = "/home/esp/scriptDevelopment/drMD/04_PET_proj_outputs/00_methods"
     batchConfigYaml = "/home/esp/scriptDevelopment/drMD/prescriptions/PETase_MD_config.yaml"
     methods_writer_protocol(batchConfigYaml, configDir, outDir)
-
