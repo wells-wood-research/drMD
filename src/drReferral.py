@@ -332,6 +332,9 @@ def write_referral(Equipment: dict, Procedure: dict) -> None:
         'aftercareInfo': aftercareInfo
         }
     
+    if Equipment.get("ligandInfo") != None:
+        Referral.update({"ligandInfo": Equipment["ligandInfo"]})
+
     ## if there are restaints to be added
     if Equipment.get("equilibriationRestraints") != None:
         Referral.update({"equilibriationRestraints": Procedure["equilibriationRestraints"]})

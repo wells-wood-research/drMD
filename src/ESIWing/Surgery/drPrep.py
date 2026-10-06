@@ -212,7 +212,7 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
         return {}
 
     nonCannonicalAminoAcidData = {}
-    drMethodsWriter.add_parameter_to_prep_log(protPdb, "nonCanonicalResidueNames", ncaaResNames)
+    drMethodsWriter.add_parameter_to_prep_log(config["proteinInfo"]["proteinName"], "nonCanonicalResidueNames", ncaaResNames)
 
     for resName in ncaaResNames:
         mol2 = p.join(inputDir, f"{resName}.mol2")
@@ -220,7 +220,7 @@ def get_non_cannonical_amino_acid_data(protPdb: FilePath, config: dict) -> dict[
         lib = p.join(inputDir, f"{resName}.lib")
         if p.exists(mol2) and p.exists(frcmod) and p.exists(lib):
             nonCannonicalAminoAcidData[resName] = {"mol2": mol2, "frcmod": frcmod, "lib": lib}
-    drMethodsWriter.add_parameter_to_prep_log(protPdb, "nonCanonicalResidueData", nonCannonicalAminoAcidData)
+    drMethodsWriter.add_parameter_to_prep_log(config["proteinInfo"]["proteinName"], "nonCanonicalResidueData", nonCannonicalAminoAcidData)
 
     return nonCannonicalAminoAcidData
 
@@ -603,7 +603,9 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
 #####################################################################################
 def ensure_ligand_atoms_are_unique(ligPdb: FilePath) -> FilePath:
     """
-    Ensure that all atoms in the ligand have unique atom names.
+    Ensure that all atoms in each ligand residue have unique atom names.
+    Names only need to be unique within a residue, so multiple copies of
+    the same ligand keep their (template-matching) atom names.
 
     Args:
         ligPdb (str): Path to the input ligand PDB file.
@@ -614,11 +616,10 @@ def ensure_ligand_atoms_are_unique(ligPdb: FilePath) -> FilePath:
     # Read PDB file
     ligDf = pdbUtils.pdb2df(ligPdb)
 
-    atomNames = ligDf["ATOM_NAME"].tolist()
-    uniqueAtomName = set(atomNames)
+    hasDuplicateNames: bool = ligDf.duplicated(subset=["CHAIN_ID", "RES_ID", "ATOM_NAME"]).any()
 
-    if len(atomNames) != len(uniqueAtomName):
-        ligDf = rename_heteroatoms(ligDf)    
+    if hasDuplicateNames:
+        ligDf = rename_heteroatoms(ligDf)
 
     pdbUtils.df2pdb(ligDf, ligPdb)
     return ligPdb

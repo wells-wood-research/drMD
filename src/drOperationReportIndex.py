@@ -1,5 +1,6 @@
 ## BASIC PYTHON LIBRARIES
 import os
+import re
 from os import path as p
 from shutil import copy2
 
@@ -54,8 +55,10 @@ def _copy_css_assets(target_dir: str, css_files: list[str]) -> None:
 def _collect_report_entries(batch_output_dir: str) -> tuple[List[Dict[str, str]], List[Dict[str, str]]]:
     """Collect per-protein report links from the batch output tree.
 
-    The project stores each operation in its own directory, and each one contains a nested
-    00_full_reports folder with full_report_index.html entries for the protein reports inside it.
+    Each operation is stored in its own directory, but its 00_full_reports folder may be nested
+    (e.g. ESI/ESI_1/00_full_reports or VacuumCM/CM_1/00_full_reports), so every 00_full_reports
+    folder below an operation directory is collected. A per-operation full_report_index.html is
+    not required; any <protein>/full_report.html found is indexed.
     """
 
     protein_entries: List[Dict[str, str]] = []
@@ -67,41 +70,60 @@ def _collect_report_entries(batch_output_dir: str) -> tuple[List[Dict[str, str]]
         if not p.isdir(operation_dir) or entry_name.startswith("00_"):
             continue
 
-        full_reports_root = p.join(operation_dir, "00_full_reports")
-        if not p.isdir(full_reports_root):
-            continue
+        for full_reports_root in _find_full_report_roots(operation_dir):
+            run_rel_path = p.relpath(p.dirname(full_reports_root), batch_output_dir)
+            operation_name = run_rel_path.replace(os.sep, " / ")
 
-        operation_index = p.join(full_reports_root, "full_report_index.html")
-        if not p.isfile(operation_index):
-            continue
+            operation_protein_entries: List[Dict[str, str]] = []
+            for protein_name in sorted(os.listdir(full_reports_root)):
+                report_path = p.join(full_reports_root, protein_name, "full_report.html")
+                if not p.isfile(report_path):
+                    continue
 
-        report_rel_path = p.relpath(operation_index, portable_reports_dir)
-        operation_entries.append(
-            {
-                "operationName": entry_name,
-                "reportCount": str(_count_reports_in_operation(full_reports_root)),
-                "reportRelPath": report_rel_path,
-            }
-        )
+                operation_protein_entries.append(
+                    {
+                        "operationName": operation_name,
+                        "proteinName": protein_name,
+                        "reportRelPath": p.relpath(report_path, portable_reports_dir),
+                    }
+                )
 
-        for protein_name in sorted(os.listdir(full_reports_root)):
-            protein_dir = p.join(full_reports_root, protein_name)
-            if not p.isdir(protein_dir):
+            if not operation_protein_entries:
                 continue
 
-            report_path = p.join(protein_dir, "full_report.html")
-            if not p.isfile(report_path):
-                continue
+            operation_index = p.join(full_reports_root, "full_report_index.html")
+            if p.isfile(operation_index):
+                operation_rel_path = p.relpath(operation_index, portable_reports_dir)
+            else:
+                operation_rel_path = operation_protein_entries[0]["reportRelPath"]
 
-            protein_entries.append(
+            operation_entries.append(
                 {
-                    "operationName": entry_name,
-                    "proteinName": protein_name,
-                    "reportRelPath": p.relpath(report_path, portable_reports_dir),
+                    "operationName": operation_name,
+                    "reportCount": str(_count_reports_in_operation(full_reports_root)),
+                    "reportRelPath": operation_rel_path,
                 }
             )
+            protein_entries.extend(operation_protein_entries)
 
     return protein_entries, operation_entries
+
+
+def _find_full_report_roots(operation_dir: str) -> List[str]:
+    """Return every 00_full_reports directory beneath an operation directory, in sorted order."""
+
+    full_report_roots: List[str] = []
+    for root, dirs, _ in os.walk(operation_dir):
+        if "00_full_reports" in dirs:
+            full_report_roots.append(p.join(root, "00_full_reports"))
+        # don't descend into other 00_* folders (configs, logs, collated pdbs, the reports themselves)
+        dirs[:] = sorted(d for d in dirs if not d.startswith("00_"))
+    return sorted(full_report_roots, key=_natural_sort_key)
+
+
+def _natural_sort_key(path: str) -> list:
+    """Sort ESI_2 before ESI_10."""
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", path)]
 
 
 def _count_reports_in_operation(full_reports_root: str) -> int:

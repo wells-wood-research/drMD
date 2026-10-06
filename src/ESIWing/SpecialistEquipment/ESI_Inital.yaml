@@ -2,7 +2,7 @@
 simulationInfo:
   - stepName: 01_energy_minimisation
     simulationType: EM
-    temperature: 300
+    temperature: 50
     maxIterations: -1
  ########################################################################
   - stepName: ESI_NVT_equilibriation_1
@@ -17,28 +17,28 @@ simulationInfo:
     duration: 100 ps
     timestep: 2 fs
     heavyProtons: False
-    temperature: 50
+    temperature: 100
     logInterval: 1 ps
   - stepName: ESI_NVT_equilibriation_2
     simulationType: NVT
     duration: 100 ps
     timestep: 2 fs
     heavyProtons: False
-    temperature: 100
+    temperature: 150
     logInterval: 1 ps
   - stepName: ESI_NVT_equilibriation_3
     simulationType: NVT
     duration: 100 ps
     timestep: 2 fs
     heavyProtons: False
-    temperature: 150
+    temperature: 200
     logInterval: 1 ps
   - stepName: ESI_NVT_equilibriation_4
     simulationType: NVT
     duration: 100 ps
     timestep: 2 fs
     heavyProtons: False
-    temperature: 200
+    temperature: 250
     logInterval: 1 ps
   - stepName: ESI_NVT_equilibriation_5
     simulationType: NVT

@@ -83,6 +83,7 @@ def run_metadynamics(prmtop: app.Topology,
     # Read biases from sim config and create bias variables
     biases: list = metaDynamicsInfo["biases"]
     biasVariables: list = []
+    addedBiases: list = []
 
     for bias in biases:
         # Get atom indexes and coordinates for the biases
@@ -104,6 +105,7 @@ def run_metadynamics(prmtop: app.Topology,
         elif bias["biasVar"].upper() == "RG":
             biasVariable, addedBias= gen_gyration_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
+        addedBiases.append(addedBias)
 
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", addedBiases)    
    
@@ -271,7 +273,6 @@ def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
     # Create a custom torsion force object
     dihedralForce: openmm.CustomTorsionForce = openmm.CustomTorsionForce(dihedralEnergyExpression)
 
-    drMethodsWriter.update_methods_log(f"              force: {dihedralForce}")
  
     # Add the atom indexes for the dihedral angle
     dihedralForce.addTorsion(atomIndexes[0],
@@ -311,7 +312,6 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
 
     # Create a distance bias force
     distanceForce: openmm.CustomBondForce = openmm.CustomBondForce("r")
-    drMethodsWriter.update_methods_log(f"              force: {distanceForce}")
 
     distanceForce.addBond(atomIndexes[0],
                           atomIndexes[1])
@@ -346,7 +346,6 @@ def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
 
      # Generate a Rg bias force
     rgForce: openmm.RGForce = openmm.RGForce(atomIndexes)
-    drMethodsWriter.update_methods_log(f"              force: {rgForce}")
 
     # Create a Rg bias variable
     gyrationBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(
@@ -383,7 +382,6 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
 
     # Generate a RMSD bias force
     rmsdForce: openmm.RMSDForce = openmm.RMSDForce(atomCoords, atomIndexes)
-    drMethodsWriter.update_methods_log(f"              force: {rmsdForce}")
 
     # Create a RMSD bias variable
     rmsdBiasVariable: metadynamics.BiasVariable = metadynamics.BiasVariable(

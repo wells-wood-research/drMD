@@ -419,7 +419,7 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
 
     drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
     drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", sim["maxIterations"])
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "type", "EM")
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "simulationType", "EM")
 
     drLogger.log_info(f"Running {stepName} Step for: {protName} {' '*10}", True)
     ## create simluation directory

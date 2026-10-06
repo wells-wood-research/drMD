@@ -95,10 +95,11 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         raise KeyError("ESI cutoff is missing from ESIInfo.")
 
     esiInfo = {
-        "esiCount": outDir.split(os.sep)[-1].split("_")[0].removeprefix("ESI"),
+        "esiCount": int(esiSuffix) if (esiSuffix := outDir.rstrip(os.sep).split(os.sep)[-1].split("_")[-1]).isdigit() else 1,
         "mode": mode_value,
         "cutoff": cutoff_value,
     }
+    drMethodsWriter.add_esi_info_to_log(esiInfo)
     ## set environment variables for OpenMP and OpenMM - this should limit their CPU useage
     manage_cpu_usage_for_subprocesses("ON",subprocessCpus)
 
@@ -115,14 +116,14 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
 
     ## set up logging for post simulation processes
     drLogger.setup_logging(p.join(batchConfig["pathInfo"]["outputDir"], "00_drMD_logs", "aftercare.log"))
-    ## write methods section if desired
+    ## perform post simulation operations
+    drCleanup.clean_up_handler(batchConfig)
+    ## write methods section if desired (after aftercare, so analysis steps are included)
     if writeMyMethodsSection:
         try:
             drMethodsWriter.write_log_to_methods_file(outDir)
         except Exception as e:
             drLogger.log_info(f"Error writing methods log: {e}", True, True)
-    ## perform post simulation operations
-    drCleanup.clean_up_handler(batchConfig)
 
     drLogger.log_info("Simulations Complete!", True)
     ## close logging for post simulation processes

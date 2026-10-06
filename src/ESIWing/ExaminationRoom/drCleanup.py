@@ -4,7 +4,7 @@ from os import path as p
 from shutil import copy, rmtree
 
 ## drMD LIBRARIES
-from ExaminationRoom import drLogger, drClusterizer, drCollision
+from ExaminationRoom import drLogger, drClusterizer
 from ExaminationRoom.drFullReport import full_report_handler
 from UtilitiesCloset import drSelector, drListInitiator
 
@@ -37,8 +37,6 @@ def clean_up_handler(batchConfig: dict) -> None:
     endpoint_handler(batchConfig)
     ## collate vitals reports if instructed to in config file
     collate_vitals_reports(batchConfig)
-    ## calculate CCS using ShadowScreen if instructed to in config file
-    drCollision.calculate_ccs_shadow(batchConfig)
     ## write a batch-level HTML summary if instructed to in config file
     full_report_handler(batchConfig)
     ## delete unwanted directories as instructed to in config file

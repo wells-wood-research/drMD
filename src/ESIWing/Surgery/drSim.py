@@ -80,7 +80,7 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
         drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperature", initailSimulationTemp)
     elif "temperatureRange" in sim:
         initailSimulationTemp = sim["temperatureRange"][0]
-        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperatureRange", initailSimulationTemp)
+        drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "temperatureRange", sim["temperatureRange"])
 
     ## deal with any restraints
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
@@ -398,8 +398,8 @@ def run_energy_minimisation(prmtop: app.AmberPrmtopFile,
     stepName: str = sim["stepName"]
     protName: str = config["proteinInfo"]["proteinName"]
     drMethodsWriter.add_simulation_step_to_log(sim["stepName"])
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", str(sim["maxIterations"]))
-    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "type", "EM")
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "maxIterations", sim["maxIterations"])
+    drMethodsWriter.add_parameter_to_simulation_log(sim["stepName"], "simulationType", "EM")
 
     drLogger.log_info(f"Running {stepName} Step for: {protName} {' '*10}", True)
 

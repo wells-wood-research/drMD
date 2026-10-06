@@ -3,7 +3,7 @@ simulationInfo:
   - stepName: 01_energy_minimisation
     simulationType: EM
     temperature: 300
-    maxIterations: -1
+    maxIterations: 100
  ########################################################################
   - stepName: ESI_NVT_equilibration_end
     simulationType: NVT

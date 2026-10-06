@@ -147,7 +147,7 @@ def ligand_prep_protocol(config: dict, protName: str, prepDir: DirectoryPath) ->
                         outDir=prepDir)
         ## PREPARE LIGAND PARAMETERS, OUTPUT LIGAND PDBS
         
-        ligandPdbs, ligandFileDict, ligandInfo = prepare_ligand_parameters(config = config)
+        ligandPdbs, ligandFileDict = prepare_ligand_parameters(config = config)
         drMethodsWriter.add_parameter_to_prep_log(protName, "ligands", config["ligandInfo"])
         ## PREPARE PROTEIN STRUCTURE
         protPdb = prepare_protein_structure(config=config, outDir = prepDir, protName=protName)
@@ -580,7 +580,9 @@ def prepare_ligand_parameters(config: Dict) -> Tuple[List[str], Dict[str, Dict[s
 #####################################################################################
 def ensure_ligand_atoms_are_unique(ligPdb: FilePath) -> FilePath:
     """
-    Ensure that all atoms in the ligand have unique atom names.
+    Ensure that all atoms in each ligand residue have unique atom names.
+    Names only need to be unique within a residue, so multiple copies of
+    the same ligand keep their (template-matching) atom names.
 
     Args:
         ligPdb (str): Path to the input ligand PDB file.
@@ -591,11 +593,10 @@ def ensure_ligand_atoms_are_unique(ligPdb: FilePath) -> FilePath:
     # Read PDB file
     ligDf = pdbUtils.pdb2df(ligPdb)
 
-    atomNames = ligDf["ATOM_NAME"].tolist()
-    uniqueAtomName = set(atomNames)
+    hasDuplicateNames: bool = ligDf.duplicated(subset=["CHAIN_ID", "RES_ID", "ATOM_NAME"]).any()
 
-    if len(atomNames) != len(uniqueAtomName):
-        ligDf = rename_heteroatoms(ligDf)    
+    if hasDuplicateNames:
+        ligDf = rename_heteroatoms(ligDf)
 
     pdbUtils.df2pdb(ligDf, ligPdb)
     return ligPdb
@@ -925,7 +926,6 @@ def make_amber_params(
 
     drMethodsWriter.add_parameter_to_prep_log(outName, "forceFields", {
         "protein": proteinff.split('.')[-1],
-        "water": waterff.split('.')[-1],
         "ion1": ion1ff.split('.')[-1],
         "ion2": ion2ff.split('.')[-1],
         "general": "gaff2"

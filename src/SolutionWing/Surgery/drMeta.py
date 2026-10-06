@@ -301,7 +301,7 @@ def gen_dihedral_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
                                                     periodic = True)
     bias.update({"periodic": True})
     bias.update({"energy": dihedralForce.getEnergyExpression()})
-    return dihedralBiasVariable
+    return dihedralBiasVariable, bias
 
 ########################################################################################################
 def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list) -> metadynamics.BiasVariable:
@@ -336,7 +336,7 @@ def gen_distance_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: 
                                                     periodic = False)
     bias.update({"periodic": False})
     bias.update({"energy": distanceForce.getEnergyExpression()})
-    return distanceBiasVariable
+    return distanceBiasVariable, bias
 ########################################################################################################
 def gen_gyration_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list) -> metadynamics.BiasVariable:
     """
@@ -405,7 +405,7 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
         periodic=False)
     bias.update({"periodic": False})
     bias.update({"energy": rmsdForce.getEnergyExpression()})
-    return rmsdBiasVariable
+    return rmsdBiasVariable, bias
 
 
 
