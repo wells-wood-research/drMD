@@ -3,6 +3,7 @@ import os
 from os import path as p
 import numpy as np
 import pandas as pd
+from pdbUtils import pdbUtils
 
 ## OPENMM LIBRARIES
 import openmm.app as app
@@ -87,6 +88,7 @@ def run_metadynamics(prmtop: app.Topology,
     # Read biases from sim config and create bias variables
     biases: list = metaDynamicsInfo["biases"]
     biasVariables: list = []
+    addedBiases: list = []
 
     for bias in biases:
         # Get atom indexes and coordinates for the biases
@@ -108,7 +110,8 @@ def run_metadynamics(prmtop: app.Topology,
         elif bias["biasVar"].upper() == "RG":
             biasVariable, addedBias= gen_gyration_bias_variable(bias, atomCoords, atomIndexes)
             biasVariables.append(biasVariable)
-        drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", str(addedBias))    
+        addedBiases.append(addedBias)
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "biases", addedBiases)
 
         
     meta: metadynamics.Metadynamics = metadynamics.Metadynamics(
@@ -132,7 +135,6 @@ def run_metadynamics(prmtop: app.Topology,
         sim["temperature"], 1/unit.picosecond, sim["timestep"]
     )
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "integrator", "LangevinMiddleIntegrator")
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "temperature", str(sim["temperature"]))
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "timeStep", str(sim["timestep"]))
     drMethodsWriter.add_parameter_to_simulation_log(stepName, "friction", "1 ps^-1")
 
@@ -155,10 +157,11 @@ def run_metadynamics(prmtop: app.Topology,
     )
 
 
-    
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "totalSteps", totalSteps)
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "reportInterval", reportInterval)
-    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationTime", totalSteps * sim['timestep'])
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "totalSteps", str(totalSteps))
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "reportInterval", str(reportInterval))
+    simulationTime = (totalSteps * sim["timestep"]).value_in_unit(unit.femtoseconds)
+
+    drMethodsWriter.add_parameter_to_simulation_log(stepName, "simulationTime", str(simulationTime))
 
     # Run metadynamics simulation
     meta.step(simulation, sim["nSteps"])
@@ -433,5 +436,155 @@ def gen_rmsd_bias_variable(bias: dict, atomCoords: np.ndarray, atomIndexes: list
     return rmsdBiasVariable, bias
 
 
+ONE_TO_THREE: dict = {
+    "A": "ALA", "R": "ARG", "N": "ASN", "D": "ASP", "C": "CYS",
+    "Q": "GLN", "E": "GLU", "G": "GLY", "H": "HIS", "I": "ILE",
+    "L": "LEU", "K": "LYS", "M": "MET", "F": "PHE", "P": "PRO",
+    "S": "SER", "T": "THR", "W": "TRP", "Y": "TYR", "V": "VAL"
+}
+########################################################################################################
+def get_sequence_from_pdb(pdbFile: str) -> list:
+    """
+    Get the sequence of residue names from the CA atoms of a PDB file
 
+    Parameters
+    ----------
+    pdbFile : str
+        The path to the PDB file.
+
+    Returns
+    -------
+    sequence : list
+        A list of three-letter residue names.
+    """
+    pdbDf: pd.DataFrame = pdbUtils.pdb2df(pdbFile)
+    caDf: pd.DataFrame = pdbDf[pdbDf["ATOM_NAME"] == "CA"]
+    return caDf["RES_NAME"].tolist()
+########################################################################################################
+def make_compact_sphere_pdb(sequence: str | list,
+                             outPdb: str,
+                               beadSpacing: float = 3.8) -> str:
+    """
+    Build a fully compacted, spherical, coarse-grained (one CA bead per residue)
+    PDB file from a sequence.
+
+    Beads are placed on a face-centred cubic (FCC) lattice - the densest possible
+    sphere packing - and the N lattice sites closest to the origin are kept, giving
+    the most compact sphere possible. The sites are then threaded into a chain so
+    that consecutive residues sit on neighbouring lattice sites (one bead spacing apart).
+
+    Parameters
+    ----------
+    sequence : str | list
+        Either a one-letter sequence string (e.g. "MKTAYIAK") or a list of
+        three-letter residue names (e.g. ["MET", "LYS", ...]).
+    outPdb : str
+        The path to the output PDB file.
+    beadSpacing : float
+        The nearest-neighbour distance between beads in Angstroms (default 3.8, the CA-CA distance).
+
+    Returns
+    -------
+    outPdb : str
+        The path to the output PDB file.
+    """
+    ## convert sequence to three-letter codes
+    if isinstance(sequence, str):
+        sequence = [ONE_TO_THREE[aa] for aa in sequence.upper()]
+    nResidues: int = len(sequence)
+    if nResidues == 0:
+        raise ValueError("Sequence is empty")
+
+    ## build an FCC lattice big enough to hold all residues
+    latticeConstant: float = beadSpacing * np.sqrt(2)
+    nCells: int = int(np.ceil((nResidues / 4) ** (1 / 3))) + 2
+    cellRange: np.ndarray = np.arange(-nCells, nCells + 1)
+    basis: np.ndarray = np.array([[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]])
+    cells: np.ndarray = np.array(np.meshgrid(cellRange, cellRange, cellRange)).T.reshape(-1, 3)
+    lattice: np.ndarray = (cells[:, None, :] + basis[None, :, :]).reshape(-1, 3) * latticeConstant
+
+    ## keep the N sites closest to the origin -> most compact sphere
+    sortedIndexes: np.ndarray = np.argsort(np.linalg.norm(lattice, axis=1), kind="stable")
+    sites: np.ndarray = lattice[sortedIndexes[:nResidues]]
+
+    ## thread a chain through the sites
+    chainCoords: np.ndarray = thread_chain_through_sites(sites, beadSpacing)
+
+    ## write PDB
+    pdbDf: pd.DataFrame = pd.DataFrame({
+        "ATOM": "ATOM",
+        "ATOM_ID": np.arange(1, nResidues + 1),
+        "ATOM_NAME": "CA",
+        "RES_NAME": sequence,
+        "CHAIN_ID": "A",
+        "RES_ID": np.arange(1, nResidues + 1),
+        "X": chainCoords[:, 0],
+        "Y": chainCoords[:, 1],
+        "Z": chainCoords[:, 2],
+        "OCCUPANCY": 1.0,
+        "BETAFACTOR": 0.0,
+        "ELEMENT": "C"
+    })
+    pdbUtils.df2pdb(pdbDf, outPdb)
+    return outPdb
+########################################################################################################
+def thread_chain_through_sites(sites: np.ndarray, beadSpacing: float) -> np.ndarray:
+    """
+    Order lattice sites into a chain where consecutive sites are lattice neighbours.
+    Uses a Warnsdorff-style walk (always step to the free neighbour that has the fewest
+    free neighbours itself), starting from the outermost site, which keeps the
+    walk from stranding sites. If the walk gets stuck it jumps to the nearest free site.
+
+    Parameters
+    ----------
+    sites : np.ndarray
+        (N, 3) array of lattice site coordinates.
+    beadSpacing : float
+        The nearest-neighbour distance between sites in Angstroms.
+
+    Returns
+    -------
+    chainCoords : np.ndarray
+        (N, 3) array of site coordinates in chain order.
+    """
+    nSites: int = len(sites)
+    distances: np.ndarray = np.linalg.norm(sites[:, None, :] - sites[None, :, :], axis=2)
+    neighbours: list = [np.where((row > 0) & (row < beadSpacing * 1.01))[0] for row in distances]
+
+    visited: np.ndarray = np.zeros(nSites, dtype=bool)
+    current: int = int(np.argmax(np.linalg.norm(sites, axis=1)))
+    order: list = [current]
+    visited[current] = True
+    for _ in range(nSites - 1):
+        freeNeighbours: list = [n for n in neighbours[current] if not visited[n]]
+        if freeNeighbours:
+            current = min(freeNeighbours,
+                          key=lambda n: (sum(not visited[m] for m in neighbours[n]),
+                                         -np.linalg.norm(sites[n])))
+        else:
+            ## stuck - jump to nearest unvisited site
+            freeDistances: np.ndarray = np.where(visited, np.inf, distances[current])
+            current = int(np.argmin(freeDistances))
+        order.append(current)
+        visited[current] = True
+
+    return sites[order]
+########################################################################################################
+def get_ccs_limit(refPdb: str) -> float:
+    """
+    Get the minimum and maximum possible CCS using the toy model as a basis
+    
+    Parameters
+    ----------
+    refPdb : str
+        The path to the reference PDB file.
+    
+    Returns
+    -------
+    ccsLimits : tuple
+        A tuple containing the minimum and maximum possible CCS values.
+    """
+    # Get the sequence of amino acids from the reference PDB file
+    refDf: pd.DataFrame = pdbUtils.pdbtoDataFrame(refPdb)
+    return ccsLimit
 ########################################################################################################

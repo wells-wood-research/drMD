@@ -25,7 +25,7 @@ def full_report_handler(batchConfig: dict) -> None:
     """
 
     aftercareInfo: Dict = batchConfig.get("aftercareInfo", {})
-    fullReport: bool = aftercareInfo.get("fullReport", False)
+    fullReport: bool = aftercareInfo.get("fullReport", True)
     if not fullReport:
         return
 

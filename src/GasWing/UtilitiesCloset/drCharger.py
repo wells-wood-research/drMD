@@ -543,7 +543,7 @@ def SimpleCharger( PDBfile: str, TargetCharge: int):
             
     if TargetCharge == 0:
         TargetCharge= TotalCharge
-    if TotalCharge == TargetCharge:
+    if TotalCharge == TargetCharge+1:
         chargedPDB=PDBfile.removesuffix(".pdb")+f"_{TargetCharge}.pdb"
         pdbUtils.df2pdb(NewpdbDf, chargedPDB)
         cleanup_outputs(chargedPqr)
@@ -555,7 +555,7 @@ def SimpleCharger( PDBfile: str, TargetCharge: int):
     UBpH= 14
     LBpH= 0
     
-    while TotalCharge != TargetCharge:
+    while TotalCharge != TargetCharge+1:
 
         protPqr= PDBfile.removesuffix(".pdb")+f"_{pH}.pqr"
         pdb2pqrCommand: str = ["pdb2pqr",
@@ -569,39 +569,46 @@ def SimpleCharger( PDBfile: str, TargetCharge: int):
         if NewpdbDf is None:
             cleanup_outputs(protPqr)
             raise RuntimeError(f"pdb2pqr failed while probing pH {pH} for {PDBfile}")
-        if TotalCharge < TargetCharge:
+        if TotalCharge < TargetCharge+1:
             UBpH= pH
             pH= UBpH- 0.5*(UBpH-LBpH)
-        elif TotalCharge > TargetCharge:
+        elif TotalCharge > TargetCharge+1:
             LBpH= pH
             pH= LBpH+ 0.5*(UBpH-LBpH)
         
-        elif TotalCharge == TargetCharge:
+        elif TotalCharge == TargetCharge+1:
+            for AtmNumb, Atom in NewpdbDf.iterrows():
+                if Atom["ATOM_NAME"].find("H") != -1:
+                    NewpdbDf= NewpdbDf[NewpdbDf.index!= AtmNumb]
             chargedPDB=PDBfile.removesuffix(".pdb")+f"_{TargetCharge}.pdb"
             pdbUtils.df2pdb(NewpdbDf, chargedPDB)
             cleanup_outputs(protPqr)
             return chargedPDB
 
         if UBpH-LBpH <= 0.01:
-            for probePH in np.linspace(LBpH, UBpH, num=11):
-                probePqr= PDBfile.removesuffix(".pdb")+f"_{probePH}.pqr"
-                probeCommand: str = ["pdb2pqr",
+            for testPH in np.linspace(LBpH, UBpH, num=11):
+                testPqr= PDBfile.removesuffix(".pdb")+f"_{testPH}.pqr"
+                testCommand: str = ["pdb2pqr",
                                     "--ffout", "AMBER",
                                     "--titration-state-method", "propka",
                                     "--keep-chain",
-                                    "--with-ph", str(float(probePH)),
-                                    strippedPdb, probePqr]
-                ProbeDf, ProbeCharge = run_pdb2pqr(probeCommand, probePqr)
-                if ProbeDf is None:
-                    cleanup_outputs(probePqr)
+                                    "--with-ph", str(float(testPH)),
+                                    strippedPdb, testPqr]
+                testDf, testCharge = run_pdb2pqr(testCommand, testPqr)
+                if testDf is None:
+                    cleanup_outputs(testPqr)
                     continue
-                if ProbeCharge == TargetCharge:
+                if testCharge == TargetCharge+1:
+                    # Remove hydrogen atoms from the test dataframe
                     chargedPDB=PDBfile.removesuffix(".pdb")+f"_{TargetCharge}.pdb"
-                    pdbUtils.df2pdb(ProbeDf, chargedPDB)
-                    cleanup_outputs(probePqr)
+                    for AtmNumb, Atom in testDf.iterrows():
+                        if Atom["ATOM_NAME"].find("H") != -1:
+                            testDf= testDf[testDf.index!= AtmNumb]
+                    pdbUtils.df2pdb(testDf, chargedPDB)
+                    cleanup_outputs(testPqr)
                     cleanup_outputs(protPqr)
                     return chargedPDB
-                cleanup_outputs(probePqr)
+                cleanup_outputs(testPqr)
 
             cleanup_outputs(protPqr)
             raise RuntimeError(
