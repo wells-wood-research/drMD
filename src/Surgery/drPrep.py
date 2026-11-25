@@ -12,6 +12,7 @@ import numpy as np
 ## drMD MODULES
 from UtilitiesCloset import drFixer, drSplash, drListInitiator
 from ExaminationRoom import drLogger
+from Surgery import drMembrane
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -326,6 +327,8 @@ def split_input_pdb(inputPdb: FilePath, config: Dict, outDir: DirectoryPath) -> 
     """
     # Read whole pdb into a df
     pdbDf: pd.DataFrame = pdbUtils.pdb2df(inputPdb)
+    ## remove OPM / PPM membrane dummy atoms (DUM) from pre-oriented membrane protein structures
+    pdbDf = pdbDf[pdbDf["RES_NAME"] != "DUM"].reset_index(drop=True)
     # Write each ligand to a separate pdb file
     ligandInfo: List[dict] = config.get("ligandInfo", None)
     if not ligandInfo is None:
@@ -754,9 +757,8 @@ def detect_disulphides(pdbFile: FilePath) -> List[str]:
     distanceMatrixDf = pd.DataFrame(np.sqrt(np.sum((sgCoords[:, np.newaxis, :] - sgCoords[np.newaxis, :, :])**2, axis=-1)),
                                    index=sgDf["RES_ID"].values, columns=sgDf["RES_ID"].values)
     
-    disulphidesDf = distanceMatrixDf.applymap(
-        lambda x: x < 3.0 and x != 0
-    )
+    ## vectorised comparison (DataFrame.applymap was removed in pandas 3)
+    disulphidesDf = (distanceMatrixDf < 3.0) & (distanceMatrixDf != 0)
 
 
     disulphidePairs = [
@@ -814,23 +816,38 @@ def make_amber_params(
         pdbFile = amberNumberedPdb
 
 
-    ## box geometry
-    boxGeometry: str = config["miscInfo"]["boxGeometry"]
-    if boxGeometry == "cubic":
-        solvateKeyword: str = "solvatebox"
-    elif boxGeometry == "octahedral":
-        solvateKeyword: str = "solvateoct"
+    ## MEMBRANE SYSTEMS: pack a lipid bilayer + water + salt around the protein
+    ## (protein residues come first in the packed PDB, so disulphide numbering above still holds)
+    membraneInfo: Optional[Dict] = config.get("membraneInfo", None)
+    if membraneInfo:
+        pdbFile, membraneBoxDims = drMembrane.build_membrane_system(pdbFile = pdbFile,
+                                                                    outDir = outDir,
+                                                                    config = config,
+                                                                    keepHeteroAtoms = bool(ligandFileDict))
+        os.chdir(outDir)
+        proteinForceField: str = membraneInfo.get("proteinForceField", "ff14SB")
+    else:
+        proteinForceField: str = "ff19SB"
+        ## box geometry
+        boxGeometry: str = config["miscInfo"]["boxGeometry"]
+        if boxGeometry == "cubic":
+            solvateKeyword: str = "solvatebox"
+        elif boxGeometry == "octahedral":
+            solvateKeyword: str = "solvateoct"
 
-    ## box size
-    boxSize: int = config["miscInfo"]["boxSize"]
+        ## box size
+        boxSize: int = config["miscInfo"]["boxSize"]
 
     # Write the TLEAP input file
     tleapInput: str = p.join(outDir, "TLEAP.in")
     with open(tleapInput, "w") as f:
         # Load Amber force fields and TIP3P water model
-        f.write("source leaprc.protein.ff19SB\n")
+        f.write(f"source leaprc.protein.{proteinForceField}\n")
         f.write("source leaprc.gaff2\n")
-        f.write("source leaprc.water.tip3p\n\n")
+        f.write("source leaprc.water.tip3p\n")
+        if membraneInfo:
+            f.write("source leaprc.lipid21\n")
+        f.write("\n")
 
         # Load Amber force fields for ions
         f.write("loadamberparams frcmod.ions1lm_126_tip3p\n")
@@ -865,9 +882,19 @@ def make_amber_params(
 
         # Solvate the protein and add ions
 
-        f.write(f"{solvateKeyword} mol TIP3PBOX {boxSize}\n")
-        f.write("addions mol Na+ 0\n")
-        f.write("addions mol Cl- 0\n")
+        if membraneInfo:
+            ## system is already solvated by PACKMOL-Memgen: set the rectangular box,
+            ## then neutralise any remaining charge by swapping random waters for ions
+            f.write(f"set mol box {{{membraneBoxDims[0]:.3f} {membraneBoxDims[1]:.3f} {membraneBoxDims[2]:.3f}}}\n")
+            f.write(f"addIonsRand mol {membraneInfo['cation']} 0\n")
+            f.write(f"addIonsRand mol {membraneInfo['anion']} 0\n")
+            nSaltPairs: int = drMembrane.get_salt_pairs(outDir)
+            if nSaltPairs > 0:
+                f.write(f"addIonsRand mol {membraneInfo['cation']} {nSaltPairs} {membraneInfo['anion']} {nSaltPairs}\n")
+        else:
+            f.write(f"{solvateKeyword} mol TIP3PBOX {boxSize}\n")
+            f.write("addions mol Na+ 0\n")
+            f.write("addions mol Cl- 0\n")
 
         ## make disulphide bonds
         for disulphideAtomPair in disulphideAtomPairs:

@@ -18,7 +18,7 @@ from concurrent.futures.process import BrokenProcessPool
 
 ## CUSTOM DR MD MODULES
 from Triage import drConfigTriage, drPdbTriage, drConfigWriter
-from Surgery import drOperator
+from Surgery import drOperator, drMembrane
 from ExaminationRoom import  drCleanup, drLogger
 from UtilitiesCloset import drSplash, drMethodsWriter
 
@@ -63,6 +63,12 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
     ## create logDir if it doesn't exist
     logDir: DirectoryPath = p.join(outDir, "00_drMD_logs")
     os.makedirs(logDir, exist_ok=True)
+
+    ## membrane simulations: work from cleaned copies of the input PDBs
+    ## (removes OPM/PPM dummy atoms and fills blank PDB columns; user files are not changed)
+    if batchConfig.get("membraneInfo"):
+        batchConfig = drMembrane.prepare_membrane_inputs(batchConfig)
+        pdbDir = batchConfig["pathInfo"]["inputDir"]
 
     skipPdbTriage = batchConfig["miscInfo"].get("skipPdbTriage", False)
     if not skipPdbTriage:

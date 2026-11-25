@@ -11,6 +11,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
    - **Hardware Info**: [platform](#platform) |[parallelCPU](#parallelcpu) | [subprocessCpus](#subprocesscpus)
    - **Misc Info**: [pH](#pH) | [firstAidMaxRetries](#firstaidmaxretries) | [boxGeometry](#boxgeometry) | [boxSize](#boxsize) | [writeMyMethodsSection](#writemymethodssection) | [skipPdbTriage](#skippdbtriage) | [trajectorySelections](#trajectoryselections)
    - **Ligand Info**: [ligandName](#ligandname) | [protons](#protons) | [charge](#charge) | [frcmod](#frcmod) | [mol2](#mol2)
+   - **Membrane Info**: [membraneInfo](#membraneinfo) | [lipids](#lipids) | [lipidRatio](#lipidratio) | [orientation](#orientation) | [saltConcentration](#saltconcentration) | [padding](#padding) | [waterThickness](#waterthickness) | [boxSizeXY](#boxsizexy) | [proteinForceField](#proteinforcefield)
    - **Simulation Info**: [stepName](#stepname) | [simulationType](#simulationtype) | [temperature](#temperature) | [temperatureRange](#temperaturerange) | [maxIterations](#maxiterations) | [duration](#duration) | [timestep](#timestep) | [logInterval](#loginterval)
    - **Aftercare Info**: 
      - **End Point Info**: [stepNames](#stepnamesendpoint) | [removeAtoms](#removeatomsendpoint)
@@ -25,6 +26,7 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
     - [Example 4: Using drMD default settings](#worked-example-4)
     - [Example 5: Metadynamics Simulation of Alanine Dipeptide](#worked-example-5)
     - [Example 6: Metadynamics Simulation of Chignolin Peptide](#worked-example-6)
+    - [Example 9: MD Simulation of a Membrane Protein](#worked-example-9)
 
 # :medical_symbol: GitHub Installation :medical_symbol:
 We recommend that you use the following steps to install **drMD**:
@@ -348,6 +350,83 @@ This `ligandInfo` tells **drMD** to expect two ligands: FMN and TPA. FMN has a f
 ---
 
 <a id="simulationinfo"></a>
+<a id="membraneinfo"></a>
+## :brain: membraneInfo
+*(bool or dict)* **Optional.** Add this section to tell **drMD** that your protein should be simulated in a lipid bilayer.
+
+The minimal membrane config is a single line:
+
+```yaml
+membraneInfo: True
+```
+
+This gives a POPC bilayer, 0.15 M NaCl, automatic orientation (MemPrO if installed, otherwise MEMEMBED) and the default membrane protocol (if you have not written a `simulationInfo` section).
+Any of the options below can be added to override a default; anything you leave out uses the default.
+
+**drMD** then:
+1. Protonates the protein as usual (pdb2pqr / propka)
+2. Orients the protein and packs lipids, water and salt around it with [PACKMOL-Memgen](https://doi.org/10.1021/acs.jcim.9b00269) (part of AmberTools)
+3. Parameterises the system with tleap using the AMBER Lipid21 lipid forcefield, ff14SB (default) for the protein and TIP3P water, in a rectangular box
+4. Runs NpT steps with a membrane barostat (x and y scaled together, z independently, zero surface tension)
+
+If `simulationInfo` is left out, **drMD** uses a default membrane protocol: restrained energy minimisation, 125 ps NVT heating (1 fs, 50 → 300 K),
+250 ps and 500 ps NpT equilibration while backbone and lipid head-group restraints are released, then 10 ns of production MD (4 fs, heavy protons).
+
+> :warning: `boxGeometry` and `boxSize` in miscInfo are ignored for membrane simulations.
+> pKa values from propka do not account for the membrane environment; if you need specific protonation states, protonate your protein yourself.
+
+<a id="lipids"></a>
+### :anatomical_heart: lipids
+*(str)* Lipid(s) for the bilayer, using PACKMOL-Memgen names (`packmol-memgen --available_lipids`). Default: `"POPC"`.
+Mixtures are separated by `:` (e.g. `"POPC:CHL1"`). Different upper and lower leaflets are separated by `//` (e.g. `"POPC:POPE//POPC"`, lower leaflet first).
+
+<a id="lipidratio"></a>
+### :anatomical_heart: lipidRatio
+*(str)* Relative amounts of each lipid, written in the same layout as `lipids` (e.g. `"9:1"` or `"3:1//1"`). Default: equal parts of every lipid.
+
+<a id="orientation"></a>
+### :anatomical_heart: orientation
+*(str)* How the protein is placed in the membrane. Default: `"auto"`.
+  - **"auto"** : uses MemPrO if it is installed, otherwise MEMEMBED; if the first method fails, the other is tried
+  - **"memembed"** : predicts the orientation with MEMEMBED (bundled with PACKMOL-Memgen). MEMEMBED assumes the N-terminus is on the cytoplasmic (lower, -z) side, so single-pass type-I proteins come out upside down. This does not matter for symmetric bilayers, but check the orientation if you use different upper and lower leaflets (MemPrO assigns the sidedness using the positive-inside rule)
+  - **"mempro"** : predicts the orientation with [MemPrO](https://github.com/ShufflerBardOnTheEdge/MemPrO) (`pip install mempro`, needs Python >= 3.11)
+  - **"preoriented"** : your PDB is already oriented (membrane normal along z, membrane centre at z = 0), e.g. a structure from the [OPM database](https://opm.phar.umich.edu). OPM dummy membrane atoms (`DUM`) and crystallographic waters are removed automatically (from a working copy; your input files are not changed). Detergent or lipid molecules from the crystal structure are not removed - delete them from your PDB before running.
+
+<a id="saltconcentration"></a>
+### :anatomical_heart: saltConcentration
+*(float)* Salt concentration in the water layers, in M. Default: `0.15`. Use `0` for counter-ions only. The salt is set with `cation` (`"Na+"` default, or `"K+"`) and `anion` (`"Cl-"`).
+
+<a id="padding"></a>
+### :anatomical_heart: padding
+*(float)* Minimum distance between the protein and the box edge in the membrane plane, in Å. Default: `15`.
+
+<a id="waterthickness"></a>
+### :anatomical_heart: waterThickness
+*(float)* Thickness of the water layer above and below the bilayer, in Å. Default: `17.5`.
+
+<a id="boxsizexy"></a>
+### :anatomical_heart: boxSizeXY
+*(float)* Fixes the box length in x and y (in Å) instead of using `padding`. Default: not set.
+
+<a id="proteinforcefield"></a>
+### :anatomical_heart: proteinForceField
+*(str)* `"ff14SB"` (default; the protein forcefield Lipid21 was developed with) or `"ff19SB"`.
+
+A membrane config with every option written out:
+
+```yaml
+membraneInfo:
+  lipids: POPC:CHL1
+  lipidRatio: "9:1"
+  orientation: auto
+  saltConcentration: 0.15
+  cation: Na+
+  anion: Cl-
+  padding: 15
+  waterThickness: 17.5
+  proteinForceField: ff14SB
+```
+
 ## :brain: simulationInfo
 This is the real meat and potatoes of the **drMD** config file. 
 
@@ -501,7 +580,9 @@ When creating restraints, metadynamics bias variables or running post-simulation
   - **"protein"** : This will select all protein atoms in your system
   - **"water"** : This will select all water molecules in your system
   - **"ions"**: This will select all ions in your system
-  - **"ligand"** : This will select all non-protein, non-water and non-ion atoms in your system
+  - **"ligand"** : This will select all non-protein, non-water, non-ion and non-lipid atoms in your system
+  - **"lipid"** : This will select all lipid atoms in your system (membrane simulations)
+  - **"lipid_headgroups"** : This will select the phosphorus atom of each lipid head group (useful for restraining a bilayer during equilibration)
   - **"custom"** : This will select all atoms that match the customSelection (see below)
 
 Example use of keywords in the selection dictionary:

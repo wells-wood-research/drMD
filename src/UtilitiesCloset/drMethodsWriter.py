@@ -3,6 +3,7 @@ import os
 from os import path as p
 import sys
 import yaml
+import json
 from glob import glob
 import numpy as np
 import inflect
@@ -63,7 +64,7 @@ def methods_writer_protocol(batchConfig: Dict, configDir: DirectoryPath, outDir:
     ## write solvation related methods
     write_solvation_charge_balance_methods(batchConfig, configDicts, methodsFile)
     ## write forcefield related methods
-    write_forecefields_methods(methodsFile)
+    write_forecefields_methods(methodsFile, configDicts[0].get("membraneInfo", None))
     ## write simulation related methods
     simulationInfo: dict = configDicts[0]["simulationInfo"]
     write_simulation_methods(methodsFile, simulationInfo)
@@ -283,8 +284,26 @@ def write_solvation_charge_balance_methods(batchConfig: Dict, configDicts: List[
     with open(methodsFile, "a", encoding = "utf-8") as methods:
         methods.write("## Solvation and Charge Balancing\n\n")
         ## info on solvation box
-        methods.write(f"All proteins were placed in {inflect.engine().an(boxGeometry)} {boxGeometry} solvation box with a 10 Å buffer between")
-        methods.write(f" the protein and the nearest edge of the box. ")
+        membraneInfo = configDicts[0].get("membraneInfo", None)
+        if membraneInfo:
+            orientationUsed = membraneInfo["orientation"]
+            boxJsons = glob(p.join(batchConfig["pathInfo"]["outputDir"], "*", "00_prep", "*", "MEMBRANE", "MEMBRANE_box.json"))
+            if boxJsons:
+                with open(boxJsons[0]) as jf:
+                    orientationUsed = json.load(jf).get("orientationUsed", orientationUsed)
+            orientationText = {"memembed": f"oriented in the membrane with MEMEMBED [Ref. {cite('memembed')}]",
+                               "mempro": f"oriented in the membrane with MemPrO [Ref. {cite('mempro')}]",
+                               "preoriented": "used in their supplied (pre-oriented) membrane orientation"}.get(orientationUsed, "oriented in the membrane")
+            methods.write(f"Proteins were {orientationText} and embedded in a {membraneInfo['lipids']} lipid bilayer")
+            if ":" in membraneInfo["lipids"]:
+                methods.write(f" (ratio {membraneInfo['lipidRatio']})")
+            methods.write(f" using PACKMOL-Memgen [Ref. {cite('packmolMemgen')}], with at least {membraneInfo['padding']} Å between the protein and the box edge in the membrane plane")
+            methods.write(f" and a {membraneInfo['waterThickness']} Å water layer on each side of the bilayer, in a rectangular box. ")
+            if membraneInfo["saltConcentration"] > 0:
+                methods.write(f"{membraneInfo['saltConcentration']} M {membraneInfo['cation'].rstrip('+')}Cl was added to the water layers. ")
+        else:
+            methods.write(f"All proteins were placed in {inflect.engine().an(boxGeometry)} {boxGeometry} solvation box with a 10 Å buffer between")
+            methods.write(f" the protein and the nearest edge of the box. ")
         methods.write("The system was treated using periodic boundary conditions. ")
         ## average water count
         methods.write(f"Approximately {approxWaterCount} TIP3P water molecules were added to the solvation box. ")
@@ -496,6 +515,8 @@ def selection_to_text(selection: Dict) -> str:
     if not keyword == "custom":
         if keyword == "all":
             return "all atoms in the system"
+        elif keyword == "lipid_headgroups":
+            return "the phosphorus atoms of all lipid head groups"
         else:
             return f"all {keyword} atoms in the system"  
 
@@ -693,7 +714,7 @@ def write_generic_simulation_methods(methodsFile: FilePath, simulationInfo: dict
         if "NPT" in simluationTypes:
             ## MonteCarloBarostat
             methods.write("For simulations run under the *isothermal-isobaric* (NpT) ensemble, ")
-            methods.write("the Monte-Carlo barostat was used to enforce a constant pressure of 1 atm. ")
+            methods.write("a Monte-Carlo barostat was used to enforce a constant pressure of 1 bar. ")
         ## ParticleMeshEwald
         methods.write("In all simulations, long-range Coulombic interactions were modelled using the ")
         methods.write(f"Particle-Mesh Ewald (PME) method [Ref. {cite('pme')}], with a 10 Å cutoff distance. ")
@@ -703,7 +724,7 @@ def write_generic_simulation_methods(methodsFile: FilePath, simulationInfo: dict
         methods.write(f"In all simulations, bonds lengths and angles of water molecules were constrained using the SETTLE algorithm [Ref. {cite('settle')}]. ")
         
 ##########################################################################################
-def write_forecefields_methods(methodsFile):
+def write_forecefields_methods(methodsFile, membraneInfo = None):
     """
     Writes methods section talking about forcefields, generic to all simulations run by drMD
     
@@ -715,7 +736,13 @@ def write_forecefields_methods(methodsFile):
     """
     with open(methodsFile, "a", encoding = "utf-8") as methods:
         methods.write("## Forcefield Information\n\n")
-        methods.write(f"All protein residues were parameterised using the AMBER ff19SB and forcefield [Ref. {cite('ff19SB')}]. ")
+        if membraneInfo:
+            proteinFF = membraneInfo.get("proteinForceField", "ff14SB")
+            methods.write(f"All protein residues were parameterised using the AMBER {proteinFF} forcefield [Ref. {cite(proteinFF)}]. ")
+            methods.write(f"Lipids were parameterised using the AMBER Lipid21 forcefield [Ref. {cite('lipid21')}]. ")
+            methods.write("Constant pressure (1 bar) was maintained with a Monte Carlo membrane barostat, scaling the box isotropically in the membrane plane and independently along the membrane normal, with zero surface tension. ")
+        else:
+            methods.write(f"All protein residues were parameterised using the AMBER ff19SB and forcefield [Ref. {cite('ff19SB')}]. ")
         methods.write(f" These parameters were prepared using tleap from the Ambertools package [Ref. {cite('ambertools')}]. ")
         methods.write(f"Simulations were performed in explicit solvent. All water molecules parameterised using the TIP3P model [Ref. {cite('tip3pParams')}]. ")
         methods.write(f"Any ions in our system were treated using parameters calculated to complement the TIP3P water model [Ref. {cite('ionParams')}]. \n\n")
@@ -766,7 +793,12 @@ def cite(key: str) -> str:
         ## parameter citations
         "ionParams": ["10.1021/ct500918t", "10.1021/ct400146w"],
         "tip3pParams": ["/10.1063/1.472061"],
-        "ff19SB": ["10.1021/acs.jctc.9b00591"]
+        "ff19SB": ["10.1021/acs.jctc.9b00591"],
+        "ff14SB": ["10.1021/acs.jctc.5b00255"],
+        "lipid21": ["10.1021/acs.jctc.1c01217"],
+        "packmolMemgen": ["10.1021/acs.jcim.9b00269"],
+        "memembed": ["10.1186/1471-2105-14-276"],
+        "mempro": ["10.1021/acs.jctc.5c01433"]
     }
 
 

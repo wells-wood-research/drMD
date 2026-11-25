@@ -103,27 +103,30 @@ def reset_water_ions(inputDf: pd.DataFrame) -> pd.DataFrame:
     Sets the CHAIN_ID for counter-ions and water to be different to that of the rest of the system
     """
     ## init sets for matching
-    counterIons: set = {"Na+", "Cl-"}
+    counterIons: set = {"Na+", "Cl-", "K+"}
     water: set = {"HOH", "WAT"}
-
-
+    lipids: set = drListInitiator.get_lipid_residue_names()
 
     ## create dataframes for water and counter-ions
     nonWaterIonsDf = inputDf[(~inputDf["RES_NAME"].isin(counterIons)) &
-                             (~inputDf["RES_NAME"].isin(water))]
+                             (~inputDf["RES_NAME"].isin(water)) &
+                             (~inputDf["RES_NAME"].isin(lipids))]
     
-    maxChain = nonWaterIonsDf["CHAIN_ID"].max()
+    maxChain = str(nonWaterIonsDf["CHAIN_ID"].max()).strip()
 
-    if maxChain in ["Y", "Z"] or len(maxChain) != 1:
+    if maxChain in ["X", "Y", "Z"] or len(maxChain) != 1:
         ionChain = " "
         waterChain = " "
+        lipidChain = " "
     else:
         ionChain = chr(ord(maxChain) + 1)
         waterChain = chr(ord(maxChain) + 2)
+        lipidChain = chr(ord(maxChain) + 3)
     ## set CHAIN_ID for counter-ions and water to be different to that of the rest of the system
     outputDf = inputDf.copy()
     outputDf.loc[outputDf["RES_NAME"].isin(counterIons), "CHAIN_ID"] = ionChain
     outputDf.loc[outputDf["RES_NAME"].isin(water), "CHAIN_ID"] = waterChain
+    outputDf.loc[outputDf["RES_NAME"].isin(lipids), "CHAIN_ID"] = lipidChain
 
     return outputDf
 ##################################################################################################

@@ -2,10 +2,11 @@ name: drMD
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.11
   - ambertools=23
   - openmm
   - openbabel
+  - pandas<3
   - pango
   - pip
   - pip:

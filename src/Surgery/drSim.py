@@ -80,10 +80,7 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
     # add constant pressure force to system (makes this an NpT simulation)    
     if sim["simulationType"].upper() in ["NPT","META"]:
-        if "temperature" in sim:
-            system.addForce(openmm.MonteCarloBarostat(1*unit.bar, initailSimulationTemp))
-        elif "temperatureRange" in sim:
-            system.addForce(openmm.MonteCarloBarostat(1*unit.bar, initailSimulationTemp))
+        system.addForce(make_barostat(initailSimulationTemp, sim.get("membrane", False)))
 
     ## setup an intergrator
     if sim["simulationType"].upper() == "EM":
@@ -96,11 +93,28 @@ def initialise_simulation(prmtop: app.AmberPrmtopFile,
                                                                            sim["timestep"])
 
 
-    simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, )
+    ## use the platform requested in hardwareInfo (previously ignored: OpenMM chose its own)
+    simulation: app.simulation.Simulation = app.simulation.Simulation(prmtop.topology, system, integrator, platform)
     
 
     return simulation , integrator
 
+###########################################################################################
+def make_barostat(temperature, isMembrane: bool = False) -> openmm.Force:
+    """
+    Returns the barostat for NpT simulations.
+    Membrane systems (bilayer in the xy plane) use a semi-isotropic MonteCarloMembraneBarostat:
+    x and y scale together, z scales independently, zero surface tension (NPzAT-like, tensionless bilayer).
+    All other systems use an isotropic MonteCarloBarostat. Both at 1 bar.
+    """
+    if isMembrane:
+        return openmm.MonteCarloMembraneBarostat(1 * unit.bar,
+                                                 0 * unit.bar * unit.nanometer,
+                                                 temperature,
+                                                 openmm.MonteCarloMembraneBarostat.XYIsotropic,
+                                                 openmm.MonteCarloMembraneBarostat.ZFree,
+                                                 100)
+    return openmm.MonteCarloBarostat(1 * unit.bar, temperature)
 ###########################################################################################
 def process_sim_data(sim: Dict) -> Dict:
     """
@@ -294,6 +308,8 @@ def run_molecular_dynamics(prmtop: app.AmberPrmtopFile,
     simDir: str = p.join(outDir, sim["stepName"])
     os.makedirs(simDir, exist_ok=True)
 
+    ## flag membrane systems (selects the membrane barostat)
+    sim["membrane"] = bool(config.get("membraneInfo", None))
     ## initialise a new system from parameters
     hardwareInfo = config["hardwareInfo"]
     simulation, integrator = initialise_simulation(prmtop, inpcrd, sim, saveFile, refPdb, platform, hardwareInfo)

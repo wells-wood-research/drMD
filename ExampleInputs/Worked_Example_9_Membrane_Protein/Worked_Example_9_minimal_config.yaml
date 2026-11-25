@@ -1,0 +1,24 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   Simplest possible membrane-protein simulation.
+#
+#   Adding "membraneInfo: True" tells drMD that this is a membrane simulation.
+#   drMD will then:
+#     1. protonate the protein (pdb2pqr / propka, as usual)
+#     2. orient it in the membrane (MemPrO if installed, otherwise MEMEMBED) and pack a POPC bilayer, water
+#        and 0.15 M NaCl around it with PACKMOL-Memgen
+#     3. parameterise the system with tleap (ff14SB + Lipid21 + TIP3P)
+#     4. run a default staged equilibration (backbone + lipid head-group restraints
+#        released step by step) followed by 10 ns of production MD, using a
+#        membrane barostat (xy isotropic, z free, tensionless bilayer)
+#
+#   Put your membrane protein PDB file(s) in inputDir.
+########################################################################
+pathInfo:
+  inputDir: /path/to/Worked_Example_9_Membrane_Protein
+  outputDir: /path/to/Worked_Example_9_Membrane_Protein/outputs
+
+hardwareInfo:
+  platform: CUDA
+
+membraneInfo: True

@@ -72,6 +72,22 @@ def get_backbone_atom_names() -> set:
     """
     return {"N","CA","C","O"}
 ##################################################################################
+def get_lipid_residue_names() -> set:
+    """
+    Returns the residue names used by the AMBER Lipid21 (and Lipid17) force field.
+    Lipid21 splits each phospholipid into head-group and acyl-tail residues
+    (e.g. POPC -> PA + PC + OL), so all fragments are listed here.
+    """
+    return {"AR", "CHL", "DHA", "LAL", "MY", "OL", "PA", "PC", "PE",
+            "PGR", "PGS", "PH-", "PS", "SA", "SPM", "ST"}
+##################################################################################
+def get_lipid_headgroup_atom_names() -> set:
+    """
+    Returns atom names used to restrain lipid head groups during membrane equilibration
+    P31 = phosphate phosphorus in Lipid21 head groups, O1 = cholesterol hydroxyl oxygen
+    """
+    return {"P31", "P"}
+##################################################################################
 def get_solvent_residue_names() -> set:
     """
     Returns a list of the solvent residue names.
@@ -88,4 +104,5 @@ def get_not_a_run_dir() -> set:
                  "00_drMD_logs",
                    "00_vitals_reports",
                      "01_ligand_parameters",
-                       "00_collated_pdbs"}
+                       "00_collated_pdbs",
+                         "00_membrane_inputs"}

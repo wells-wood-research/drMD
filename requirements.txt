@@ -15,3 +15,5 @@ inflect
 pdb2pqr
 mdanalysis
 gputil
+mempro; python_version >= "3.11"
+jax[cpu]<0.7.2; python_version >= "3.11"

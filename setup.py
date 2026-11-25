@@ -17,7 +17,7 @@ setup(
     ],
     install_requires=[
         'pyyaml',
-        'argparse',
+        'argpass',
         'pandas',
         'mdtraj',
         'numpy',
@@ -33,5 +33,7 @@ setup(
         'pdb2pqr',
         'mdanalysis',
         'gputil',
+        'mempro; python_version >= "3.11"',
+        'jax[cpu]<0.7.2; python_version >= "3.11"',
     ],
 )

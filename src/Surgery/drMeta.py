@@ -75,7 +75,7 @@ def run_metadynamics(prmtop: app.Topology,
     system: openmm.System = drRestraints.restraints_handler(system, prmtop, inpcrd, sim, saveFile, refPdb)
 
     # Add a Monte Carlo Barostat to maintain constant pressure
-    barostat: openmm.MonteCarloBarostat = openmm.MonteCarloBarostat(1.0*unit.atmospheres, sim["temperature"])  # Set pressure and temperature
+    barostat: openmm.Force = drSim.make_barostat(sim["temperature"], bool(config.get("membraneInfo", None)))  # 1 bar; membrane barostat for bilayers
     system.addForce(barostat)
     # Read metaDynamicsInfo from sim config
     metaDynamicsInfo: dict = sim["metaDynamicsInfo"]

@@ -83,6 +83,9 @@ def make_per_protein_config(
 
     if bool(ligandInfo):
         runConfig["ligandInfo"] = ligandInfo
+    ## membrane simulations: pass membrane options through to each run
+    if batchConfig.get("membraneInfo"):
+        runConfig["membraneInfo"] = batchConfig["membraneInfo"]
     # Write config to YAML
     configYaml: FilePath = p.join(yamlDir, f"{protName}_config.yaml")
     with open(configYaml, "w") as f:
@@ -191,7 +194,8 @@ def make_ligandInfo(
 
     ligandDf: pd.DataFrame = pdbDf[~pdbDf["RES_NAME"].isin(aminoAcidNames) &
                                     ~pdbDf["ATOM_NAME"].isin(ionNames) &
-                                    ~pdbDf["RES_NAME"].isin(ncaaNames)]
+                                    ~pdbDf["RES_NAME"].isin(ncaaNames) &
+                                    ~pdbDf["RES_NAME"].isin(["DUM"])]   ## OPM membrane dummy atoms
 
     ## GET NAMES OF LIGANDS
     ligNames: list = ligandDf["RES_NAME"].unique().tolist()
