@@ -1,40 +1,62 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "drMD"
-version = '1.0.2'
+version = "1.0.2"
 description = "drMD: Molecular Dynamics for Protein Scientists"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Dr Eugene Shrimpton-Phoenix", email = "eshrimpt@ed.ac.uk"}
 ]
-urls = { "Homepage" = "https://github.com/ESPhoenix/drMD" }
-
+urls = { "Homepage" = "https://github.com/wells-wood-research/drMD" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
 ]
 
+## ---------------------------------------------------------------------------
+## Core drMD: "uv sync" installs exactly this.
+## Programs that are not on PyPI (AmberTools, OpenBabel) come from drMD_tools.yaml
+## ---------------------------------------------------------------------------
 dependencies = [
-        'pyyaml',
-        'argparse',
-        'pandas',
-        'mdtraj',
-        'numpy',
-        'matplotlib',
-        'weasyprint',
-        'scipy',
-        'tqdm',
-        'pdbutils',
-        'scikit-learn',
-        'propka',
-        'jinja2',
-        'inflect',
-        'pdb2pqr',
-        'mdanalysis',
-        'gputil',
-    ]
+    "openmm>=8.1",
+    "numpy<2",
+    "pandas<3",
+    "scipy",
+    "matplotlib",
+    "pyyaml",
+    "argpass",
+    "inflect",
+    "jinja2",
+    "tqdm",
+    "scikit-learn",
+    "mdtraj",
+    "mdanalysis",
+    "pdbutils",
+    "pdb2pqr",
+    "propka",
+    "weasyprint",
+    "gputil",
+]
+
+## ---------------------------------------------------------------------------
+## Optional features: "uv sync --extra <name>" (several --extra flags can be combined)
+## Each extra is registered in src/UtilitiesCloset/drDependencies.py so drMD can
+## tell users exactly what to install when a config needs it.
+## ---------------------------------------------------------------------------
+[project.optional-dependencies]
+cuda12 = ["openmm[cuda12]>=8.1"]
+cuda13 = ["openmm[cuda13]>=8.1"]
+
+[tool.uv]
+## drMD is run from the repository (python src/drMD.py); uv manages the environment only
+package = false
+## the lock is resolved (and tested) for Python 3.11 - 3.12; .python-version makes uv use 3.11 by default
+environments = ["python_version >= '3.11' and python_version < '3.13'"]
+conflicts = [
+    [ { extra = "cuda12" }, { extra = "cuda13" } ],
+]

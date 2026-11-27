@@ -1,5 +1,6 @@
 ## BASIC PYTHON LIBRARIES
 import os
+import sys
 from os import path as p
 import numpy as np
 import yaml
@@ -20,7 +21,7 @@ from concurrent.futures.process import BrokenProcessPool
 from Triage import drConfigTriage, drPdbTriage, drConfigWriter
 from Surgery import drOperator
 from ExaminationRoom import  drCleanup, drLogger
-from UtilitiesCloset import drSplash, drMethodsWriter
+from UtilitiesCloset import drSplash, drMethodsWriter, drDependencies
 
 ## CLEAN CODE
 from typing import Optional, Dict, Tuple
@@ -52,6 +53,13 @@ def main(batchConfigYaml: Optional[FilePath] = None) -> None:
         drSplash.print_config_error(e)
 
     batchConfig  = drConfigTriage.validate_config(batchConfig)
+
+    ## find AmberTools / OpenBabel (drMD-tools env) and check that every feature this config needs is installed
+    drDependencies.set_up_tool_paths()
+    dependencyProblems = drDependencies.check_dependencies(batchConfig)
+    if dependencyProblems:
+        print("\n\n".join(dependencyProblems))
+        sys.exit(1)
 
     ## unpack batchConfig into variables for this function
     outDir: DirectoryPath = batchConfig["pathInfo"]["outputDir"]
