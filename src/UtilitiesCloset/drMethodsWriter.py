@@ -6,7 +6,10 @@ import yaml
 from glob import glob
 import numpy as np
 import inflect
-import GPUtil
+try:
+    import GPUtil     ## optional: only used to name the GPU in the methods section
+except Exception:
+    GPUtil = None
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -81,7 +84,10 @@ def write_hardware_methods(methodsFile: FilePath, config: Dict) -> None:
     Returns:
         None    
     """
-    gpuData = GPUtil.getGPUs()
+    try:
+        gpuData = GPUtil.getGPUs() if GPUtil is not None else []
+    except Exception:
+        gpuData = []
 
     hardwareInfo: dict = config["hardwareInfo"]
     nCpus = hardwareInfo["parallelCPU"] * hardwareInfo["subprocessCpus"]
