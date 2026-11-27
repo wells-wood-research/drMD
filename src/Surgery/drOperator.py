@@ -122,10 +122,10 @@ def run_simulation(config: dict, outDir: str, inputCoords: str, amberParams: str
 ###########################################################################################
 def choose_platform(config: Dict) -> openmm.Platform:
     # Set up platform
-    usePlatform: str = config["hardwareInfo"]["platform"]
+    usePlatform: str = str(config["hardwareInfo"]["platform"]).upper()
     if usePlatform == "CUDA":
         platform=openmm.Platform.getPlatformByName("CUDA")
-    elif usePlatform == "OpenCL":
+    elif usePlatform == "OPENCL":
         platform=openmm.Platform.getPlatformByName("OpenCL")
     elif usePlatform == "CPU":
         platform=openmm.Platform.getPlatformByName("CPU")

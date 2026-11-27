@@ -1,0 +1,113 @@
+#########################################################################
+#       PRESCRIPTION DESCRIPTION:
+#   Membrane-protein simulation with every membraneInfo option written out.
+#   All options are optional - anything you leave out uses the default shown.
+#
+#   lipids:            lipid name(s) from "packmol-memgen --available_lipids"
+#                      mixtures with ":"          e.g. POPC:CHL1
+#                      asymmetric leaflets "//"   e.g. POPC:POPE//POPC   (lower//upper)
+#   lipidRatio:        relative amounts, same layout as lipids e.g. "9:1"  (default: equal parts)
+#   orientation:       auto         - MemPrO if installed, otherwise MEMEMBED; falls back to the other on failure (default)
+#                      memembed     - predict orientation with MEMEMBED (bundled with PACKMOL-Memgen)
+#                      mempro       - predict orientation with MemPrO (uv sync --extra membrane)
+#                      preoriented  - input is already oriented: membrane normal = z, centre at z = 0
+#                                     (e.g. structures from the OPM database; DUM atoms are removed)
+#   saltConcentration: molar salt in the water layers (default 0.15; 0 = counter-ions only)
+#   cation / anion:    Na+ or K+ / Cl-
+#   padding:           minimum protein-to-box-edge distance in the membrane plane, Angstrom (default 15)
+#   waterThickness:    water layer above and below the bilayer, Angstrom (default 17.5)
+#   boxSizeXY:         fix the box length in x and y (Angstrom) instead of using padding
+#   proteinForceField: ff14SB (default, validated with Lipid21) or ff19SB
+#
+#   If simulationInfo is left out, drMD uses its default membrane protocol.
+#   Here we write a protocol out explicitly. The selection keywords
+#   "lipid" and "lipid_headgroups" (lipid phosphorus atoms) can be used for restraints,
+#   trajectory selections and metadynamics, just like "protein" or "backbone".
+########################################################################
+pathInfo:
+  inputDir: /path/to/Worked_Example_9_Membrane_Protein
+  outputDir: /path/to/Worked_Example_9_Membrane_Protein/outputs_full
+
+hardwareInfo:
+  parallelCPU: 1
+  platform: CUDA
+  subprocessCpus: 1
+
+miscInfo:
+  pH: 7.4
+  trajectorySelections:
+    - selection:
+        keyword: protein
+    - selection:
+        keyword: lipid
+
+membraneInfo:
+  lipids: POPC:CHL1
+  lipidRatio: "9:1"
+  orientation: auto
+  saltConcentration: 0.15
+  cation: Na+
+  anion: Cl-
+  padding: 15
+  waterThickness: 17.5
+  proteinForceField: ff14SB
+
+simulationInfo:
+  - stepName: 01_energy_minimisation
+    simulationType: EM
+    temperature: 300
+    maxIterations: -1
+    restraintInfo:
+      - restraintType: position
+        parameters: {k: 1000}
+        selection: {keyword: backbone}
+      - restraintType: position
+        parameters: {k: 1000}
+        selection: {keyword: lipid_headgroups}
+
+  - stepName: 02_NVT_heating
+    simulationType: NVT
+    duration: 125 ps
+    timestep: 1 fs
+    temperatureRange: [50, 100, 150, 200, 250, 300]
+    logInterval: 5 ps
+    restraintInfo:
+      - restraintType: position
+        parameters: {k: 1000}
+        selection: {keyword: backbone}
+      - restraintType: position
+        parameters: {k: 1000}
+        selection: {keyword: lipid_headgroups}
+
+  - stepName: 03_NPT_equilibration_restrained
+    simulationType: NPT
+    duration: 250 ps
+    timestep: 2 fs
+    temperature: 300
+    logInterval: 10 ps
+    restraintInfo:
+      - restraintType: position
+        parameters: {k: 500}
+        selection: {keyword: backbone}
+      - restraintType: position
+        parameters: {k: 250}
+        selection: {keyword: lipid_headgroups}
+
+  - stepName: 04_NPT_equilibration_relaxed
+    simulationType: NPT
+    duration: 500 ps
+    timestep: 2 fs
+    temperature: 300
+    logInterval: 10 ps
+    restraintInfo:
+      - restraintType: position
+        parameters: {k: 100}
+        selection: {keyword: backbone}
+
+  - stepName: 05_production_MD
+    simulationType: NPT
+    duration: 10 ns
+    timestep: 4 fs
+    heavyProtons: True
+    temperature: 300
+    logInterval: 100 ps

@@ -35,6 +35,7 @@ def get_atom_indexes(selection: Dict, pdbFile: FilePath) -> List[int]:
     backboneAtomNames = drListInitiator.get_backbone_atom_names()
     solventResNames = drListInitiator.get_solvent_residue_names()
     ionResidueNames = drListInitiator.get_ion_residue_names()
+    lipidResidueNames = drListInitiator.get_lipid_residue_names()
 
     # Initialize list of atom indexes
     atomIndexes: List[int] = []
@@ -65,8 +66,19 @@ def get_atom_indexes(selection: Dict, pdbFile: FilePath) -> List[int]:
         # Find indexes for all ligand / organics / oddball molecules
         ligandDf: pd.DataFrame = pdbDf[~pdbDf["RES_NAME"].isin(aminoAcidResNames) &
                                         ~pdbDf["RES_NAME"].isin(solventResNames) & 
-                                        ~pdbDf["RES_NAME"].isin(ionResidueNames)]
+                                        ~pdbDf["RES_NAME"].isin(ionResidueNames) &
+                                        ~pdbDf["RES_NAME"].isin(lipidResidueNames)]
         atomIndexes: List[int] =  ligandDf.index.tolist()
+    elif selection["keyword"] == "lipid":
+        # Find indexes for all lipid atoms (membrane simulations)
+        lipidDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(lipidResidueNames)]
+        atomIndexes: List[int] = lipidDf.index.tolist()
+    elif selection["keyword"] == "lipid_headgroups":
+        # Find indexes for lipid phosphate atoms (used to restrain bilayers during equilibration)
+        headgroupAtomNames = drListInitiator.get_lipid_headgroup_atom_names()
+        headDf: pd.DataFrame = pdbDf[pdbDf["RES_NAME"].isin(lipidResidueNames) &
+                                     pdbDf["ATOM_NAME"].isin(headgroupAtomNames)]
+        atomIndexes: List[int] = headDf.index.tolist()
     elif selection["keyword"] == "custom":
         # Find indexes for whole residue selections
         customSelection: List[Dict] = selection["customSelection"]

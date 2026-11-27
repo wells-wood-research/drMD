@@ -54,6 +54,8 @@ def validate_config(config: dict) -> FilePath:
     config, configDisorders["pathInfo"], pathInfoOk = check_pathInfo(config, configDefaults)
     config, configDisorders["hardwareInfo"], hardwareInfoOk  = check_hardwareInfo(config, configDefaults)
 
+    config, configDisorders["membraneInfo"], membraneInfoOk = check_membraneInfo(config)
+
     config, configDisorders["simulationInfo"], simulationInfoOk = check_simulationInfo(config)
 
     configDisorders["aftercareInfo"], aftercareInfoOk  = check_aftercareInfo(config)
@@ -61,7 +63,7 @@ def validate_config(config: dict) -> FilePath:
     configDisorders["ligandInfo"], ligandInfoOk  = check_ligandInfo(config)
                 
 
-    allInfoOk = miscInfoOk * pathInfoOk * hardwareInfoOk * simulationInfoOk * aftercareInfoOk * ligandInfoOk
+    allInfoOk = miscInfoOk * pathInfoOk * hardwareInfoOk * simulationInfoOk * aftercareInfoOk * ligandInfoOk * membraneInfoOk
 
     ## TODO: write configDisorders to file in all cases
     if allInfoOk:
@@ -226,10 +228,14 @@ def check_hardwareInfo(config: dict, configDefaults: dict) -> Tuple[dict, dict, 
         config["hardwareInfo"]["platform"] = configDefaults["hardwareInfo"]["platform"]
         hardwareInfoDisorders["platform"] = "Automatic Default Used!"
     else:
-        if platform not in ["CUDA", "OPENCL", "CPU"]:
-            hardwareInfoDisorders["platform"] = "platform is not 'CUDA', 'OPENCL', or 'CPU'"
+        ## accept any capitalisation, store OpenMM's own platform name
+        canonicalPlatforms = {"CUDA": "CUDA", "OPENCL": "OpenCL", "CPU": "CPU"}
+        canonicalPlatform = canonicalPlatforms.get(str(platform).upper(), None)
+        if canonicalPlatform is None:
+            hardwareInfoDisorders["platform"] = "platform is not 'CUDA', 'OpenCL', or 'CPU'"
             haredwareInfoOk = False
         else:
+            config["hardwareInfo"]["platform"] = canonicalPlatform
             hardwareInfoDisorders["platform"] = None
 
 
@@ -367,6 +373,146 @@ def check_miscInfo(config:dict, configDefaults:dict) -> Tuple[dict,dict,bool]:
     return config, miscInfoDisorders, miscInfoOk
 
 #####################################################################################
+#########################################################################
+def get_membrane_defaults() -> dict:
+    """
+    Sensible defaults for membrane simulations.
+    A user only needs to write  "membraneInfo: True"  (or an empty block) to get these.
+    """
+    return {
+        "lipids": "POPC",             ## single lipid or mixture "POPC:CHL1"; asymmetric "POPC:POPE//POPC"
+        "lipidRatio": None,           ## e.g. "3:1"; None = equal parts of each lipid
+        "orientation": "auto",        ## auto (MemPrO if installed, else MEMEMBED) | mempro | memembed | preoriented
+        "saltConcentration": 0.15,    ## Molar, added to the water layers
+        "cation": "Na+",
+        "anion": "Cl-",
+        "padding": 15.0,              ## Angstrom, protein to box edge in the membrane (xy) plane
+        "waterThickness": 17.5,       ## Angstrom, water layer above / below the bilayer
+        "boxSizeXY": None,            ## Angstrom, fixes the xy box size instead of using padding
+        "proteinForceField": "ff14SB" ## ff14SB is the protein force field Lipid21 was validated with
+    }
+#########################################################################
+def get_membrane_default_simulation_info() -> list:
+    """
+    Default equilibration + production protocol for membrane-protein systems.
+    Used when membraneInfo is present but simulationInfo is not.
+    Restraints on the protein backbone and lipid phosphates are released in stages.
+    """
+    def position_restraint(keyword: str, k: float) -> dict:
+        return {"restraintType": "position", "parameters": {"k": k}, "selection": {"keyword": keyword}}
+    return [
+        {"stepName": "01_energy_minimisation", "simulationType": "EM", "temperature": 300, "maxIterations": -1,
+         "restraintInfo": [position_restraint("backbone", 1000), position_restraint("lipid_headgroups", 1000)]},
+        {"stepName": "02_NVT_heating", "simulationType": "NVT", "duration": "125 ps", "timestep": "1 fs",
+         "temperatureRange": [50, 100, 150, 200, 250, 300], "logInterval": "5 ps",
+         "restraintInfo": [position_restraint("backbone", 1000), position_restraint("lipid_headgroups", 1000)]},
+        {"stepName": "03_NPT_equilibration_restrained", "simulationType": "NPT", "duration": "250 ps", "timestep": "2 fs",
+         "temperature": 300, "logInterval": "10 ps",
+         "restraintInfo": [position_restraint("backbone", 500), position_restraint("lipid_headgroups", 250)]},
+        {"stepName": "04_NPT_equilibration_relaxed", "simulationType": "NPT", "duration": "500 ps", "timestep": "2 fs",
+         "temperature": 300, "logInterval": "10 ps",
+         "restraintInfo": [position_restraint("backbone", 100)]},
+        {"stepName": "05_production_MD", "simulationType": "NPT", "duration": "10 ns", "timestep": "4 fs",
+         "heavyProtons": True, "temperature": 300, "logInterval": "100 ps"},
+    ]
+#########################################################################
+def check_membraneInfo(config: dict) -> Tuple[dict, dict, bool]:
+    """
+    Checks (optional) membraneInfo in config.
+    membraneInfo can be:
+        - absent / False  -> not a membrane simulation
+        - True / {}       -> membrane simulation with all defaults
+        - a dict          -> any missing options are filled with defaults
+    If no simulationInfo is supplied, a default membrane protocol is added.
+    """
+    membraneInfo = config.get("membraneInfo", None)
+    if membraneInfo is None or membraneInfo is False:
+        config.pop("membraneInfo", None)
+        return config, {}, True
+    if membraneInfo is True:
+        membraneInfo = {}
+    if not isinstance(membraneInfo, dict):
+        return config, {"membraneInfo": "membraneInfo must be True or a dictionary of options (see README)"}, False
+
+    disorders = {}
+    membraneInfoOk = True
+    defaults = get_membrane_defaults()
+
+    ## reject unknown options (most likely typos)
+    for key in membraneInfo:
+        if key not in defaults:
+            disorders[key] = f"Unknown membraneInfo option '{key}'. Allowed options: {', '.join(defaults)}"
+            membraneInfoOk = False
+    ## fill in defaults
+    for key, value in defaults.items():
+        if membraneInfo.get(key, None) is None:
+            membraneInfo[key] = value
+            if value is not None:
+                disorders[key] = f"Automatic default used: {value}"
+
+    ## lipids
+    lipids = membraneInfo["lipids"]
+    if isinstance(lipids, list):
+        lipids = ":".join(str(l) for l in lipids)
+    if not isinstance(lipids, str) or lipids.strip() == "":
+        disorders["lipids"] = "lipids must be a string, e.g. 'POPC' or 'POPC:CHL1'"
+        membraneInfoOk = False
+    else:
+        lipids = lipids.replace(" ", "").upper()
+        membraneInfo["lipids"] = lipids
+        leaflets = lipids.split("//")
+        ## lipid ratio
+        ratio = membraneInfo["lipidRatio"]
+        if ratio is None:
+            ratio = "//".join(":".join(["1"] * len(leaflet.split(":"))) for leaflet in leaflets)
+            membraneInfo["lipidRatio"] = ratio
+        ratio = str(ratio).replace(" ", "")
+        membraneInfo["lipidRatio"] = ratio
+        ratioLeaflets = ratio.split("//")
+        if len(ratioLeaflets) != len(leaflets) or any(
+                len(r.split(":")) != len(l.split(":")) for r, l in zip(ratioLeaflets, leaflets)):
+            disorders["lipidRatio"] = f"lipidRatio '{ratio}' does not match lipids '{lipids}' (one number per lipid, // between leaflets)"
+            membraneInfoOk = False
+        elif not all(x.replace(".", "", 1).isdigit() for r in ratioLeaflets for x in r.split(":")):
+            disorders["lipidRatio"] = "lipidRatio must contain positive numbers, e.g. '3:1'"
+            membraneInfoOk = False
+
+    ## orientation
+    if membraneInfo["orientation"] not in ["auto", "memembed", "preoriented", "mempro"]:
+        disorders["orientation"] = "orientation must be one of: auto, mempro, memembed, preoriented"
+        membraneInfoOk = False
+    ## numbers
+    for key, minValue in [("saltConcentration", 0), ("padding", 0.1), ("waterThickness", 0.1)]:
+        value = membraneInfo[key]
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or value < minValue:
+            disorders[key] = f"{key} must be a number >= {minValue}"
+            membraneInfoOk = False
+    if membraneInfo["boxSizeXY"] is not None:
+        if not isinstance(membraneInfo["boxSizeXY"], (int, float)) or membraneInfo["boxSizeXY"] <= 0:
+            disorders["boxSizeXY"] = "boxSizeXY must be a positive number (Angstrom)"
+            membraneInfoOk = False
+    if membraneInfo["cation"] not in ["Na+", "K+"]:
+        disorders["cation"] = "cation must be 'Na+' or 'K+'"
+        membraneInfoOk = False
+    if membraneInfo["anion"] not in ["Cl-"]:
+        disorders["anion"] = "anion must be 'Cl-'"
+        membraneInfoOk = False
+    if membraneInfo["proteinForceField"] not in ["ff14SB", "ff19SB"]:
+        disorders["proteinForceField"] = "proteinForceField must be 'ff14SB' or 'ff19SB'"
+        membraneInfoOk = False
+
+    ## membranes need a rectangular box: boxGeometry / boxSize are not used
+    if config.get("miscInfo", {}).get("boxGeometry", "cubic") == "octahedral":
+        disorders["boxGeometry"] = "Membrane simulations use a rectangular box; boxGeometry 'octahedral' is ignored"
+
+    ## default protocol if the user did not write one
+    if config.get("simulationInfo", None) is None:
+        config["simulationInfo"] = get_membrane_default_simulation_info()
+        disorders["simulationInfo"] = "No simulationInfo supplied: using the default membrane equilibration + production protocol"
+
+    config["membraneInfo"] = membraneInfo
+    return config, disorders, membraneInfoOk
+#########################################################################
 def check_simulationInfo(config: dict) -> Tuple[dict, bool]:
     """
     Checks for simulationInfo in config
@@ -813,7 +959,7 @@ def check_selection(selection: dict) -> list:
     if not isinstance(keyword, str):
         return [f"keyword must be a string, not {type(keyword)}"]
     
-    if not keyword in ["all", "protein", "ligand", "water", "ions", "custom", "backbone"]:
+    if not keyword in ["all", "protein", "ligand", "water", "ions", "custom", "backbone", "lipid", "lipid_headgroups"]:
         return [f"selection keywords incorrect see README.md for more details"]
     
     ## check custom selection syntax

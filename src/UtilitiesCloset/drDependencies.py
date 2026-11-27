@@ -47,6 +47,9 @@ def _always(config: dict) -> bool:
 def _uses_ligands(config: dict) -> bool:
     return bool(config.get("ligandInfo"))
 
+def _uses_membrane(config: dict) -> bool:
+    return bool(config.get("membraneInfo"))
+
 def _uses_cuda(config: dict) -> bool:
     return str(config.get("hardwareInfo", {}).get("platform", "")).upper() == "CUDA"
 
@@ -72,6 +75,14 @@ FEATURES: Dict[str, dict] = {
         "python": {},
         "executables": ["obabel", "antechamber", "parmchk2"],
         "required": _uses_ligands,
+    },
+    "membrane": {
+        "description": "membrane-protein simulations (membraneInfo)",
+        "extra": "membrane",
+        "python": {},                      ## MemPrO is checked below: MEMEMBED is a fallback for orientation "auto"
+        "executables": ["packmol-memgen"],
+        "required": _uses_membrane,
+        "check": "_check_membrane_orientation",
     },
     "cuda": {
         "description": "OpenMM CUDA platform",
@@ -165,7 +176,34 @@ def _check_cuda_platform() -> List[str]:
         return [f"could not query OpenMM platforms ({e})"]
     return [] if "CUDA" in names else ["OpenMM has no CUDA platform (available: " + ", ".join(names) + ")"]
 
-def check_feature(featureName: str) -> List[str]:
+def find_memembed() -> Optional[str]:
+    """MEMEMBED ships inside PACKMOL-Memgen (tools environment)"""
+    exe = shutil.which("memembed")
+    if exe:
+        return exe
+    packmolMemgenDir = find_tools_site_packages("packmol_memgen")
+    if packmolMemgenDir:
+        candidate = p.join(packmolMemgenDir, "lib", "memembed", "bin", "memembed")
+        if p.isfile(candidate):
+            return candidate
+    return None
+
+def _check_membrane_orientation(config: Optional[dict] = None) -> List[str]:
+    """Checks that the requested orientation method (membraneInfo.orientation) is available"""
+    orientation = "auto"
+    if isinstance(config, dict) and isinstance(config.get("membraneInfo"), dict):
+        orientation = config["membraneInfo"].get("orientation", "auto")
+    hasMempro = shutil.which("mempro") is not None
+    hasMemembed = find_memembed() is not None
+    if orientation == "mempro" and not hasMempro:
+        return ["orientation 'mempro' requested but MemPrO is not installed (uv sync --extra membrane)"]
+    if orientation == "memembed" and not hasMemembed:
+        return ["orientation 'memembed' requested but MEMEMBED was not found (comes with PACKMOL-Memgen in drMD-tools)"]
+    if orientation == "auto" and not (hasMempro or hasMemembed):
+        return ["no orientation method found: install MemPrO (uv sync --extra membrane) or PACKMOL-Memgen/MEMEMBED"]
+    return []
+
+def check_feature(featureName: str, config: Optional[dict] = None) -> List[str]:
     """Returns a list of human-readable problems (empty list = feature is usable)"""
     feature = FEATURES[featureName]
     problems: List[str] = []
@@ -177,7 +215,8 @@ def check_feature(featureName: str) -> List[str]:
             problems.append(f"program '{exe}' was not found")
     extraCheck = feature.get("check")
     if extraCheck:
-        problems += globals()[extraCheck]()
+        checkFunction = globals()[extraCheck]
+        problems += checkFunction(config) if checkFunction.__code__.co_argcount else checkFunction()
     return problems
 
 def install_hint(featureName: str) -> str:
@@ -202,7 +241,7 @@ def check_dependencies(config: dict) -> List[str]:
     """
     messages: List[str] = []
     for name in required_features(config):
-        problems = check_feature(name)
+        problems = check_feature(name, config)
         if problems:
             messages.append(f"Feature '{name}' ({FEATURES[name]['description']}) is missing dependencies:\n" +
                             "".join(f"    - {problem}\n" for problem in problems) +

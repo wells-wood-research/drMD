@@ -68,6 +68,8 @@ def pdb_triage(pdbDir: DirectoryPath, config: dict) -> None:
     inputPdbs = [p.join(pdbDir, file) for file in os.listdir(pdbDir) if file.endswith(".pdb")]
     ## convert to dataframes
     pdbDfs = [pdbUtils.pdb2df(pdbFile) for pdbFile in inputPdbs]
+    ## ignore OPM / PPM membrane dummy atoms (DUM) in pre-oriented membrane protein structures
+    pdbDfs = [pdbDf[pdbDf["RES_NAME"] != "DUM"].reset_index(drop=True) for pdbDf in pdbDfs]
 
     pdbDisorders = {}
     ## check for pdb files with problems

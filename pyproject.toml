@@ -51,6 +51,9 @@ dependencies = [
 [project.optional-dependencies]
 cuda12 = ["openmm[cuda12]>=8.1"]
 cuda13 = ["openmm[cuda13]>=8.1"]
+## membrane-protein simulations (membraneInfo). MemPrO predicts the orientation in the membrane;
+## PACKMOL-Memgen and MEMEMBED come with AmberTools (drMD_tools.yaml)
+membrane = ["mempro>=0.6", "jax[cpu]<0.7.2"]
 
 [tool.uv]
 ## drMD is run from the repository (python src/drMD.py); uv manages the environment only
