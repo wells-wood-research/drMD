@@ -9,7 +9,7 @@ import subprocess
 
 ## drMD LIBRARIES
 from ExaminationRoom import drLogger
-from UtilitiesCloset import drSplash, drListInitiator
+from UtilitiesCloset import drSplash, drListInitiator, drDependencies
 
 ## PDB // DATAFRAME UTILS
 from pdbUtils import pdbUtils
@@ -24,7 +24,7 @@ drMembrane: builds protein-in-bilayer systems for drMD
 Workflow:
     1. (optional) orient the protein with MemPrO
     2. pack lipids, water and salt around the protein with PACKMOL-Memgen
-       (memembed / PPM orientation unless the protein is pre-oriented)
+       (MemPrO or MEMEMBED orientation unless the protein is pre-oriented)
     3. return the packed PDB and box dimensions to drPrep.make_amber_params,
        which parameterises the system with tleap (Lipid21 + ff14SB/ff19SB + TIP3P)
 
@@ -211,7 +211,7 @@ def orient_protein(inputPdb: FilePath, memDir: DirectoryPath, orientation: str) 
     advice = ("Could not orient the protein in the membrane.\n"
               + "\n".join(errors) +
               "\nEither:\n"
-              "  - install MemPrO (pip install mempro, Python >= 3.11) and use orientation: mempro (or auto), or\n"
+              "  - install MemPrO (uv sync --extra membrane) and use orientation: mempro (or auto), or\n"
               "  - supply an oriented structure (e.g. from the OPM database) and use orientation: preoriented")
     drSplash.print_prep_failed(RuntimeError(advice), "Membrane orientation", None)
 #########################################################################
@@ -240,17 +240,7 @@ def run_memembed_orientation(inputPdb: FilePath, memDir: DirectoryPath) -> FileP
     return orientedPdb
 #########################################################################
 def _find_memembed() -> Optional[str]:
-    exe = shutil.which("memembed")
-    if exe:
-        return exe
-    try:
-        import packmol_memgen
-        candidate = p.join(p.dirname(packmol_memgen.__file__), "lib", "memembed", "bin", "memembed")
-        if p.isfile(candidate):
-            return candidate
-    except ImportError:
-        pass
-    return None
+    return drDependencies.find_memembed()
 #########################################################################
 def _atom_key(line: str) -> Tuple[str, str, str]:
     """chain, residue number + insertion code, atom name"""
@@ -326,7 +316,7 @@ def run_mempro_orientation(inputPdb: FilePath, memDir: DirectoryPath) -> FilePat
     """
     memproExe: Optional[str] = shutil.which("mempro")
     if memproExe is None:
-        raise FileNotFoundError("MemPrO is not installed (pip install mempro, Python >= 3.11)")
+        raise FileNotFoundError("MemPrO is not installed (uv sync --extra membrane)")
     memproDir: DirectoryPath = p.join(memDir, "MemPrO")
     memproLog: FilePath = p.join(memDir, "mempro.log")
     env = dict(os.environ)
@@ -395,13 +385,8 @@ def _write_clean_input_pdb(inPdb: FilePath, outPdb: FilePath) -> None:
         fout.write("END\n")
 #########################################################################
 def _make_sure_amberhome_is_set() -> None:
-    """PACKMOL-Memgen needs AMBERHOME; in a conda env this is the env prefix"""
-    if os.environ.get("AMBERHOME"):
-        return
-    for candidate in [sys.prefix, p.dirname(p.dirname(shutil.which("tleap") or ""))]:
-        if candidate and p.isdir(p.join(candidate, "dat", "leap")):
-            os.environ["AMBERHOME"] = candidate
-            return
+    """PACKMOL-Memgen needs AMBERHOME and the tools environment on PATH (see drDependencies)"""
+    drDependencies.set_up_tool_paths()
 #########################################################################
 def _run_in_dir(command: List[str], workDir: DirectoryPath, stepName: str,
                 logFile: Optional[FilePath], env: Optional[dict] = None) -> None:

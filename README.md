@@ -3,8 +3,8 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
 # :medical_symbol: README Contents :medical_symbol:
 
 1. **Installation**
-   - [GitHub Installation](#github-installation)
-   - [Pip Installation](#pip-installation)
+   - [Installation with uv](#medical_symbol-installation-medical_symbol)
+   - [Optional features](#optional-features)
 2. **Running drMD**: [Running **drMD** from the command line](#run-from-cmd-line) | [Running **drMD** as a Python Module](#run-from-python)
 3. **Config Syntax**
    - **Path Info**: [inputDir](#inputdir) | [outputDir](#outputdir)
@@ -28,85 +28,58 @@ Automated workflow for running molecular dynamics simulations with Amber and Ope
     - [Example 6: Metadynamics Simulation of Chignolin Peptide](#worked-example-6)
     - [Example 9: MD Simulation of a Membrane Protein](#worked-example-9)
 
-# :medical_symbol: GitHub Installation :medical_symbol:
-We recommend that you use the following steps to install **drMD**:
+# :medical_symbol: Installation :medical_symbol:
+**drMD** uses [uv](https://docs.astral.sh/uv/) for its Python dependencies and a small conda environment
+for the few programs that are not available on PyPI (AmberTools and OpenBabel).
+
 1. Clone this repository
 ```bash
 git clone https://github.com/wells-wood-research/drMD
+cd drMD
 ```
 
-2. Create conda environment using the environment.yaml file
+2. Install uv (once per machine), see [the uv docs](https://docs.astral.sh/uv/getting-started/installation/)
 ```bash
-conda env create -f environment.yaml
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-3. Activate conda environment
+3. Create the default **drMD** Python environment (Python 3.11+, created in `.venv`)
 ```bash
-conda activate drMD
+uv sync
 ```
 
-## :medical_symbol: Step-by-step installation :medical_symbol:
-You may instead wish to install the dependencies in a stepwise manner:
-1. Clone this repository
+4. Create the tools environment (AmberTools + OpenBabel) with micromamba, mamba or conda
 ```bash
-git clone https://github.com/wells-wood-research/drMD
+micromamba env create -f drMD_tools.yaml      # or: conda env create -f drMD_tools.yaml
 ```
+You do **not** need to activate this environment. **drMD** finds it by name (`drMD-tools`) and puts its programs on
+the `PATH` of every step it runs. To use an existing AmberTools installation instead, set
+`export DRMD_TOOLS_PREFIX=/path/to/that/env` (or `AMBERHOME`).
 
-2. Create and activate conda environment
+5. Check your installation
 ```bash
-conda create -n drMD python=3.10
+uv run python src/UtilitiesCloset/drDependencies.py
 ```
-```bash
-conda activate drMD
-```
-3. Install AmberTools (needs to be before OpenMM) with conda
-```bash
-conda install -c conda-forge ambertools=23
-``` 
-4. Install OpenMM with conda
-```bash
-conda install -c conda-forge openmm
-``` 
-5. Install OpenBabel with conda
-```bash
-conda install -c conda-forge openbabel
-```
-6. Install Pango with conda (optional, but can solve compatibility issues associated with *weasyprint*)
-```bash
-conda install -c conda-forge pango
-```
+This lists every **drMD** feature and whether its dependencies were found.
 
-7. Install other python libraries with pip
-```bash
-pip install -r requirements.txt
-```
+<a id="optional-features"></a>
+## :medical_symbol: Optional features :medical_symbol:
+The default environment runs standard **drMD** simulations. Features with extra dependencies are installed with
+`--extra` (several can be combined), for example:
 
-# :medical_symbol: Pip Installation :medical_symbol:
-If you want to integrate **drMD** into a python-based pipeline, you can install **drMD** with pip and use it as a python module:
+| Feature | Install | Needed for |
+|---|---|---|
+| CUDA (NVIDIA GPUs) | `uv sync --extra cuda12` (or `cuda13`, to match your driver) | `platform: CUDA` |
+| Membrane proteins | `uv sync --extra membrane` | `membraneInfo` (MemPrO orientation; PACKMOL-Memgen comes from `drMD_tools.yaml`) |
 
-1. Create and activate conda environment
-```bash
-conda create -n drMD python=3.10
-```
-```bash
-conda activate drMD
-```
-2. Install **drMD** with pip
-```bash
-pip install drMD
-```
-3. Install AmberTools (needs to be before OpenMM) with conda
-```bash
-conda install -c conda-forge ambertools=23
-``` 
-4. Install OpenMM with conda
-```bash
-conda install -c conda-forge openmm
-``` 
-5. Install OpenBabel with conda
-```bash
-conda install -c conda-forge openbabel
-```
+If your config uses a feature whose dependencies are missing, **drMD** stops before running anything and tells you the
+command that installs them.
+
+### Adding a new feature (for developers)
+1. Add an extra to `[project.optional-dependencies]` in `pyproject.toml` and run `uv lock`.
+2. Register the feature in `src/UtilitiesCloset/drDependencies.py` (`FEATURES`): its Python modules, its programs and a
+   function that says when a config needs it.
+3. Commit `pyproject.toml` and `uv.lock` together.
 
 <a id="running-drmd"></a>
 # :medical_symbol: Running **drMD** :medical_symbol:
@@ -116,16 +89,20 @@ Now that you have successfully set up the dependencies for **drMD**, you are nea
 <a id="run-from-cmd-line"></a>
 ## :brain: Running **drMD** from the command line
 
-If you have used the GitHub installation method, you can run **drMD** using the following command:
+From the **drMD** directory, run:
 
 ```bash
-python /path/to/drMD.py --config config.yaml
+uv run python src/drMD.py --config config.yaml
 ```
+(or activate the environment with `source .venv/bin/activate` and run `python src/drMD.py --config config.yaml`)
 <a id="run-as-python-module"></a>
 ## :brain: Running **drMD** as a python module
-If you have used the Pip installation method, you can import **drMD** as a python module, and as following:
+To call **drMD** from your own Python code, run it with the **drMD** environment (`uv run`, or the `.venv` python) and
+add the `src` directory to your path:
 
 ```python
+import sys
+sys.path.insert(0, "/path/to/drMD/src")
 import drMD
 
 myBatchConfig = "/path/to/config.yaml"
@@ -389,7 +366,7 @@ Mixtures are separated by `:` (e.g. `"POPC:CHL1"`). Different upper and lower le
 *(str)* How the protein is placed in the membrane. Default: `"auto"`.
   - **"auto"** : uses MemPrO if it is installed, otherwise MEMEMBED; if the first method fails, the other is tried
   - **"memembed"** : predicts the orientation with MEMEMBED (bundled with PACKMOL-Memgen). MEMEMBED assumes the N-terminus is on the cytoplasmic (lower, -z) side, so single-pass type-I proteins come out upside down. This does not matter for symmetric bilayers, but check the orientation if you use different upper and lower leaflets (MemPrO assigns the sidedness using the positive-inside rule)
-  - **"mempro"** : predicts the orientation with [MemPrO](https://github.com/ShufflerBardOnTheEdge/MemPrO) (`pip install mempro`, needs Python >= 3.11)
+  - **"mempro"** : predicts the orientation with [MemPrO](https://github.com/ShufflerBardOnTheEdge/MemPrO) (installed with `uv sync --extra membrane`)
   - **"preoriented"** : your PDB is already oriented (membrane normal along z, membrane centre at z = 0), e.g. a structure from the [OPM database](https://opm.phar.umich.edu). OPM dummy membrane atoms (`DUM`) and crystallographic waters are removed automatically (from a working copy; your input files are not changed). Detergent or lipid molecules from the crystal structure are not removed - delete them from your PDB before running.
 
 <a id="saltconcentration"></a>

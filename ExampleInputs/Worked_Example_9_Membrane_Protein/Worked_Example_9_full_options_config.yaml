@@ -9,7 +9,7 @@
 #   lipidRatio:        relative amounts, same layout as lipids e.g. "9:1"  (default: equal parts)
 #   orientation:       auto         - MemPrO if installed, otherwise MEMEMBED; falls back to the other on failure (default)
 #                      memembed     - predict orientation with MEMEMBED (bundled with PACKMOL-Memgen)
-#                      mempro       - predict orientation with MemPrO (pip install mempro, Python >= 3.11)
+#                      mempro       - predict orientation with MemPrO (uv sync --extra membrane)
 #                      preoriented  - input is already oriented: membrane normal = z, centre at z = 0
 #                                     (e.g. structures from the OPM database; DUM atoms are removed)
 #   saltConcentration: molar salt in the water layers (default 0.15; 0 = counter-ions only)

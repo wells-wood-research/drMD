@@ -1,39 +1,5 @@
+## Package metadata and dependencies live in pyproject.toml (managed with uv).
+## This shim only keeps setuptools package discovery for legacy builds.
 from setuptools import setup, find_packages
 
-setup(
-    name='drMD',
-    version = '1.0.2',
-    description='drMD: Molecular Dynamics for Protein Scientists',
-    author="Dr Eugene Shrimpton-Phoenix",
-    author_email="eshrimpt@ed.ac.uk",
-    long_description=open('README.md').read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/wells-wood-research/drMD",
-    packages=find_packages(),
-    python_requires='>=3.9',
-    classifiers=[
-        'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
-    ],
-    install_requires=[
-        'pyyaml',
-        'argpass',
-        'pandas',
-        'mdtraj',
-        'numpy',
-        'matplotlib',
-        'weasyprint',
-        'scipy',
-        'tqdm',
-        'pdbutils',
-        'scikit-learn',
-        'propka',
-        'jinja2',
-        'inflect',
-        'pdb2pqr',
-        'mdanalysis',
-        'gputil',
-        'mempro; python_version >= "3.11"',
-        'jax[cpu]<0.7.2; python_version >= "3.11"',
-    ],
-)
+setup(packages=find_packages())

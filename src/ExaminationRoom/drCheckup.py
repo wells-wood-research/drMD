@@ -19,7 +19,13 @@ from matplotlib.ticker import MaxNLocator
 
 ## PDF LIBS
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML, CSS
+## weasyprint needs the pango system library; without it drMD still runs but skips the PDF vitals report
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_ERROR = None
+except (ImportError, OSError) as weasyprintError:
+    HTML = CSS = None
+    WEASYPRINT_ERROR = weasyprintError
 
 ## MDTRAJ AND MDANALYSIS LIBRARIES
 import mdtraj as md
@@ -135,6 +141,9 @@ def create_vitals_pdf(simDir):
     
     # Generate the PDF with error handling
     outPdf = p.join(simDir, "vitals_report.pdf")
+    if HTML is None:
+        drLogger.log_info(f"weasyprint unavailable ({WEASYPRINT_ERROR}); skipping vitals_report.pdf (PNG report still written)")
+        return
     try:
         baseUrl = simDir  # Set the base URL to the current working directory
         css = CSS(string='''

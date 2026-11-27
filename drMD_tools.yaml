@@ -1,0 +1,12 @@
+## Programs drMD needs that are not available on PyPI.
+## Create once with any of:
+##     micromamba env create -f drMD_tools.yaml
+##     conda env create -f drMD_tools.yaml
+## drMD finds this environment automatically (by its name, "drMD-tools") - you do not need to activate it.
+## Python dependencies are NOT installed here: they are managed by uv (pyproject.toml / uv.lock).
+name: drMD-tools
+channels:
+  - conda-forge
+dependencies:
+  - ambertools=23     # tleap, antechamber, parmchk2 (+ packmol-memgen for membrane simulations)
+  - openbabel         # obabel (ligand protonation)
